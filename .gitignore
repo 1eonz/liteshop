@@ -1,0 +1,64 @@
+# 依赖
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# 构建产物
+dist/
+.next/
+build/
+*.tsbuildinfo
+coverage/
+.nyc_output/
+
+# 环境变量（敏感）
+.env
+.env.local
+.env.staging
+.env.production
+!.env.example
+!.env.development
+
+# 密钥与证书
+certs/
+*.pem
+*.key
+*.p12
+
+# 日志
+*.log
+logs/
+!logs/.gitkeep
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# 系统
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# 临时文件
+*.tmp
+*.bak
+.cache/
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+
+# Storybook
+storybook-static/
+
+# 备份
+backups/
+*.sql.gz
