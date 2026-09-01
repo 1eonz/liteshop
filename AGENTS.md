@@ -98,6 +98,7 @@ liteshop/
 │   ├── 环境准备清单.md           # 电脑环境/软件/依赖清单
 │   ├── 工作流文档-v2.0.md        # IDE 多 Agent 调度机制
 │   ├── 设计规范.md               # Design System 完整规范（色彩/字体/间距/圆角/阴影/组件）
+│   ├── Skills安装指南.md         # 11 个核心 skills 清单 + 市面分析 + 使用时机
 │   ├── api-contracts/v1/         # OpenAPI 契约（阶段 0 产出）
 │   ├── error-codes.md            # 错误码表（PRD D2.2）
 │   └── verify-commands.md        # 各端验证命令
@@ -123,11 +124,13 @@ liteshop/
 **当前已存在的文档文件**（你换电脑后只需带这几个文件，其他由主 Agent 生成）：
 
 - `AGENTS.md`（本文件）
-- `提示词.md`
+- `操作手册.md`（你本人看的逐步 IDE 操作指南，8 步从环境到上线）
+- `提示词.md`（主 Agent 入口提示词，复制粘贴到对话窗即可启动）
 - `docs/PRD-v1.3.md`（产品需求 + 详细设计附录 D/E）
 - `docs/工作流文档-v2.0.md`（IDE 多 Agent 调度机制）
 - `docs/环境准备清单.md`（电脑环境/软件/依赖）
 - `docs/设计规范.md`（Design System 完整规范：色彩/字体/间距/圆角/阴影/组件）
+- `docs/Skills安装指南.md`（11 个核心 skills 清单 + 市面分析 + 使用时机）
 - `docs/verify-commands.md`（各端验证命令）
 - `.env.example`（环境变量模板）
 - `.gitignore`
