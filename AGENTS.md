@@ -98,7 +98,7 @@ liteshop/
 │   ├── 环境准备清单.md           # 电脑环境/软件/依赖清单
 │   ├── 工作流文档-v2.0.md        # IDE 多 Agent 调度机制
 │   ├── 设计规范.md               # Design System 完整规范（色彩/字体/间距/圆角/阴影/组件）
-│   ├── Skills安装指南.md         # 12 个核心 skills 清单 + 市面分析 + 使用时机
+│   ├── Skills安装指南.md         # 13 个核心 skills 清单 + 市面分析 + 使用时机
 │   ├── api-contracts/v1/         # OpenAPI 契约（阶段 0 产出）
 │   ├── error-codes.md            # 错误码表（PRD D2.2）
 │   └── verify-commands.md        # 各端验证命令
@@ -130,7 +130,7 @@ liteshop/
 - `docs/工作流文档-v2.0.md`（IDE 多 Agent 调度机制）
 - `docs/环境准备清单.md`（电脑环境/软件/依赖）
 - `docs/设计规范.md`（Design System 完整规范：色彩/字体/间距/圆角/阴影/组件）
-- `docs/Skills安装指南.md`（12 个核心 skills 清单 + 市面分析 + 使用时机）
+- `docs/Skills安装指南.md`（13 个核心 skills 清单 + 市面分析 + 使用时机）
 - `docs/verify-commands.md`（各端验证命令）
 - `.env.example`（环境变量模板）
 - `.gitignore`
@@ -175,6 +175,7 @@ liteshop/
 - 样式：Tailwind 静态类 + CSS 变量动态值，禁动态拼接 class
 - **视觉规范：必须遵循 `docs/设计规范.md`，禁硬编码颜色/字号/间距/圆角/阴影值，一律用 `--color-*` / `--font-size-*` / `--spacing-*` / `--radius-*` / `--shadow-*` 等 CSS 变量**
 - **设计质量（impeccable skill）**：子 Agent 完成 UI 后，主 Agent 调用 impeccable `/audit` 做设计审查（排版/色彩/间距/对比度/a11y），上线前调 `/polish` 精细化 + `/harden` 生产就绪检查。CI 里跑 `npx impeccable detect` 60 条确定性规则（不调 LLM）。Impeccable 的反模式库（禁 Inter/Arial/紫色渐变/嵌套卡片/弹跳缓动）与项目设计规范互补，在 `.impeccable.md` 里加"优先遵循 docs/设计规范.md，主色 #ff6b6b"
+- **图表可视化（chart-visualization skill）**：plan-12 后台数据看板子 Agent 必须加载此 skill，基于看板数据生成 ECharts 规范配置。色板必须对齐 `docs/设计规范.md` 的 `--color-*` CSS 变量，禁硬编码颜色。图表组件按需懒加载（`React.lazy`），首屏 gzip 不超限
 - 金额一律 `number`（分），展示前 `formatPrice()`
 - API 调用统一走 `src/api/*` + React Query，禁组件内裸 axios
 - 所有展示文本走 i18n key，禁硬编码中文
