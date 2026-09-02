@@ -1,22 +1,22 @@
 # LiteShop Skills 安装指南
 
-> 本文件列出 LiteShop 项目推荐的所有 TRAE Skills，含**市面可用 skills 分析、安装命令、使用时机、组合策略**。
+> 本文件列出 LiteShop 项目推荐的所有 CodeX Skills，含**市面可用 skills 分析、安装命令、使用时机、组合策略**。
 > 你需要先手动安装这些 skills，主 Agent 才能在 IDE 里自动调用它们优化项目。
 
 ---
 
 ## 一、Skills 是什么
 
-TRAE Skills 是字节跳动 TRAE IDE 的"技能包"——把一套完整指令、脚本、参考资料打包，AI 加载后能在特定领域发挥专业能力。本质上是给 Agent 装"外挂大脑"，让它不只写代码，还能审代码、跑测试、管 PR、写文档。
+CodeX Skills 是字节跳动 CodeX IDE 的"技能包"——把一套完整指令、脚本、参考资料打包，AI 加载后能在特定领域发挥专业能力。本质上是给 Agent 装"外挂大脑"，让它不只写代码，还能审代码、跑测试、管 PR、写文档。
 
 **关键特性**：
-- Skill 是 `.md` 文件（`SKILL.md`），装在 `.trae/skills/{skill-name}/` 目录
+- Skill 是 `.md` 文件（`SKILL.md`），装在 `.codex/skills/{skill-name}/` 目录
 - Agent 在对话中遇到匹配场景时自动触发，也可手动 `$调用 skill-name`
-- 项目级 skill 放 `.trae/skills/`，全局级放用户目录
+- 项目级 skill 放 `.codex/skills/`，全局级放用户目录
 
 **安装方式**：
-1. TRAE IDE → 设置 → 规则和技能 → 技能 → 创建并导入 SKILL.md
-2. 或对话让 TRAE 帮你创建："帮我创建一个代码审查的 SKILL，重点关注安全和性能"
+1. CodeX IDE → 设置 → 规则和技能 → 技能 → 创建并导入 SKILL.md
+2. 或对话让 CodeX 帮你创建："帮我创建一个代码审查的 SKILL，重点关注安全和性能"
 3. 或从技能市场搜索安装（推荐路径，已通过官方审核）
 
 ---
@@ -28,7 +28,7 @@ TRAE Skills 是字节跳动 TRAE IDE 的"技能包"——把一套完整指令�
 | Skill 名 | 作者 | 核心能力 | LiteShop 用途 | 推荐度 |
 |---|---|---|---|---|
 | **frontend-design** | Anthropic | 从零生成明确视觉风格的前端界面（排版/配色/动效），避免"AI 模板味" | 设计 3 个 Demo 让你选风格 | ⭐⭐⭐⭐⭐ |
-| **frontend-skill** | TRAE 官方 | 构建结构清晰且风格克制的前端界面，规范信息层级与排版 | 商城/后台页面布局 | ⭐⭐⭐⭐ |
+| **frontend-skill** | CodeX 官方 | 构建结构清晰且风格克制的前端界面，规范信息层级与排版 | 商城/后台页面布局 | ⭐⭐⭐⭐ |
 | **frontend-ui-ux** | code-yeongyu | 微交互/间距/色彩和谐/UI 体验优化 | 商品卡片、SKU 抽屉细节优化 | ⭐⭐⭐⭐ |
 | **design-taste-frontend** | Leonxlnx | 避免 AI 模板味，提升设计品味 | 全站视觉品味兜底 | ⭐⭐⭐ |
 | **better-interface** | Anthropic | 可访问性 + 交付审查（a11y） | PRD E5.4 a11y 合规 | ⭐⭐⭐⭐ |
@@ -40,7 +40,7 @@ TRAE Skills 是字节跳动 TRAE IDE 的"技能包"——把一套完整指令�
 | Skill 名 | 作者 | 核心能力 | LiteShop 用途 | 推荐度 |
 |---|---|---|---|---|
 | **fullstack-developer** | Shubhamsaboo | 前端 React + 后端 Node + 数据库 + 认证 + 部署 | 不直接用（我们前后端分离） | ⭐⭐ |
-| **composition-patterns** | TRAE 官方 | 组件组合模式拆分重构、状态管理优化 | 共享组件库重构 | ⭐⭐⭐⭐ |
+| **composition-patterns** | CodeX 官方 | 组件组合模式拆分重构、状态管理优化 | 共享组件库重构 | ⭐⭐⭐⭐ |
 | **cache-components** | Vercel | Next.js PPR 和缓存组件最佳实践 | 官网 ISR 缓存优化（二期） | ⭐⭐⭐⭐（二期必装） |
 
 ### 2.3 代码审查类（3 个，LiteShop 必装）
@@ -73,23 +73,23 @@ TRAE Skills 是字节跳动 TRAE IDE 的"技能包"——把一套完整指令�
 |---|---|---|---|---|
 | **update-docs** | Vercel | 代码变更自动分析更新对应文档 | OpenAPI/AGENTS.md 同步 | ⭐⭐⭐⭐ |
 | **find-skills** | Vercel Labs | 从技能市场搜索/安装/管理 skills | 发现新 skill | ⭐⭐⭐ |
-| **doc-coauthoring** | TRAE 官方 | 分阶段协作生成结构清晰文档 | PRD/设计文档协作 | ⭐⭐⭐ |
+| **doc-coauthoring** | CodeX 官方 | 分阶段协作生成结构清晰文档 | PRD/设计文档协作 | ⭐⭐⭐ |
 
 ### 2.7 数据与可视化类（2 个）
 
 | Skill 名 | 作者 | 核心能力 | LiteShop 用途 | 推荐度 |
 |---|---|---|---|---|
-| **chart-visualization** | TRAE 官方 | 根据数据特征选图表类型，生成可视化 | 后台数据看板 ECharts | ⭐⭐⭐⭐ |
-| **data-analysis** | TRAE 官方 | SQL 查询 Excel/CSV，多表关联分析 | 后台报表/导出 | ⭐⭐⭐ |
+| **chart-visualization** | CodeX 官方 | 根据数据特征选图表类型，生成可视化 | 后台数据看板 ECharts | ⭐⭐⭐⭐ |
+| **data-analysis** | CodeX 官方 | SQL 查询 Excel/CSV，多表关联分析 | 后台报表/导出 | ⭐⭐⭐ |
 
 ### 2.8 其他实用类（3 个）
 
 | Skill 名 | 作者 | 核心能力 | LiteShop 用途 | 推荐度 |
 |---|---|---|---|---|
-| **brainstorming** | TRAE 官方 | 开发前强制需求梳理澄清，交互式对话形成方案 | 阶段 0 契约设计 | ⭐⭐⭐⭐ |
-| **canvas-design** | TRAE 官方 | 生成海报/封面等静态视觉内容 | 二期商城模板图 | ⭐⭐⭐ |
-| **figma** | TRAE 官方 | 解析 Figma 设计稿生成前端代码 | 二期接设计师交付物 | ⭐⭐⭐ |
-| **agent-browser** | TRAE 官方 | 脚本化浏览器操作，数据提取/自动化流程 | E2E 测试辅助 | ⭐⭐⭐ |
+| **brainstorming** | CodeX 官方 | 开发前强制需求梳理澄清，交互式对话形成方案 | 阶段 0 契约设计 | ⭐⭐⭐⭐ |
+| **canvas-design** | CodeX 官方 | 生成海报/封面等静态视觉内容 | 二期商城模板图 | ⭐⭐⭐ |
+| **figma** | CodeX 官方 | 解析 Figma 设计稿生成前端代码 | 二期接设计师交付物 | ⭐⭐⭐ |
+| **agent-browser** | CodeX 官方 | 脚本化浏览器操作，数据提取/自动化流程 | E2E 测试辅助 | ⭐⭐⭐ |
 | **humanizer** | Anthropic | 文案自然化，去 AI 腔 | 商品文案/SEO 文案 | ⭐⭐⭐ |
 
 ---
@@ -147,9 +147,9 @@ TRAE Skills 是字节跳动 TRAE IDE 的"技能包"——把一套完整指令�
 
 ## 四、安装步骤（你手动操作）
 
-### 4.1 通过 TRAE 技能市场安装（推荐）
+### 4.1 通过 CodeX 技能市场安装（推荐）
 
-1. 打开 TRAE IDE
+1. 打开 CodeX IDE
 2. 侧边栏点击"技能"图标（或 设置 → 规则和技能 → 技能）
 3. 搜索下列 skill 名，逐个点击"安装"：
    - `frontend-design`
@@ -166,7 +166,7 @@ TRAE Skills 是字节跳动 TRAE IDE 的"技能包"——把一套完整指令�
 
 4. 安装后验证：在对话窗输入 `$list-skills`，应看到上述 11 个
 
-### 4.2 通过对话让 TRAE 创建（备选）
+### 4.2 通过对话让 CodeX 创建（备选）
 
 如果某个 skill 在市场找不到，可直接对话：
 
@@ -175,14 +175,14 @@ TRAE Skills 是字节跳动 TRAE IDE 的"技能包"——把一套完整指令�
 功能是从零生成明确视觉风格的前端界面，注重排版/配色/动效。
 ```
 
-TRAE 会自动生成 `.trae/skills/frontend-design/SKILL.md`。
+CodeX 会自动生成 `.codex/skills/frontend-design/SKILL.md`。
 
 ### 4.3 手动导入 SKILL.md（高级）
 
 1. 从 GitHub 下载对应 SKILL.md 文件
-2. 在项目根目录创建 `.trae/skills/{skill-name}/SKILL.md`
+2. 在项目根目录创建 `.codex/skills/{skill-name}/SKILL.md`
 3. 把下载的文件内容粘进去
-4. 重启 TRAE IDE 或刷新技能列表
+4. 重启 CodeX IDE 或刷新技能列表
 
 ---
 
@@ -274,7 +274,7 @@ code-reviewer + update-docs
 
 - 执行顺序靠后的 skill 会覆盖前面的规则
 - **把 frontend-design 放最后**，否则好看的设计会被后面的通用规则覆盖
-- 配置 `.trae/skills/order.txt` 控制执行顺序（如有）
+- 配置 `.codex/skills/order.txt` 控制执行顺序（如有）
 
 ### 7.3 避免规则重叠
 
@@ -297,7 +297,7 @@ code-reviewer + update-docs
 
 ```bash
 # 定期执行（每月一次）
-trae skills update
+codex skills update
 ```
 
 获取最新规则，避免用过时的最佳实践。
@@ -315,25 +315,39 @@ trae skills update
 主 Agent 在阶段 0 会自动创建 4 个项目专属 skill：
 
 ```
-.trae/skills/
-├── liteshop-contract/SKILL.md       # 契约审查：检查代码是否符合 OpenAPI/shared-types
-├── liteshop-territory/SKILL.md      # 领地检查：子 Agent 改动是否越界
-├── liteshop-verify/SKILL.md         # 5 步验收：自动跑验证命令+查幻觉+抽查
-└── liteshop-style/SKILL.md          # 设计规范：检查是否用 CSS 变量、是否硬编码
+.codex/skills/
+├── liteshop-contract/SKILL.md    # 契约审查：检查代码是否符合 OpenAPI/shared-types
+├── liteshop-territory/SKILL.md   # 领地检查：子 Agent 改动是否越界
+├── liteshop-verify/SKILL.md      # 5+1 步验收：自动跑验证命令+查幻觉+抽查+重复检测
+└── liteshop-style/SKILL.md       # 设计规范：检查是否用 CSS 变量、是否硬编码
 ```
 
-这些 skill 是 LiteShop 特有的，主 Agent 在初始化时自动生成，你不需要手动安装。
+此外还有一个**通用全局 Skill**（不在项目内，装在用户目录）：
+
+```
+~/.codex/skills/
+└── project-radar/SKILL.md       # 项目雷达：通用，扫描任何项目+分析 14 类风险+提示用户调整+生成 project-context.md
+```
+
+**project-radar 是通用 Skill**，装一次，所有项目共用。它解决以下问题：
+- **上下文爆炸**：自动识别文档体积，生成分段读指引，主 Agent 不再一次读全 PRD
+- **重复造轮子**：在项目内生成 `.codex/project-context.md`（代码索引），子 Agent 启动前知道项目已有什么，5+1 步验收时重复检测
+- **子 Agent 盲目编码**：主 Agent 把 project-context 摘要塞进 Task query，子 Agent 不再盲目
+- **风险预警**：扫描后分析 14 类风险，用 AskUserQuestion 提示用户是否调整产品文档/工作流
+- **文档调整建议**：只建议不擅改，用户逐项确认后才修改
+
+安装方式：把 `.codex/skills/project-radar/SKILL.md`（LiteShop 项目里已有一份副本）复制到 `~/.codex/skills/project-radar/SKILL.md` 即可全局生效。
 
 ---
 
 ## 九、安装完成验证清单
 
-- [ ] TRAE IDE 已安装并登录
+- [ ] CodeX IDE 已安装并登录
 - [ ] 11 个核心 skill 已安装（`$list-skills` 能看到）
-- [ ] 项目根目录有 `.trae/skills/` 目录（主 Agent 阶段 0 创建）
+- [ ] 项目根目录有 `.codex/skills/` 目录（主 Agent 阶段 0 创建）
 - [ ] 4 个 LiteShop 专属 skill 已自动生成
 - [ ] 每个 skill 的 SKILL.md 末尾已加"优先遵循项目设计系统"那一行
-- [ ] `trae skills update` 已执行一次
+- [ ] `codex skills update` 已执行一次
 
 ---
 
