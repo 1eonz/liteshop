@@ -28,12 +28,17 @@ CodeX Skills 是字节跳动 CodeX IDE 的"技能包"——把一套完整指令
 | Skill 名 | 作者 | 核心能力 | LiteShop 用途 | 推荐度 |
 |---|---|---|---|---|
 | **frontend-design** | Anthropic | 从零生成明确视觉风格的前端界面（排版/配色/动效），避免"AI 模板味" | 设计 3 个 Demo 让你选风格 | ⭐⭐⭐⭐⭐ |
+| **impeccable** | Paul Bakaus | AI 设计词汇层：7 份设计领域参考 + 23 条斜杠命令 + 25 条反模式 + 60 条 CI 检测规则，让 AI 生成的 UI 不再"AI 味" | Demo 质量提升/5+1 验收设计审查/CI 设计检测/日常微调 | ⭐⭐⭐⭐⭐ |
 | **frontend-skill** | CodeX 官方 | 构建结构清晰且风格克制的前端界面，规范信息层级与排版 | 商城/后台页面布局 | ⭐⭐⭐⭐ |
 | **frontend-ui-ux** | code-yeongyu | 微交互/间距/色彩和谐/UI 体验优化 | 商品卡片、SKU 抽屉细节优化 | ⭐⭐⭐⭐ |
 | **design-taste-frontend** | Leonxlnx | 避免 AI 模板味，提升设计品味 | 全站视觉品味兜底 | ⭐⭐⭐ |
 | **better-interface** | Anthropic | 可访问性 + 交付审查（a11y） | PRD E5.4 a11y 合规 | ⭐⭐⭐⭐ |
 
-**LiteShop 装哪些**：`frontend-design` + `frontend-ui-ux` + `better-interface` 三个必装，其他可选。
+**LiteShop 装哪些**：`frontend-design` + `impeccable` + `frontend-ui-ux` + `better-interface` 四个必装，其他可选。
+
+**Impeccable 与 frontend-design 的关系**：Impeccable 基于 frontend-design 扩展，提供更深层的设计词汇层。两者不冲突——frontend-design 负责"从零设计"，Impeccable 负责"审查+微调+反模式兜底+CI 检测"。
+
+**Impeccable 与项目设计规范的关系**：Impeccable 安装后会在项目根目录生成 `.impeccable.md`，需在里面加一行"优先遵循项目 docs/设计规范.md，不覆盖自定义 CSS 变量。主色 #ff6b6b，禁用 Impeccable 推荐的默认配色"。Impeccable 的反模式库（禁 Inter/Arial/紫色渐变/嵌套卡片/弹跳缓动）和项目的 `docs/设计规范.md`（主色 #ff6b6b、L0-L4 组件分层）互补不冲突。
 
 ### 2.2 全栈开发类（3 个）
 
@@ -94,9 +99,9 @@ CodeX Skills 是字节跳动 CodeX IDE 的"技能包"——把一套完整指令
 
 ---
 
-## 三、LiteShop 推荐安装清单（11 个核心 + 4 个可选）
+## 三、LiteShop 推荐安装清单（12 个核心 + 4 个可选）
 
-### 3.1 核心必装（11 个，1a 期全流程覆盖）
+### 3.1 核心必装（12 个，1a 期全流程覆盖）
 
 按场景顺序：
 
@@ -105,22 +110,23 @@ CodeX Skills 是字节跳动 CodeX IDE 的"技能包"——把一套完整指令
 1. frontend-design          # 设计 3 个风格 Demo
 2. frontend-ui-ux           # 微交互/间距/色彩优化
 3. better-interface         # a11y 可访问性审查
+4. impeccable               # AI 设计词汇层：反模式库 + 23 条设计命令 + CI 设计检测
 
 # === 代码审查（子 Agent 完成后） ===
-4. code-reviewer            # 通用审查（后端+前端）
-5. frontend-code-review     # 前端专项审查
-6. react-best-practices     # React/Next.js 性能优化
+5. code-reviewer            # 通用审查（后端+前端）
+6. frontend-code-review     # 前端专项审查
+7. react-best-practices     # React/Next.js 性能优化
 
 # === 自动化测试 ===
-7. webapp-testing           # Playwright E2E 测试生成
-8. fix                      # Prettier + Lint 自动修复
+8. webapp-testing           # Playwright E2E 测试生成
+9. fix                      # Prettier + Lint 自动修复
 
 # === Git/CI ===
-9. git-commit               # Conventional Commits 规范提交
-10. pr-creator              # PR 自动创建
+10. git-commit               # Conventional Commits 规范提交
+11. pr-creator              # PR 自动创建
 
 # === 文档同步 ===
-11. update-docs             # 代码变更同步文档
+12. update-docs             # 代码变更同步文档
 ```
 
 ### 3.2 可选装（4 个，按需）
@@ -193,6 +199,7 @@ CodeX 会自动生成 `.codex/skills/frontend-design/SKILL.md`。
 | Skill | 触发时机 | 主 Agent 调用方式 |
 |---|---|---|
 | frontend-design | 设计 3 个风格 Demo 时 | 子 Agent prompt 里要求"加载 frontend-design skill" |
+| impeccable | Demo 设计审查 + 精细化 | 子 Agent 完成后调用 `/audit` 设计审查 + `/polish` 精细化 + `/bolder` 增强视觉 |
 | frontend-ui-ux | Demo 细节优化 | 子 Agent prompt 里要求"加载 frontend-ui-ux 优化微交互" |
 | brainstorming | 阶段 0 契约设计 | 主 Agent 自己调用，澄清需求 |
 
@@ -207,10 +214,11 @@ CodeX 会自动生成 `.codex/skills/frontend-design/SKILL.md`。
 
 | Skill | 触发时机 | 主 Agent 调用方式 |
 |---|---|---|
-| code-reviewer | 主 Agent 5 步验收 | "用 code-reviewer 审查 backend/ 目录" |
+| code-reviewer | 主 Agent 5+1 步验收 | "用 code-reviewer 审查 backend/ 目录" |
 | frontend-code-review | 前端子 Agent 完成后 | "用 frontend-code-review 审查 packages/h5-app/" |
 | react-best-practices | 性能优化阶段 | "用 react-best-practices 审查 packages/h5-app/ 性能" |
 | better-interface | a11y 检查 | "用 better-interface 审查可访问性" |
+| impeccable | 设计质量审查 | "调用 /audit 做全面设计审查（排版/色彩/间距/对比度/a11y），/polish 做上线前精细化，/harden 做生产就绪检查" |
 
 ### 5.4 测试阶段
 
@@ -244,11 +252,12 @@ pr-creator + code-reviewer + fix
 ### 6.2 前端交付组合
 
 ```
-frontend-code-review + webapp-testing + better-interface
+frontend-code-review + impeccable + webapp-testing + better-interface
   ↓
   1. frontend-code-review 审查代码质量
-  2. better-interface 审查 a11y
-  3. webapp-testing 生成 E2E 测试
+  2. impeccable /audit 审查设计质量（排版/色彩/间距/对比度）
+  3. better-interface 审查 a11y
+  4. webapp-testing 生成 E2E 测试
 ```
 
 ### 6.3 后端交付组合
@@ -358,6 +367,7 @@ codex skills update
 | Skill | PRD/AGENTS.md 对应 |
 |---|---|
 | frontend-design | docs/设计规范.md |
+| impeccable | docs/设计规范.md（反模式兜底 + 设计审查 + CI 检测） |
 | code-reviewer | AGENTS.md §5 验证要求、PRD E15 验收清单 |
 | frontend-code-review | AGENTS.md §4.3 前端代码约束 |
 | react-best-practices | PRD E1.3 前端性能约束 |
