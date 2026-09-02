@@ -10,21 +10,22 @@
 
 ## 一、Skill 架构
 
+**全局安装（仅一个文件）**：
 ```
-~/.codex/skills/project-radar/
-├── SKILL.md              # 主逻辑（通用引擎，零项目假设）
-└── profiles/             # 项目类型配置包（插件）
-    ├── ecommerce.md      # 电商：状态机/防抖/幂等/迁移可逆
-    ├── education.md      # 教育：版权素材/配额逻辑/自评逻辑
-    ├── baas.md           # BaaS：RLS 权限/安全规则
-    ├── crossplatform.md  # 跨端：多端 API 兼容/条件编译/包体积
-    ├── miniprogram.md    # 小程序：包体积/类目合规
-    ├── saas.md           # SaaS：多租户/权限矩阵
-    └── i18n.md           # 国际化：key 遗漏
+~/.codex/skills/project-radar/SKILL.md   # 通用引擎 + 配置包生成格式定义
 ```
 
-**引擎职责**：扫描→识别→加载配置包→分析→提示→覆盖检查→生成
+**主 Agent 启动后动态生成（项目专属）**：
+```
+{项目}/.codex/skills/project-radar/profiles/
+├── {识别出的类型 1}.md   # 主 Agent 5 层识别后现场生成
+├── {识别出的类型 2}.md   # 可同时生成多个
+└── ...
+```
+
+**引擎职责**：扫描→5 层识别→按识别结果动态生成配置包→分析→提示→覆盖检查→生成 project-context.md
 **配置包职责**：定义该类型项目的专属关键词/风险检测项/PRD 格式/任务载体/目录结构
+**配置包是现场生成的**：主 Agent 读 Skill 后，根据项目实际情况动态生成，不预创建。
 
 ---
 
@@ -113,21 +114,23 @@
 - 有 miniprogram/ 或 app.json(微信) → 小程序
 ```
 
-### 3.6 综合判断 + 加载配置包
+### 3.6 综合判断 + 动态生成配置包
 
-5 层识别后，综合判断项目类型，加载对应配置包：
+5 层识别后，综合判断项目类型，**按 SKILL.md §十 定义的配置包格式，现场生成配置包**到 `.codex/skills/project-radar/profiles/`：
 
 ```
-if L2 有 @tarojs/* 或 react-native → 加载 crossplatform.md
-if L2 有 supabase/firebase/appwrite → 加载 baas.md
-if L3 有电商关键词 → 加载 ecommerce.md
-if L3 有教育关键词 → 加载 education.md
-if L4 有 miniprogram 或 app.json → 加载 miniprogram.md
-if L3 有 SaaS 关键词 → 加载 saas.md
-if 有 i18n 目录或 locale 文件 → 加载 i18n.md
+if L2 有 @tarojs/* 或 react-native → 生成 crossplatform.md
+if L2 有 supabase/firebase/appwrite → 生成 baas.md
+if L3 有电商关键词 → 生成 ecommerce.md
+if L3 有教育关键词 → 生成 education.md
+if L4 有 miniprogram 或 app.json → 生成 miniprogram.md
+if L3 有 SaaS 关键词 → 生成 saas.md
+if 有 i18n 目录或 locale 文件 → 生成 i18n.md
 ```
 
-**可同时加载多个配置包**（如电商 + 跨端 + i18n）。
+**可同时生成多个配置包**（如电商 + 跨端 + i18n）。
+
+**生成后**：主 Agent 读生成的配置包，按其中的专属风险/关键词/验收项执行后续步骤。
 
 ---
 
@@ -172,36 +175,33 @@ else:
     跳过
 ```
 
-### 4.3 配置包专属风险（动态加载）
+### 4.3 配置包专属风险（读动态生成的配置包）
 
-每个配置包定义该类型项目的专属风险检测项。例如：
+主 Agent 读 §3.6 生成的配置包，按其中的专属风险检测项执行。配置包示例（由主 Agent 现场生成，以下为格式参考）：
 
-**ecommerce.md**：
-```
-| 状态机竞态 | 订单超时 vs 支付回调并发 |
-| 防抖缺失 | 写操作按钮没有防抖 |
-| 数据库迁移可逆 | Alembic/Prisma 是否有 downgrade |
-```
+**ecommerce.md 会检测**：
+- 状态机竞态：订单超时 vs 支付回调并发
+- 库存超卖：是否用原子 SQL
+- 支付回调幂等：是否做幂等
+- 金额精度：是否用整数分
+- 防抖缺失：写操作按钮
+- 数据库迁移可逆
 
-**education.md**：
-```
-| 版权素材误用 | 是否引用了 TED/BBC 等版权素材 |
-| 配额逻辑 | 配额限制是否正确（如 2 篇/天）|
-| 自评模式逻辑 | 自评三档是否正确 |
-```
+**education.md 会检测**：
+- 版权素材误用：是否引用 TED/BBC
+- 配额逻辑：配额限制是否正确
+- 自评模式逻辑
 
-**baas.md**：
-```
-| RLS 权限配置 | Supabase RLS 策略是否配置 |
-| 安全规则 | Firebase Security Rules 是否配置 |
-```
+**baas.md 会检测**：
+- RLS 权限配置
+- 安全规则
 
-**crossplatform.md**：
-```
-| 多端 API 兼容 | 是否用了某端专有 API |
-| 条件编译 | 跨端条件编译是否正确 |
-| 包体积超限 | 小程序包体积是否超限 |
-```
+**crossplatform.md 会检测**：
+- 多端 API 兼容
+- 条件编译
+- 包体积超限
+
+具体检测项由主 Agent 根据项目实际情况生成，不硬编码在 SKILL.md 里。
 
 ### 4.4 额外自适应检测项（所有项目通用）
 
@@ -500,9 +500,9 @@ Skill 在项目根目录的 `.codex/` 下生成 `project-context.md`，**所有�
 
 ---
 
-## 十、配置包格式
+## 十、配置包格式与生成逻辑
 
-每个配置包（`profiles/*.md`）格式如下：
+**主 Agent 在 §3.6 识别项目类型后，按以下格式动态生成配置包**到 `.codex/skills/project-radar/profiles/{type}.md`：
 
 ```markdown
 # {项目类型名} Profile
@@ -526,16 +526,26 @@ Skill 在项目根目录的 `.codex/` 下生成 `project-context.md`，**所有�
 - {验收项 2}
 ```
 
+**主 Agent 生成配置包的依据**：
+- 根据项目类型（电商/教育/BaaS/跨端/小程序/SaaS/i18n）
+- 根据项目实际情况（扫描到的依赖/PRD 关键词/代码模式）
+- 根据通用风险检测经验（状态机/幂等/版权/RLS/多端兼容等）
+
+**不预创建**：配置包不是预先写好的通用文件，而是主 Agent 在每个项目里根据实际情况现场生成的。同一个"电商"类型，不同项目的配置包内容可能不同。
+
 ---
 
 ## 十一、安装方式
 
-### 11.1 全局安装（一次性）
+### 11.1 全局安装（一次性，仅一个文件）
 
 ```bash
-# 把整个 project-radar 目录放到全局 skills 目录
-cp -r .codex/skills/project-radar ~/.codex/skills/project-radar
+# 只复制 SKILL.md 到全局目录
+mkdir -p ~/.codex/skills/project-radar
+cp .codex/skills/project-radar/SKILL.md ~/.codex/skills/project-radar/SKILL.md
 ```
+
+配置包不预创建，主 Agent 在每个项目里动态生成。
 
 ### 11.2 验证安装
 
@@ -547,15 +557,13 @@ $list-skills
 
 ### 11.3 在新项目里使用
 
-打开任何项目 → 启动主 Agent → 主 Agent 自动调用 project-radar → 5 层识别 → 加载配置包 → 分析 → 提示 → 覆盖检查 → 生成 `project-context.md`。
+打开任何项目 → 启动主 Agent → 主 Agent 自动调用 project-radar → 5 层识别 → **动态生成配置包** → 分析 → 提示 → 覆盖检查 → 生成 `project-context.md`。
 
 ### 11.4 扩展：新增项目类型
 
-未来如果需要支持新项目类型（如 IoT/游戏/AI），只需：
+未来如果需要支持新项目类型（如 IoT/游戏/AI），主 Agent 只需在项目里生成新的配置包，不需要改 SKILL.md。
 
-1. 在 `~/.codex/skills/project-radar/profiles/` 下新建 `{type}.md`
-2. 按配置包格式填写识别条件 + 专属风险 + 专属关键词
-3. 不改 SKILL.md
+SKILL.md 里定义了项目类型识别条件（§3）和配置包格式（§十），主 Agent 根据识别结果动态生成对应配置包。如果遇到未识别的项目类型，主 Agent 会用 AskUserQuestion 问用户"这是什么类型的项目"，然后按格式生成配置包。
 
 ---
 
@@ -563,8 +571,8 @@ $list-skills
 
 | 文件 | 性质 | 谁生成 | 作用 |
 |---|---|---|---|
-| `~/.codex/skills/project-radar/SKILL.md` | **通用** | 用户安装 | 引擎，零项目假设 |
-| `~/.codex/skills/project-radar/profiles/*.md` | **通用插件** | 用户安装 | 项目类型配置包 |
+| `~/.codex/skills/project-radar/SKILL.md` | **通用** | 用户安装（仅一个文件） | 引擎，零项目假设，含配置包生成格式定义 |
+| `{项目}/.codex/skills/project-radar/profiles/*.md` | **项目专属** | 主 Agent 动态生成 | 该项目的类型配置包，现场生成 |
 | `{项目}/.codex/project-context.md` | **项目专属** | Skill 动态生成 | 6 部分全占位符填充 |
 | `{项目}/AGENTS.md` | **项目专属** | Skill 建议调整，用户确认 | Agent 宪法 |
 | `{项目}/docs/PRD-*.md` | **项目专属** | Skill 建议分层读指引 | 产品需求 |
