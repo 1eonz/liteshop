@@ -292,7 +292,7 @@ liteshop/
 | git push / 合并 main | ❌ | 用 AskUserQuestion 请示用户 |
 | 新依赖引入 | ❌ | 用 AskUserQuestion 请示用户 |
 
-### 8.2 5 步验收（决定权实现）
+### 8.2 5+1 步验收（决定权实现）
 
 每个子 Agent 返回 final summary 后，主 Agent 必须执行：
 
@@ -301,12 +301,74 @@ liteshop/
 3. **查幻觉依赖**：Grep 查 import，对照 package.json / requirements
 4. **抽查 1-2 个文件**：Read 看是否真实实现（非 TODO 空壳）
 5. **类型检查/构建**：GetDiagnostics 或跑 tsc/mypy
+6. **重复检测**（project-radar skill）：Grep 搜索新代码是否有与 `.codex/project-context.md` 中已有代码重复的组件/函数/类型。发现重复则 reject，提示子 Agent 复用已有代码。检测规则：
+   - 组件名重复 → reject，提示"复用已有组件 {file}"
+   - 函数名重复 → reject，提示"复用已有函数 {file}"
+   - 类型/interface 重复 → reject，提示"从 @liteshop/shared-types 导入"
+   - 枚举重复 → reject，提示"从 @liteshop/shared-types/enums 导入"
+   - API 路径硬编码重复 → warn，提示"使用已有 api 封装"
+   - CSS 硬编码（非 CSS 变量） → warn，提示"用 --color-* / --font-size-* 等"
+   - 组件名相似度 > 80% → warn，提示"与已有组件 {name} 相似，考虑合并"
 
 ### 8.3 串行调度
 
 主 Agent 一条消息只发一个 Task 调用，等返回再发下一个。**禁止并行**（除非用户明确要求）。
 
-### 8.4 人工介入红线
+### 8.5 项目雷达（project-radar skill，通用全局 Skill）
+
+主 Agent 启动后**第一时间**调用 project-radar skill（全局安装于 `~/.codex/skills/project-radar/`，所有项目共用）。
+
+Skill 执行 **5 步**：扫描 → 分析 → 提示 → **需求覆盖检查** → 生成。
+
+1. **启动后第一次扫描**：全局扫描项目（自动识别技术栈/目录结构/已有代码/已有文档），分析 16 类风险（14 类基础 + 2 类覆盖类），用 AskUserQuestion 提示用户是否调整产品文档/工作流
+2. **拆计划后需求覆盖检查**：Grep 提取 PRD 所有需求点（`- [ ]` / `功能点` / `P0` / `必须实现`），对照 plans/ 检查覆盖，遗漏则 AskUserQuestion 提示用户补拆
+3. **每个子 Agent 启动前**：读 `project-context.md` 的代码索引章节，把相关摘要（约 500-1000 字）塞进 Task query 的"前置上下文"部分
+4. **每个子 Agent 完成后**：5+1 步验收的第 6 步重复检测（见 8.2）
+5. **每 3 个 plan 完成后**：重新调用 project-radar 扫描更新的目录，增量更新 `project-context.md` 的代码索引和需求覆盖矩阵；同时压缩主 Agent 上下文，丢弃已完成 plan 的 final summary 全文和验收输出，只保留"给下一个的提示"和 pass/fail 结论
+6. **验收前**：Grep 提取 PRD §7.1 MVP 清单，对照验收清单检查覆盖，遗漏则 AskUserQuestion 提示"以下 MVP 项未列入验收"
+7. **上下文接近上限时**：主动触发压缩，用 AskUserQuestion 提示用户"上下文即将满，建议压缩"
+
+**子 Agent 不直接调用此 skill**，由主 Agent 调用后把结果注入 Task query。
+
+#### 8.5.1 project-context.md 内容
+
+project-radar 在项目内生成的 `.codex/project-context.md` 包含 **6 部分**：
+- **代码索引**：已有类型/枚举/函数/组件/CSS 变量/API 路由清单（含文件路径），子 Agent 启动前必读
+- **PRD 分层读指引**：3 层分层读（主 Agent 启动读目录+MVP 清单+阶段表 → 拆 plan 时读附录章节 → 子 Agent 只读 plan 文件）
+- **风险清单 + 已确认的调整**：记录分析出的 16 类风险 + 用户已确认的调整方案
+- **Agent 工作流适配建议**：根据项目规模建议串行/并行、plan 数量、上下文预算、子 Agent 前置上下文注入规约
+- **完整 MVP 清单**：从 PRD §7.1 提取，验收时逐项检查，如果验收清单项数 < 此清单项数说明验收有遗漏
+- **需求覆盖矩阵**：每个 PRD 需求点对应的 plan，确保无遗漏
+
+#### 8.5.2 PRD 分层读指引（3 层）
+
+主 Agent 和子 Agent **禁止一次读全 PRD**（25 万字符会撑爆上下文）。按以下 3 层分层读：
+
+| 层次 | 谁读 | 读什么 | 估算 token | 用途 |
+|---|---|---|---|---|
+| 第 1 层 | 主 Agent 启动时 | PRD 目录 + §7.1 MVP 清单 + §D8.1 阶段表 | ~1 万 | 拆计划，确保覆盖所有需求 |
+| 第 2 层 | 主 Agent 拆每个 plan 时 | plan 对应的 PRD 附录章节（如 plan-05 读 D1.1+E3.1） | ~0.5 万/plan | 把 PRD 需求翻译成 plan 的任务清单 |
+| 第 3 层 | 子 Agent 执行时 | 只读 plans/plan-{i}.md（含完整任务清单，主 Agent 已翻译好） | ~0.2 万 | 子 Agent 按 plan 执行，不需读 PRD |
+
+**关键**：主 Agent 拆计划时读第 1 层 + 第 2 层，把 PRD 需求翻译成 plan 的任务清单。子 Agent 只读 plan 文件，plan 文件里有完整的任务清单。
+
+| Plan | PRD 章节 |
+|---|---|
+| plan-01~03 | D2.4 + E2 + E8.2 |
+| plan-04 | D2.1~D2.5 + E3.4 + E7.2 |
+| plan-05 | D1.1.1 + D1.5 + E3.1 + E3.2 |
+| plan-06 | D1.1 + D1.3.6 + E3.3 + E3.5 + E3.8 + E16 |
+| plan-07 | D4.1 + D4.4 + E1.3 |
+| plan-08 | PRD 4.1.2 + D6.3 |
+| plan-09 | D1.3 + D6.5 + D6.6 + E16 |
+| plan-10 | D1.4 + E1.4 + PRD 4.2 |
+| plan-11 | D6.2 + E3.8 |
+| plan-12 | D6.4 + D6.5 + E5.4 |
+| plan-13 | E15 + E3.1.2 + E12 + E16 |
+
+主 Agent 在拆 plan 时，每个 `plans/plan-{i}.md` 顶部写明"PRD 章节：D1.1+E3.1"，子 Agent 只读这些章节。
+
+### 8.6 人工介入红线
 
 主 Agent 遇到以下场景一律用 AskUserQuestion 请示用户：
 
