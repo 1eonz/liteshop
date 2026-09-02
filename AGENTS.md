@@ -316,17 +316,20 @@ liteshop/
 
 ### 8.5 项目雷达（project-radar skill，通用全局 Skill）
 
-主 Agent 启动后**第一时间**调用 project-radar skill（全局安装于 `~/.codex/skills/project-radar/`，所有项目共用）。
+主 Agent 启动后**第一时间**调用 project-radar skill（全局安装于 `~/.codex/skills/project-radar/SKILL.md`，仅一个文件，所有项目共用）。
 
 Skill 执行 **5 步**：扫描 → 分析 → 提示 → **需求覆盖检查** → 生成。
 
-1. **启动后第一次扫描**：全局扫描项目（自动识别技术栈/目录结构/已有代码/已有文档），分析 16 类风险（14 类基础 + 2 类覆盖类），用 AskUserQuestion 提示用户是否调整产品文档/工作流
-2. **拆计划后需求覆盖检查**：Grep 提取 PRD 所有需求点（`- [ ]` / `功能点` / `P0` / `必须实现`），对照 plans/ 检查覆盖，遗漏则 AskUserQuestion 提示用户补拆
-3. **每个子 Agent 启动前**：读 `project-context.md` 的代码索引章节，把相关摘要（约 500-1000 字）塞进 Task query 的"前置上下文"部分
-4. **每个子 Agent 完成后**：5+1 步验收的第 6 步重复检测（见 8.2）
-5. **每 3 个 plan 完成后**：重新调用 project-radar 扫描更新的目录，增量更新 `project-context.md` 的代码索引和需求覆盖矩阵；同时压缩主 Agent 上下文，丢弃已完成 plan 的 final summary 全文和验收输出，只保留"给下一个的提示"和 pass/fail 结论
-6. **验收前**：Grep 提取 PRD §7.1 MVP 清单，对照验收清单检查覆盖，遗漏则 AskUserQuestion 提示"以下 MVP 项未列入验收"
-7. **上下文接近上限时**：主动触发压缩，用 AskUserQuestion 提示用户"上下文即将满，建议压缩"
+1. **5 层项目识别**：L0 配置文件 → L1 目录结构 → L2 依赖关键词 → L3 PRD 关键词 → L4 代码模式，综合判断项目类型
+2. **动态生成配置包**：按识别结果，现场生成项目专属配置包到 `.codex/skills/project-radar/profiles/{type}.md`（不预创建，主 Agent 根据项目实际情况生成）
+3. **分析风险**：基础 14 类 + 配置包专属风险（动态加载）+ 条件触发（契约/幂等按项目类型触发）+ 额外自适应检测项（幻觉依赖/CSS 硬编码/构建体积/测试框架/CI 配置）
+4. **提示用户**：用 AskUserQuestion 展示风险报告 + 建议调整产品文档/工作流，只建议不擅改
+5. **需求覆盖检查**：自适应关键词提取 PRD 需求点（4 组关键词探测，选命中最多的 2 组）→ 自适应任务载体对照（plans/phases/tasks/issues）→ 遗漏则 AskUserQuestion
+6. **生成 project-context.md**：6 部分（代码索引 + 分层读指引 + 风险清单 + 工作流适配 + MVP 清单 + 需求覆盖矩阵），全 {占位符} 动态填充
+7. **每个子 Agent 启动前**：读 `project-context.md` 代码索引章节，塞进 Task query
+8. **每个子 Agent 完成后**：5+1 步验收第 6 步重复检测
+9. **每 3 个 plan 完成后**：重新扫描，增量更新 `project-context.md` + 上下文压缩
+10. **验收前**：自适应定位 MVP 清单章节，对照验收清单检查覆盖
 
 **子 Agent 不直接调用此 skill**，由主 Agent 调用后把结果注入 Task query。
 
@@ -335,7 +338,7 @@ Skill 执行 **5 步**：扫描 → 分析 → 提示 → **需求覆盖检查**
 project-radar 在项目内生成的 `.codex/project-context.md` 包含 **6 部分**：
 - **代码索引**：已有类型/枚举/函数/组件/CSS 变量/API 路由清单（含文件路径），子 Agent 启动前必读
 - **PRD 分层读指引**：3 层分层读（主 Agent 启动读目录+MVP 清单+阶段表 → 拆 plan 时读附录章节 → 子 Agent 只读 plan 文件）
-- **风险清单 + 已确认的调整**：记录分析出的 16 类风险 + 用户已确认的调整方案
+- **风险清单 + 已确认的调整**：记录分析出的风险（基础 14 类 + 配置包专属）+ 用户已确认的调整方案
 - **Agent 工作流适配建议**：根据项目规模建议串行/并行、plan 数量、上下文预算、子 Agent 前置上下文注入规约
 - **完整 MVP 清单**：从 PRD §7.1 提取，验收时逐项检查，如果验收清单项数 < 此清单项数说明验收有遗漏
 - **需求覆盖矩阵**：每个 PRD 需求点对应的 plan，确保无遗漏
