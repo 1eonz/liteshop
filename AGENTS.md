@@ -98,7 +98,7 @@ liteshop/
 │   ├── 环境准备清单.md           # 电脑环境/软件/依赖清单
 │   ├── 工作流文档-v2.0.md        # IDE 多 Agent 调度机制
 │   ├── 设计规范.md               # Design System 完整规范（色彩/字体/间距/圆角/阴影/组件）
-│   ├── Skills安装指南.md         # 11 个核心 skills 清单 + 市面分析 + 使用时机
+│   ├── Skills安装指南.md         # 12 个核心 skills 清单 + 市面分析 + 使用时机
 │   ├── api-contracts/v1/         # OpenAPI 契约（阶段 0 产出）
 │   ├── error-codes.md            # 错误码表（PRD D2.2）
 │   └── verify-commands.md        # 各端验证命令
@@ -130,7 +130,7 @@ liteshop/
 - `docs/工作流文档-v2.0.md`（IDE 多 Agent 调度机制）
 - `docs/环境准备清单.md`（电脑环境/软件/依赖）
 - `docs/设计规范.md`（Design System 完整规范：色彩/字体/间距/圆角/阴影/组件）
-- `docs/Skills安装指南.md`（11 个核心 skills 清单 + 市面分析 + 使用时机）
+- `docs/Skills安装指南.md`（12 个核心 skills 清单 + 市面分析 + 使用时机）
 - `docs/verify-commands.md`（各端验证命令）
 - `.env.example`（环境变量模板）
 - `.gitignore`
@@ -315,22 +315,41 @@ liteshop/
 
 主 Agent 一条消息只发一个 Task 调用，等返回再发下一个。**禁止并行**（除非用户明确要求）。
 
+### 8.4 交接信息流
+
+主 Agent 把上个子 Agent 的 final summary 解析后，提取以下 4 项塞进下个 Task query：
+- 已完成：上个子 Agent 完成的任务摘要
+- 关键决策：为什么这么设计的决策记录
+- 给下一个的提示：必须先看的事项、已知坑
+- 阻塞项：需要主 Agent/用户决策的未决事项
+
+交接信息控制在 500 字内，只传关键决策和阻塞项，不传完整 final summary。
+
 ### 8.5 项目雷达（project-radar skill，通用全局 Skill）
 
-主 Agent 启动后**第一时间**调用 project-radar skill（全局安装于 `~/.codex/skills/project-radar/SKILL.md`，仅一个文件，所有项目共用）。
+主 Agent 启动后**第一时间**调用 project-radar skill。
 
-Skill 执行 **5 步**：扫描 → 分析 → 提示 → **需求覆盖检查** → 生成。
+**路径说明**：
+- **全局安装**：`~/.codex/skills/project-radar/SKILL.md`（用户手动安装，所有项目共用）
+- **项目内副本**：`.codex/skills/project-radar/SKILL.md`（作为安装源备份，主 Agent 在第一步初始化时从项目内副本复制到全局）
+- **主 Agent 实际读**：全局 `~/.codex/skills/project-radar/SKILL.md`（如果全局不存在，回退读项目内副本）
 
+Skill 执行 **5 步核心流程**：扫描 → 分析 → 提示 → 需求覆盖检查 → 生成。
+
+**5 步核心流程**：
 1. **5 层项目识别**：L0 配置文件 → L1 目录结构 → L2 依赖关键词 → L3 PRD 关键词 → L4 代码模式，综合判断项目类型
 2. **动态生成配置包**：按识别结果，现场生成项目专属配置包到 `.codex/skills/project-radar/profiles/{type}.md`（不预创建，主 Agent 根据项目实际情况生成）
 3. **分析风险**：基础 14 类 + 配置包专属风险（动态加载）+ 条件触发（契约/幂等按项目类型触发）+ 额外自适应检测项（幻觉依赖/CSS 硬编码/构建体积/测试框架/CI 配置）
 4. **提示用户**：用 AskUserQuestion 展示风险报告 + 建议调整产品文档/工作流，只建议不擅改
 5. **需求覆盖检查**：自适应关键词提取 PRD 需求点（4 组关键词探测，选命中最多的 2 组）→ 自适应任务载体对照（plans/phases/tasks/issues）→ 遗漏则 AskUserQuestion
-6. **生成 project-context.md**：6 部分（代码索引 + 分层读指引 + 风险清单 + 工作流适配 + MVP 清单 + 需求覆盖矩阵），全 {占位符} 动态填充
-7. **每个子 Agent 启动前**：读 `project-context.md` 代码索引章节，塞进 Task query
-8. **每个子 Agent 完成后**：5+1 步验收第 6 步重复检测
-9. **每 3 个 plan 完成后**：重新扫描，增量更新 `project-context.md` + 上下文压缩
-10. **验收前**：自适应定位 MVP 清单章节，对照验收清单检查覆盖
+
+**生成产物**：`.codex/project-context.md`（6 部分：代码索引 + 分层读指引 + 风险清单 + 工作流适配 + MVP 清单 + 需求覆盖矩阵，全 {占位符} 动态填充）
+
+**运行时机**（5 步核心流程在不同时机的调用）：
+- **每个子 Agent 启动前**：读 `project-context.md` 代码索引章节，塞进 Task query
+- **每个子 Agent 完成后**：5+1 步验收第 6 步重复检测
+- **每 3 个 plan 完成后**：重新扫描，增量更新 `project-context.md` + 上下文压缩
+- **验收前**：自适应定位 MVP 清单章节，对照验收清单检查覆盖
 
 **子 Agent 不直接调用此 skill**，由主 Agent 调用后把结果注入 Task query。
 
@@ -502,7 +521,7 @@ project-radar 在项目内生成的 `.codex/project-context.md` 包含 **6 部�
 - PRD 附录 E3：完整数据模型补遗
 - PRD 附录 E4：代码注释规约
 - PRD 附录 E5：行业对照
-- PRD 附录 E6-E14：SSE/Outbox/CSRF/支付时序/日志/Sentry
+- PRD 附录 E6/E7/E8/E12/E15/E16：SSE 鉴权/接口契约补强/低代码 Schema 示例/订单超时竞态/1a 期验收清单/防抖幂等
 - PRD 附录 E15：1a 期验收清单
 - PRD 附录 E16：防抖与幂等双层防护
 
