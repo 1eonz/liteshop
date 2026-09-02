@@ -277,7 +277,7 @@ code-reviewer + update-docs
 
 - **最多装 5 个全局 skill + 项目级按需**
 - 装 10+ skill 会导致上下文臃肿，响应速度下降
-- LiteShop 推荐 11 个核心，已是上限
+- LiteShop 推荐 12 个核心，已是上限
 
 ### 7.2 Skill 顺序很重要
 
@@ -354,7 +354,7 @@ codex skills update
 ## 九、安装完成验证清单
 
 - [ ] CodeX IDE 已安装并登录
-- [ ] 11 个核心 skill 已安装（`$list-skills` 能看到）
+- [ ] 12 个核心 skill 已安装（`$list-skills` 能看到）
 - [ ] 项目根目录有 `.codex/skills/` 目录（主 Agent 阶段 0 创建）
 - [ ] 4 个 LiteShop 专属 skill 已自动生成
 - [ ] 每个 skill 的 SKILL.md 末尾已加"优先遵循项目设计系统"那一行
