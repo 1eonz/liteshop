@@ -322,21 +322,23 @@ codex skills update
 └── liteshop-style/SKILL.md       # 设计规范：检查是否用 CSS 变量、是否硬编码
 ```
 
-此外还有一个**通用全局 Skill**（不在项目内，装在用户目录）：
+此外还有一个**通用全局 Skill**（仅一个文件，装在用户目录）：
 
 ```
 ~/.codex/skills/
-└── project-radar/SKILL.md       # 项目雷达：通用，扫描任何项目+分析 14 类风险+提示用户调整+生成 project-context.md
+└── project-radar/SKILL.md       # 项目雷达：通用引擎，5 层识别项目类型+动态生成配置包+分析风险+提示用户调整+需求覆盖检查+生成 project-context.md
 ```
 
-**project-radar 是通用 Skill**，装一次，所有项目共用。它解决以下问题：
-- **上下文爆炸**：自动识别文档体积，生成分段读指引，主 Agent 不再一次读全 PRD
+**project-radar 是通用 Skill**，仅一个 SKILL.md 文件，装一次，所有项目共用。配置包不预创建，主 Agent 在每个项目里根据实际情况动态生成。它解决以下问题：
+- **上下文爆炸**：5 层识别项目类型，自适应 PRD 格式探测，生成分层读指引，主 Agent 不再一次读全 PRD
 - **重复造轮子**：在项目内生成 `.codex/project-context.md`（代码索引），子 Agent 启动前知道项目已有什么，5+1 步验收时重复检测
 - **子 Agent 盲目编码**：主 Agent 把 project-context 摘要塞进 Task query，子 Agent 不再盲目
-- **风险预警**：扫描后分析 14 类风险，用 AskUserQuestion 提示用户是否调整产品文档/工作流
+- **风险预警**：基础 14 类 + 配置包专属风险（动态生成）+ 条件触发，用 AskUserQuestion 提示用户是否调整
+- **需求遗漏**：自适应关键词提取 PRD 需求点，自适应任务载体对照，遗漏则 AskUserQuestion 提示补拆
+- **验收遗漏**：自适应定位 MVP 清单，对照验收清单检查覆盖
 - **文档调整建议**：只建议不擅改，用户逐项确认后才修改
 
-安装方式：把 `.codex/skills/project-radar/SKILL.md`（LiteShop 项目里已有一份副本）复制到 `~/.codex/skills/project-radar/SKILL.md` 即可全局生效。
+安装方式：把 `.codex/skills/project-radar/SKILL.md`（仅一个文件）复制到 `~/.codex/skills/project-radar/SKILL.md` 即可全局生效。
 
 ---
 
