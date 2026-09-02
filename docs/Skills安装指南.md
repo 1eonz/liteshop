@@ -80,11 +80,13 @@ CodeX Skills 是字节跳动 CodeX IDE 的"技能包"——把一套完整指令
 | **find-skills** | Vercel Labs | 从技能市场搜索/安装/管理 skills | 发现新 skill | ⭐⭐⭐ |
 | **doc-coauthoring** | CodeX 官方 | 分阶段协作生成结构清晰文档 | PRD/设计文档协作 | ⭐⭐⭐ |
 
-### 2.7 数据与可视化类（2 个）
+### 2.7 数据与可视化类（1 个核心 + 1 个可选）
+
+> chart-visualization 升级为核心必装（1a 期 plan-12 后台数据看板需要 ECharts 图表，自动生成规范配置 + 对齐设计规范色板）。data-analysis 仍为可选（后台报表/导出场景按需）。
 
 | Skill 名 | 作者 | 核心能力 | LiteShop 用途 | 推荐度 |
 |---|---|---|---|---|
-| **chart-visualization** | CodeX 官方 | 根据数据特征选图表类型，生成可视化 | 后台数据看板 ECharts | ⭐⭐⭐⭐ |
+| **chart-visualization** | CodeX 官方 | 根据数据特征选图表类型，生成 ECharts 规范配置 + 对齐设计规范色板 | 1a 期 plan-12 后台数据看板 ECharts 图表 | ⭐⭐⭐⭐⭐ |
 | **data-analysis** | CodeX 官方 | SQL 查询 Excel/CSV，多表关联分析 | 后台报表/导出 | ⭐⭐⭐ |
 
 ### 2.8 其他实用类（3 个）
@@ -99,9 +101,9 @@ CodeX Skills 是字节跳动 CodeX IDE 的"技能包"——把一套完整指令
 
 ---
 
-## 三、LiteShop 推荐安装清单（12 个核心 + 4 个可选）
+## 三、LiteShop 推荐安装清单（13 个核心 + 3 个可选）
 
-### 3.1 核心必装（12 个，1a 期全流程覆盖）
+### 3.1 核心必装（13 个，1a 期全流程覆盖）
 
 按场景顺序：
 
@@ -127,20 +129,20 @@ CodeX Skills 是字节跳动 CodeX IDE 的"技能包"——把一套完整指令
 
 # === 文档同步 ===
 12. update-docs             # 代码变更同步文档
+
+# === 数据可视化 ===
+13. chart-visualization     # ECharts 图表规范配置 + 对齐设计规范色板（plan-12 后台数据看板）
 ```
 
-### 3.2 可选装（4 个，按需）
+### 3.2 可选装（3 个，按需）
 
 ```bash
 # 二期官网时再装
-12. cache-components        # Next.js PPR 缓存优化
-13. figma                   # Figma 设计稿转代码
-
-# 数据看板开发时装
-14. chart-visualization     # ECharts 图表生成
+14. cache-components        # Next.js PPR 缓存优化
+15. figma                   # Figma 设计稿转代码
 
 # 需求设计阶段装
-15. brainstorming           # 需求澄清对话
+16. brainstorming           # 需求澄清对话
 ```
 
 ### 3.3 不推荐安装
@@ -161,6 +163,7 @@ CodeX Skills 是字节跳动 CodeX IDE 的"技能包"——把一套完整指令
    - `frontend-design`
    - `frontend-ui-ux`
    - `better-interface`
+   - `impeccable`
    - `code-reviewer`
    - `frontend-code-review`
    - `react-best-practices`
@@ -169,8 +172,9 @@ CodeX Skills 是字节跳动 CodeX IDE 的"技能包"——把一套完整指令
    - `git-commit`
    - `pr-creator`
    - `update-docs`
+   - `chart-visualization`
 
-4. 安装后验证：在对话窗输入 `$list-skills`，应看到上述 11 个
+4. 安装后验证：在对话窗输入 `$list-skills`，应看到上述 13 个
 
 ### 4.2 通过对话让 CodeX 创建（备选）
 
@@ -210,7 +214,13 @@ CodeX 会自动生成 `.codex/skills/frontend-design/SKILL.md`。
 | composition-patterns | 共享组件重构 | 子 Agent 完成后用此 skill 审查组件结构 |
 | fix | 每个子 Agent 完成后自动触发 | 主 Agent 5 步验收前先跑 fix 修格式 |
 
-### 5.3 验收阶段
+### 5.3 数据可视化阶段
+
+| Skill | 触发时机 | 主 Agent 调用方式 |
+|---|---|---|
+| chart-visualization | plan-12 后台数据看板子 Agent | 子 Agent prompt 里要求"加载 chart-visualization skill，基于看板数据生成 ECharts 配置，色板对齐 docs/设计规范.md 的 --color-* 变量，禁硬编码颜色" |
+
+### 5.4 验收阶段
 
 | Skill | 触发时机 | 主 Agent 调用方式 |
 |---|---|---|
@@ -220,13 +230,13 @@ CodeX 会自动生成 `.codex/skills/frontend-design/SKILL.md`。
 | better-interface | a11y 检查 | "用 better-interface 审查可访问性" |
 | impeccable | 设计质量审查 | "调用 /audit 做全面设计审查（排版/色彩/间距/对比度/a11y），/polish 做上线前精细化，/harden 做生产就绪检查" |
 
-### 5.4 测试阶段
+### 5.5 测试阶段
 
 | Skill | 触发时机 | 主 Agent 调用方式 |
 |---|---|---|
 | webapp-testing | 集成验证子 Agent | "用 webapp-testing 生成 Playwright E2E 测试" |
 
-### 5.5 提交阶段
+### 5.6 提交阶段
 
 | Skill | 触发时机 | 主 Agent 调用方式 |
 |---|---|---|
@@ -252,12 +262,13 @@ pr-creator + code-reviewer + fix
 ### 6.2 前端交付组合
 
 ```
-frontend-code-review + impeccable + webapp-testing + better-interface
+frontend-code-review + impeccable + webapp-testing + better-interface + chart-visualization（仅后台看板）
   ↓
   1. frontend-code-review 审查代码质量
   2. impeccable /audit 审查设计质量（排版/色彩/间距/对比度）
   3. better-interface 审查 a11y
   4. webapp-testing 生成 E2E 测试
+  5. chart-visualization 生成对齐设计规范色板的 ECharts 配置（仅 plan-12 后台看板）
 ```
 
 ### 6.3 后端交付组合
@@ -277,7 +288,7 @@ code-reviewer + update-docs
 
 - **最多装 5 个全局 skill + 项目级按需**
 - 装 10+ skill 会导致上下文臃肿，响应速度下降
-- LiteShop 推荐 12 个核心，已是上限
+- LiteShop 推荐 13 个核心，已是上限
 
 ### 7.2 Skill 顺序很重要
 
@@ -354,7 +365,7 @@ codex skills update
 ## 九、安装完成验证清单
 
 - [ ] CodeX IDE 已安装并登录
-- [ ] 12 个核心 skill 已安装（`$list-skills` 能看到）
+- [ ] 13 个核心 skill 已安装（`$list-skills` 能看到）
 - [ ] 项目根目录有 `.codex/skills/` 目录（主 Agent 阶段 0 创建）
 - [ ] 4 个 LiteShop 专属 skill 已自动生成
 - [ ] 每个 skill 的 SKILL.md 末尾已加"优先遵循项目设计系统"那一行
@@ -377,6 +388,7 @@ codex skills update
 | pr-creator | AGENTS.md §8.4 人工介入红线（合并决策） |
 | update-docs | PRD D2.4 枚举同步、E7.1 OpenAPI |
 | better-interface | PRD E5.4 a11y 合规 |
+| chart-visualization | PRD E1.3 前端性能约束（图表按需懒加载）+ docs/设计规范.md 色板对齐 |
 | brainstorming | PRD D8.1 阶段 0 契约先行 |
 
 ---
