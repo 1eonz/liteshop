@@ -99,6 +99,12 @@ liteshop/
 │   ├── 工作流文档-v2.0.md        # IDE 多 Agent 调度机制
 │   ├── 设计规范.md               # Design System 完整规范（色彩/字体/间距/圆角/阴影/组件）
 │   ├── Skills安装指南.md         # 13 个核心 skills 清单 + 市面分析 + 使用时机
+│   ├── CI-CD规范.md              # CI/CD 流水线 + 质量门禁 + 安全扫描 + Hotfix
+│   ├── 数据库迁移规范.md          # Alembic 迁移命名/评审/回滚 SOP + 大表加字段策略
+│   ├── 可观测性规范.md            # SLI/SLO + Prometheus 指标 + 告警 + 日志 + Trace
+│   ├── 部署发布规范.md            # 部署架构 + 灰度 + 回滚 SOP + 环境隔离
+│   ├── API版本管理.md             # 版本演进 + 弃用策略 + 兼容窗口 + 破坏性变更流程
+│   ├── 故障响应手册.md            # 故障分级 + 响应流程 + BCP + postmortem 模板
 │   ├── api-contracts/v1/         # OpenAPI 契约（阶段 0 产出）
 │   ├── error-codes.md            # 错误码表（PRD D2.2）
 │   └── verify-commands.md        # 各端验证命令
@@ -131,6 +137,12 @@ liteshop/
 - `docs/环境准备清单.md`（电脑环境/软件/依赖）
 - `docs/设计规范.md`（Design System 完整规范：色彩/字体/间距/圆角/阴影/组件）
 - `docs/Skills安装指南.md`（13 个核心 skills 清单 + 市面分析 + 使用时机）
+- `docs/CI-CD规范.md`（CI/CD 流水线 + 质量门禁 + 安全扫描 + Hotfix）
+- `docs/数据库迁移规范.md`（Alembic 迁移命名/评审/回滚 SOP + 大表加字段）
+- `docs/可观测性规范.md`（SLI/SLO + Prometheus 指标 + 告警 + 日志 + Trace）
+- `docs/部署发布规范.md`（部署架构 + 灰度 + 回滚 SOP + 环境隔离）
+- `docs/API版本管理.md`（版本演进 + 弃用策略 + 兼容窗口）
+- `docs/故障响应手册.md`（故障分级 + 响应流程 + BCP + postmortem 模板）
 - `docs/verify-commands.md`（各端验证命令）
 - `.env.example`（环境变量模板）
 - `.gitignore`
@@ -185,11 +197,113 @@ liteshop/
 - 语义化 HTML，禁 `<div onClick>` 模拟交互
 - **写操作按钮必须用 `useDebounceAction` Hook（PRD E16.2）**：loading 期间 disabled
 
-### 4.4 公共代码约束
+### 4.4 公共代码约束与兼容性管理
+
+公共代码（`packages/shared-types/` / `packages/shared-tokens/` / `packages/shared-components/`）是全端依赖的基石，**破坏性变更会引发连锁返工**。子 Agent 改公共代码必须严格遵循以下兼容性规约。
+
+#### 4.4.1 基础约束
 
 - 公共 API 必须有 TSDoc/docstring 注释（PRD E4.3）
 - 共享组件全部 `"use client"`（PRD E2.3），禁 `import.meta.env` / `process.env`
 - 低代码组件必含 `version` 字段（PRD D3.1），配合迁移函数
+
+#### 4.4.2 Props 变更兼容性（强制 SemVer）
+
+公共组件的 Props 变更遵循语义化版本判定：
+
+| 变更类型 | 兼容性 | 判定 | 处理方式 |
+|---|---|---|---|
+| 新增可选 Props | ✅ 向后兼容 | MINOR | 直接合并，调用方不强制更新 |
+| 新增必填 Props | ❌ 破坏性 | MAJOR | 必须先给默认值，分两步：先加默认值（兼容）→ 下一版再改必填 |
+| 删除 Props | ❌ 破坏性 | MAJOR | 禁止直接删，必须先标记 `@deprecated` + 控制台 warning，至少保留 1 个 MINOR 版本 |
+| 改 Props 类型 | ❌ 破坏性 | MAJOR | 禁止直接改（如 `string` → `number`），必须新增 Prop + 旧 Prop 标 deprecated |
+| 改 Props 默认值 | ⚠️ 行为变更 | MINOR | 需在 CHANGELOG 显式说明，可能影响调用方视觉 |
+
+**子 Agent 改公共组件 Props 必须在 final summary 说明**：
+- 变更类型（新增/删除/改类型/改默认值）
+- 兼容性判定（MAJOR/MINOR/PATCH）
+- 已做的兼容处理（默认值/deprecated 标记/CHANGELOG）
+
+#### 4.4.3 样式变更兼容性
+
+公共组件的样式变更（CSS 变量/类名/视觉值）遵循以下规约：
+
+| 变更类型 | 兼容性 | 处理方式 |
+|---|---|---|
+| 新增 CSS 变量 | ✅ | 直接合并，调用方按需覆盖 |
+| 删除/改名 CSS 变量 | ❌ | 禁止直接删，必须保留旧变量名 1 个 MINOR 版本，控制台 warning 提示废弃 |
+| 改 CSS 变量默认值 | ⚠️ | 需在 CHANGELOG 说明，可能影响未覆盖该变量的调用方 |
+| 改 Tailwind 类名 | ❌ | 禁止改已公开类名（如 `card-header` → `card-title`），新增类名可以 |
+| 改视觉值（间距/圆角/字号） | ⚠️ | 视觉回归测试（Storybook screenshot）必须跑，差异 > 2px 需 CHANGELOG 说明 |
+| 改 z-index 层级 | ⚠️ | 必须更新 `docs/设计规范.md` 的 Z-index 层级表，避免层叠冲突 |
+
+**禁硬编码视觉值**：公共组件内禁硬编码颜色/字号/间距/圆角/阴影，一律用 `--color-*` / `--font-size-*` / `--spacing-*` / `--radius-*` / `--shadow-*` 等 CSS 变量。调用方通过覆盖 CSS 变量实现主题定制，不用改组件源码。
+
+#### 4.4.4 版本号与迁移函数
+
+公共组件包（`packages/shared-components/`）的 `package.json` 必须遵循 SemVer：
+
+```json
+{
+  "version": "1.2.3",
+  "changelog": "docs/CHANGELOG.md"
+}
+```
+
+**版本升级规则**：
+- PATCH（1.2.2 → 1.2.3）：bug 修复，Props/样式无变更
+- MINOR（1.2.3 → 1.3.0）：新增组件/新增可选 Props/新增 CSS 变量
+- MAJOR（1.3.0 → 2.0.0）：删 Props/改 Props 类型/删 CSS 变量/改视觉风格
+
+**低代码组件迁移函数**（PRD D3.1）：
+- 低代码组件 Schema 必含 `version: number` 字段
+- 每个版本升级必须注册迁移函数到 `migrations/registry.ts`
+- 迁移函数职责：把旧版本 Schema 转换为新版本，保留用户数据
+- 禁止删旧迁移函数，至少保留 3 个大版本
+
+```typescript
+// migrations/registry.ts 示例
+export const migrations: Record<number, (schema: any) => any> = {
+  1: (schema) => ({ ...schema, layout: 'flex' }),      // v1 → v2
+  2: (schema) => ({ ...schema, responsive: true }),   // v2 → v3
+  // v3 → v4 迁移函数（未来新增）
+}
+```
+
+#### 4.4.5 变更影响检查（子 Agent 必做）
+
+子 Agent 改公共代码时，必须用 Grep 检查调用方影响：
+
+```bash
+# 改 shared-types 的类型时
+grep -r "import.*XxxType" packages/ backend/
+
+# 改 shared-components 的 Props 时
+grep -r "<XxxComponent" packages/
+
+# 改 shared-tokens 的 CSS 变量时
+grep -r "var(--color-primary)" packages/
+```
+
+**发现调用方 > 3 处时**：必须在 final summary 的"阻塞项"里说明，由主 Agent 决定是否拆分多 plan 协调更新。子 Agent **不得擅自改其他领地的调用方代码**。
+
+#### 4.4.6 CHANGELOG 规约
+
+`packages/shared-components/CHANGELOG.md` 必须维护，每次变更追加：
+
+```markdown
+## [1.3.0] - 2026-09-05
+
+### Added
+- ProductCard 新增 `showSalesCount` 可选 Prop（默认 false）
+
+### Deprecated
+- ProductCard 的 `oldPrice` Prop 标记 deprecated，请改用 `originalPrice`（v2.0 删除）
+
+### Changed
+- Button 的 `--color-primary` 默认值从 #ff6b6b 调整为 #ff5252（视觉对比度优化）
+```
+
 
 ### 4.5 提交与分支（PRD E1.4）
 
