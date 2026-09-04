@@ -96,9 +96,9 @@ liteshop/
 ├── docs/
 │   ├── PRD-v1.3.md               # 产品需求文档（v1.3 含附录 D/E）
 │   ├── 环境准备清单.md           # 电脑环境/软件/依赖清单
-│   ├── 工作流文档-v2.0.md        # IDE 多 Agent 调度机制
+│   ├── 工作流文档-v2.1.md        # IDE 多 Agent 调度机制（机制以本文 §八 为准）
 │   ├── 设计规范.md               # Design System 完整规范（色彩/字体/间距/圆角/阴影/组件）
-│   ├── Skills安装指南.md         # 13 个核心 skills 清单 + 市面分析 + 使用时机
+│   ├── Skills安装指南.md         # Skills 市面分析 + 安装/使用时机（常驻清单以本文 §8.7 为准）
 │   ├── CI-CD规范.md              # CI/CD 流水线 + 质量门禁 + 安全扫描 + Hotfix
 │   ├── 数据库迁移规范.md          # Alembic 迁移命名/评审/回滚 SOP + 大表加字段策略
 │   ├── 可观测性规范.md            # SLI/SLO + Prometheus 指标 + 告警 + 日志 + Trace
@@ -133,10 +133,10 @@ liteshop/
 - `操作手册.md`（你本人看的逐步 IDE 操作指南，8 步从环境到上线）
 - `提示词.md`（主 Agent 入口提示词，复制粘贴到对话窗即可启动）
 - `docs/PRD-v1.3.md`（产品需求 + 详细设计附录 D/E）
-- `docs/工作流文档-v2.0.md`（IDE 多 Agent 调度机制）
+- `docs/工作流文档-v2.1.md`（IDE 多 Agent 调度特有内容，机制以本文 §八 为准）
 - `docs/环境准备清单.md`（电脑环境/软件/依赖）
 - `docs/设计规范.md`（Design System 完整规范：色彩/字体/间距/圆角/阴影/组件）
-- `docs/Skills安装指南.md`（13 个核心 skills 清单 + 市面分析 + 使用时机）
+- `docs/Skills安装指南.md`（Skills 清单：6 常驻 + 3 Demo 临时，唯一事实源见 §8.7；含市面分析 + 使用时机）
 - `docs/CI-CD规范.md`（CI/CD 流水线 + 质量门禁 + 安全扫描 + Hotfix）
 - `docs/数据库迁移规范.md`（Alembic 迁移命名/评审/回滚 SOP + 大表加字段）
 - `docs/可观测性规范.md`（SLI/SLO + Prometheus 指标 + 告警 + 日志 + Trace）
@@ -146,6 +146,7 @@ liteshop/
 - `docs/verify-commands.md`（各端验证命令）
 - `.env.example`（环境变量模板）
 - `.gitignore`
+- `.codex/skills/project-radar/SKILL.md`（project-radar 项目内副本 = 全局安装源，主 Agent 初始化时复制到 `~/.codex/skills/`，见 §8.5）
 
 ---
 
@@ -330,7 +331,7 @@ grep -r "var(--color-primary)" packages/
 ### 5.2 验证规则
 
 - **子 Agent 完成后必须真实运行验证命令**，把真实输出粘进 final summary
-- **主 Agent 5 步验收时自己再跑一遍**，数字对得上才算通过
+- **主 Agent 5+1 步验收时自己再跑一遍**，数字对得上才算通过
 - 禁止通过 `.skip` / 注释断言 / 改测试迎合错误实现
 - 验证不通过不得声称完成
 - 构建通过 ≠ 功能正确，业务正确性靠单测 + E2E
@@ -338,7 +339,7 @@ grep -r "var(--color-primary)" packages/
 ### 5.3 1a 期验收清单（PRD E15）
 
 主 Agent 在所有 plan 完成后，按 PRD 附录 E15.1/E15.2/E15.3 验收：
-- 16 项功能验收
+- 18 项功能验收
 - 11 项非功能验收
 - 5 项代码质量验收
 
@@ -400,7 +401,7 @@ grep -r "var(--color-primary)" packages/
 | 拆计划 | ✅ | 读 PRD v1.3，现场写 `plans/plan-{i}.md` |
 | 启动子 Agent | ✅ | Task 工具，`subagent_type=general_purpose_task` |
 | 监视子 Agent | ✅ | Task 同步等待返回，无需轮询 |
-| 5 步验收 | ✅ | 查改动/跑验证/查幻觉/抽查/类型检查 |
+| 5+1 步验收 | ✅ | 查改动/跑验证/查幻觉/抽查/类型检查/重复检测（§8.2） |
 | 决定通过/打回 | ✅ | 通过 → 启动下一个；不通过 → 修复模板重启 |
 | 交接信息流 | ✅ | 把 final summary 塞进下个 Task query |
 | 写业务代码 | ❌ | 子 Agent 才写 |
@@ -426,9 +427,31 @@ grep -r "var(--color-primary)" packages/
    - CSS 硬编码（非 CSS 变量） → warn，提示"用 --color-* / --font-size-* 等"
    - 组件名相似度 > 80% → warn，提示"与已有组件 {name} 相似，考虑合并"
 
-### 8.3 串行调度
+### 8.3 串行调度与试点校准（go/no-go 关卡）
 
 主 Agent 一条消息只发一个 Task 调用，等返回再发下一个。**禁止并行**（除非用户明确要求）。
+
+**首批不串行跑完 13 个 plan，先做校准试点**（所有质量假设在试点验证前都是纸面的）：
+
+| 批次 | Plan | 卡点 |
+|---|---|---|
+| 试点批 | plan-01（shared-types）+ plan-04（backend 骨架） | **用户人工逐文件 review** + 记录三个数 → go/no-go |
+| 第二批 | plan-05 + plan-06（商品库存 + 订单支付，核心风险区） | **用户人工逐行 review 全部事务与并发代码**（FOR UPDATE / 乐观锁 / 幂等 / 状态机流转 SQL / 金额计算） |
+| 后续批 | plan-02+03+07 → 08+09+10 → 11+12+13（每批 3 个） | 每批结束对照试点基线检查三个数，劣化则暂停调整 |
+
+**go/no-go 量化阈值（试点批与第二批通用，全部满足才放行）**：
+- 单 plan 验收耗时（含人工 review）≤ 1 个工作日
+- 返工次数 ≤ 2 次/plan（5+1 步验收打回重做计 1 次）
+- 可留用比例 ≥ 80%（用户逐文件三档标记：直接可用 / 小改可用 / 必须重写）
+
+任一不达标 → **no-go**：先修 Skills 配置 / 提示词 / plan 粒度，再重跑该批，不带病放行。三个数记入 `plans/INDEX.md` 作为基线，后续批次对照看趋势。
+
+**试点批同时干跑 project-radar**（§8.5，雷达自身的假设也是纸面的，三个验证点）：
+1. **5 步流程跑通**：`.codex/project-context.md` 成功生成且 6 部分完整（代码索引/分层读指引/风险清单/工作流适配/MVP 清单/需求覆盖矩阵）
+2. **[1a] 提取不误报**：MVP 清单只含 PRD §7.1 标注 `[1a]` 的项——若把 `[1b]` 项报为遗漏 = 提取规则失效，需修 §8.5.1 规则
+3. **第 6 步重复检测有效**：plan-04（backend 骨架）完成后，radar 能识别 plan-01 产出的 shared-types——若子 Agent 重复定义了已有类型/枚举而 radar 未拦截 = 重复检测失效，需修检测规则
+
+任一验证点失败 → 视同 no-go，先修 radar 配置/规则再重跑，不带病放行。
 
 ### 8.4 交接信息流
 
@@ -475,7 +498,7 @@ project-radar 在项目内生成的 `.codex/project-context.md` 包含 **6 部�
 - **PRD 分层读指引**：3 层分层读（主 Agent 启动读目录+MVP 清单+阶段表 → 拆 plan 时读附录章节 → 子 Agent 只读 plan 文件）
 - **风险清单 + 已确认的调整**：记录分析出的风险（基础 14 类 + 配置包专属）+ 用户已确认的调整方案
 - **Agent 工作流适配建议**：根据项目规模建议串行/并行、plan 数量、上下文预算、子 Agent 前置上下文注入规约
-- **完整 MVP 清单**：从 PRD §7.1 提取，验收时逐项检查，如果验收清单项数 < 此清单项数说明验收有遗漏
+- **完整 MVP 清单**：从 PRD §7.1 提取**只取标注 `[1a]` 的项**（`[1b]` 项进入 1b 期计划，不计入 1a 期遗漏），验收时逐项检查，如果验收清单项数 < 此清单项数说明验收有遗漏
 - **需求覆盖矩阵**：每个 PRD 需求点对应的 plan，确保无遗漏
 
 #### 8.5.2 PRD 分层读指引（3 层）
@@ -492,17 +515,23 @@ project-radar 在项目内生成的 `.codex/project-context.md` 包含 **6 部�
 
 | Plan | PRD 章节 |
 |---|---|
-| plan-01~03 | D2.4 + E2 + E8.2 |
-| plan-04 | D2.1~D2.5 + E3.4 + E7.2 |
-| plan-05 | D1.1.1 + D1.5 + E3.1 + E3.2 |
-| plan-06 | D1.1 + D1.3.6 + E3.3 + E3.5 + E3.8 + E16 |
-| plan-07 | D4.1 + D4.4 + E1.3 |
-| plan-08 | PRD 4.1.2 + D6.3 |
-| plan-09 | D1.3 + D6.5 + D6.6 + E16 |
-| plan-10 | D1.4 + E1.4 + PRD 4.2 |
-| plan-11 | D6.2 + E3.8 |
-| plan-12 | D6.4 + D6.5 + E5.4 |
-| plan-13 | E15 + E3.1.2 + E12 + E16 |
+| plan-01~03 | D2.4 + E2 + E8.2（shared 层：types / tokens / components，E2.1 五层组件分层） |
+| plan-04 | D2.1~D2.5 + E3.4 + E3.7 + E7.2 + E16.6（backend 骨架：认证 / OSS / 短信 / 操作日志 DDL 与写入） |
+| plan-05 | D1.1.1 + D1.5 + E3.1 + E3.2（backend 商品 + 库存三层模型） |
+| plan-06 | D1.1 + D1.3.6 + E3.3 + E3.5 + E3.8 + E16.3 + E16.4.1~4.2（backend 订单 + 支付，后端幂等） |
+| plan-07 | D4.1 + D4.4 + E1.3 + E15.1 #18（加载体验基础封装：Skeleton/PullToRefresh/Empty 全局组件，设计规范 §17.1）（h5-app 骨架） |
+| plan-08 | PRD 4.1.2（收藏、商品详情"相关推荐"除外 `[1b]`）+ D6.3 + E15.1 #18（商品列表/详情消费骨架屏与空状态）（h5 商品浏览 + 搜索） |
+| plan-09 | D1.3 + D6.5.1~D6.5.2 + D6.6 + E16.2 + E16.4.3（h5 购物车 + 下单 + 支付；运费模板表与计费；前端防抖） |
+| plan-10 | D1.4（RBAC 基础版）+ D2.4 + E7.1 + PRD 4.2.10「管理员与权限」+ E15.1 #16-#17（admin-app 骨架 + RBAC + 操作日志） |
+| plan-11 | PRD 4.2.2 + 4.2.3（批量发货/订单导出除外 `[1b]`）+ D2.4 + E7.1 + E3.8 + E16.5 + E15.1 #10-#11（admin 商品管理 + 订单管理；商品/订单 API 契约必读） |
+| plan-12 | PRD 4.2.1 + 4.2.4 + 4.2.10（商城主题配置 `[1b]`、官网全局设置 `[二期]` 除外）+ D6.4 + D6.5.3 + E5.4 + E15.1 #12-#15（admin 库存 + 运费模板管理 + 数据看板 + 系统设置 + feature_flags + a11y 终检） |
+| plan-13 | E15 + E3.1.2 + E12 + E16.7（集成验证：端到端 + 幂等测试用例复核） |
+
+**映射规则（2026-09 深审逐 plan 核对结论）**：
+- **13 个 plan 均为 1a 期**（对应 D8.1.1 十周排期）。1b 功能——售后（4.2.7）、会员（4.2.8）、通知中心（D6.1）、商品评价（D6.2）、商城主题配置、低代码搭建器（D3.x）、收藏、标签推荐（D6.7）——**不在本表**，1b 启动时另拆 plan-14+
+- **E16 分工**（防重复实现）：E16.2 前端防抖 → plan-09；E16.3 后端幂等 → plan-06；E16.5 后台写操作防抖 → plan-11；E16.6 短信限流 → plan-04；E16.7 测试用例随各自 plan 交付，plan-13 集成复核
+- **D6.5 分工**：D6.5.1 表结构 + D6.5.2 计费逻辑 → plan-09（下单链路依赖，批次上先于 plan-12）；D6.5.3 模板管理 API → plan-12
+- **E3.8 双引用为有意设计**：plan-06 实现订单状态机，plan-11 后台操作（发货/取消/改价）复用同一状态机
 
 主 Agent 在拆 plan 时，每个 `plans/plan-{i}.md` 顶部写明"PRD 章节：D1.1+E3.1"，子 Agent 只读这些章节。
 
@@ -520,6 +549,25 @@ project-radar 在项目内生成的 `.codex/project-context.md` 包含 **6 部�
 | 依赖决策 | 引入新的重型依赖 |
 | 需求取舍 | 某功能做不做、PRD 与实现冲突 |
 | 合并决策 | 特性分支合入 main 前的最终 review |
+
+### 8.7 Skills 配置（唯一事实源）
+
+**常驻 6 个**（5 个市场 skill + 1 个项目内 project-radar，符合 Skills安装指南 §7.1"装 10+ 上下文臃肿"的上限约束）：
+
+| Skill | 用途 | 加载者 |
+|---|---|---|
+| project-radar | 项目雷达：防重复 / 防幻觉 / 需求遗漏检查，生成 project-context.md（见 §8.5） | 主 Agent |
+| code-reviewer | 代码审查（正确性 / 安全 / 性能），审查范围**覆盖前端规则**：CSS 冗余、useEffect 依赖、TS 类型、React 性能（原 frontend-code-review 与 react-best-practices 的检查项并入其提示词） | 主 Agent 验收 + 商业级验收 |
+| fix | Prettier + Lint 自动修复格式 / 编译错误 | 主 Agent 验收 |
+| git-commit | Conventional Commits 规范提交 | 主 Agent 验收通过后 |
+| impeccable | 设计质量：60 条确定性 CI 规则（不耗 LLM）+ /audit 审查 + /polish 精细化 + /harden 生产就绪检查（含 a11y 对比度检查） | 主 Agent 验收 + Demo 阶段 + 上线前 |
+| chart-visualization | ECharts 图表配置（色板对齐设计规范 `--color-*`，禁硬编码） | **仅 plan-12 数据看板子 Agent** |
+
+**Demo 阶段临时安装 3 个**（操作手册第二步前安装，风格确认后卸载）：frontend-design、frontend-ui-ux、better-interface（a11y 审查；卸载后由 impeccable /audit + axe-core 承接）。
+
+**不安装**：webapp-testing（E2E 直接用 Playwright 命令，见 docs/verify-commands.md）、pr-creator（主 Agent 自己创建 PR）、update-docs（主 Agent 自己同步文档）。
+
+> 本清单是项目 Skills 的**唯一事实源**，操作手册 / 提示词 / Skills安装指南引用时以此为准。详细市面分析见 docs/Skills安装指南.md。
 
 ---
 
@@ -618,7 +666,22 @@ project-radar 在项目内生成的 `.codex/project-context.md` 包含 **6 部�
 
 ---
 
-## 十四、附录引用
+## 十四、运维能力分期适用矩阵（唯一事实源）
+
+`docs/` 下部署发布 / 可观测性 / 故障响应 / CI-CD 四份规范头部均放本文矩阵的摘要框；正文超出"1a 期必须"列的能力一律视为**增长期参考**，不作为 1a 期验收项。
+
+| 能力 | 1a 期（必须） | 1b 期 | 增长期（触发：日订单 > 2000） |
+|---|---|---|---|
+| 部署 | Docker Compose 单机 + tag 回滚脚本 + pg_dump 自动备份 | 同 1a | k8s / 蓝绿部署 |
+| 监控 | Sentry + /health + 结构化日志 | + Prometheus 基础指标 | + Grafana / SLO / 告警 |
+| 发布 | 脚本部署 + tag 回滚 + 备份后发布 | 同 1a | 4 阶段灰度 |
+| 值班 | 无（单人 = 随时响应） | 无 | 轮值 |
+
+**超配项归入增长期**（从 1a 期验收清单移除）：SLO 错误预算、7×24 值班、OTel 全链路 Trace、蓝绿部署（PRD E15.2 #28 已改为"回滚脚本演练"）。密钥管理同此：一期 `FIELD_ENCRYPTION_KEY` 文件密钥，KMS 为增长期（PRD D5.1 分期降级说明）。
+
+---
+
+## 十五、附录引用
 
 本 AGENTS.md 是 PRD v1.3 附录 E1 的执行版本。详细设计见：
 
