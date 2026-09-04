@@ -1,7 +1,7 @@
 # LiteShop 各端验证命令清单
 
 > 子 Agent 完成后必须运行对应命令，把真实输出粘进 final summary。
-> 主 Agent 5 步验收时自己再跑一遍。
+> 主 Agent 5+1 步验收时自己再跑一遍（第 6 步重复检测见 AGENTS.md §8.2）。
 
 ## 后端（backend/）
 
