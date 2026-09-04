@@ -1,4 +1,684 @@
 
+#### D1.1.3 orders 表结构修订
+
+```sql
+CREATE TABLE orders (
+    id              BIGSERIAL PRIMARY KEY,
+    order_no        VARCHAR(32) NOT NULL UNIQUE,          -- 订单号
+    user_id         BIGINT NOT NULL REFERENCES users(id),
+    status          VARCHAR(20) NOT NULL DEFAULT 'PENDING_PAYMENT',
+    refund_status   VARCHAR(20) NOT NULL DEFAULT 'NONE',  -- v1.2 新增
+    total_amount    INTEGER NOT NULL,                      -- 订单总金额（分）
+    product_amount  INTEGER NOT NULL,                      -- 商品总金额（分）
+    freight_amount  INTEGER NOT NULL DEFAULT 0,            -- 运费金额（分）
+    discount_amount INTEGER NOT NULL DEFAULT 0,            -- 优惠金额（分）（一期预留）
+    paid_amount     INTEGER,                               -- 实付金额（分）
+    address_snapshot JSONB NOT NULL,                       -- 收货地址快照
+    remark          TEXT,
+    paid_at         TIMESTAMPTZ,
+    shipped_at      TIMESTAMPTZ,
+    completed_at    TIMESTAMPTZ,
+    cancelled_at    TIMESTAMPTZ,
+    cancel_reason   VARCHAR(200),
+    expired_at      TIMESTAMPTZ,                           -- 支付超时时间
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_orders_user_id ON orders(user_id);
+CREATE INDEX idx_orders_status ON orders(status);
+CREATE INDEX idx_orders_expired_at ON orders(expired_at) WHERE status = 'PENDING_PAYMENT';
+```
+
+#### D1.1.4 after_sales 表结构
+
+```sql
+CREATE TABLE after_sales (
+    id              BIGSERIAL PRIMARY KEY,
+    after_sale_no   VARCHAR(32) NOT NULL UNIQUE,          -- 售后单号
+    order_id        BIGINT NOT NULL REFERENCES orders(id),
+    user_id         BIGINT NOT NULL REFERENCES users(id),
+    type            VARCHAR(20) NOT NULL,                 -- REFUND_ONLY / REFUND_AND_RETURN / EXCHANGE
+    status          VARCHAR(20) NOT NULL DEFAULT 'PENDING_REVIEW',
+    reason          TEXT NOT NULL,
+    refund_amount   INTEGER NOT NULL,                      -- 退款金额（分）
+    return_address  JSONB,                                 -- 退货地址（后台填写）
+    return_tracking VARCHAR(100),                          -- 退货物流单号
+    admin_remark    TEXT,                                  -- 后台备注
+    reviewed_at     TIMESTAMPTZ,
+    returned_at     TIMESTAMPTZ,
+    refunded_at     TIMESTAMPTZ,
+    closed_at       TIMESTAMPTZ,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_after_sales_order_id ON after_sales(order_id);
+CREATE INDEX idx_after_sales_user_id ON after_sales(user_id);
+CREATE INDEX idx_after_sales_status ON after_sales(status);
+```
+
+#### D1.1.5 after_sale_items 关联表
+
+```sql
+CREATE TABLE after_sale_items (
+    id              BIGSERIAL PRIMARY KEY,
+    after_sale_id   BIGINT NOT NULL REFERENCES after_sales(id),
+    order_item_id   BIGINT NOT NULL REFERENCES order_items(id),
+    quantity        INTEGER NOT NULL,                      -- 退款数量
+    refund_amount   INTEGER NOT NULL,                      -- 退款金额（分）
+    UNIQUE(after_sale_id, order_item_id)
+);
+```
+
+### D1.2 金额单位规约（D-02）
+
+#### D1.2.1 全链路金额规约
+
+| 层 | 存储/传输格式 | 示例 |
+|---|---|---|
+| PostgreSQL | `INTEGER`（分） | `1999` = ¥19.99 |
+| Python 后端计算 | `Decimal`（元），序列化时转为 `int`（分） | `Decimal('19.99')` → API 输出 `1999` |
+| API 请求/响应 | `integer`（分） | `"price": 1999` |
+| TypeScript 前端 | `number`（分） | `const price = 1999` |
+| 前端展示 | `formatPrice(1999)` → `"¥19.99"` | — |
+
+#### D1.2.2 Pydantic 序列化层
+
+```python
+# backend/app/core/price.py
+from decimal import Decimal, ROUND_HALF_UP
+from pydantic import field_serializer, field_validator
+
+CENTS_PER_YUAN = Decimal('100')
+
+def yuan_to_cents(yuan: Decimal) -> int:
+    """Decimal(元) → int(分)，四舍五入到分"""
+    return int((yuan * CENTS_PER_YUAN).to_integral_value(rounding=ROUND_HALF_UP))
+
+def cents_to_yuan(cents: int) -> Decimal:
+    """int(分) → Decimal(元)"""
+    return Decimal(cents) / CENTS_PER_YUAN
+
+# Pydantic 模型中使用
+class OrderResponse(BaseModel):
+    total_amount: int  # 分
+
+    @field_serializer('total_amount')
+    def serialize_amount(self, v: int) -> int:
+        return v  # 已经是分，直接输出
+
+class OrderCreate(BaseModel):
+    # 前端传入也是分
+    total_amount: int
+```
+
+#### D1.2.3 TypeScript 前端工具函数
+
+```typescript
+// packages/shared-types/src/utils/price.ts
+
+/** 分 → 展示字符串 */
+export function formatPrice(cents: number, currency = '¥'): string {
+  if (!Number.isFinite(cents)) return '-';
+  const yuan = cents / 100;
+  return `${currency}${yuan.toFixed(2)}`;
+}
+
+/** 分 → 元（用于计算） */
+export function centsToYuan(cents: number): number {
+  return cents / 100;
+}
+
+/** 元 → 分（用于提交） */
+export function yuanToCents(yuan: number): number {
+  return Math.round(yuan * 100);
+}
+
+/** 金额类型别名，语义化标注 */
+export type Price = number; // 始终为分
+```
+
+#### D1.2.4 OpenAPI 字段约定
+
+所有金额字段类型为 `integer`，字段名以 `_amount` / `_price` / `_fee` 结尾，注释标注"单位：分"：
+
+```yaml
+# OpenAPI 示例
+Order:
+  type: object
+  properties:
+    totalAmount:
+      type: integer
+      description: 订单总金额，单位：分
+      example: 1999
+```
+
+### D1.3 购物车一致性设计（D-03）
+
+#### D1.3.1 数据流
+
+```
+加购/改数量/删商品
+       ↓
+   写 Redis（主）
+       ↓ 异步
+   写 DB（备）
+       ↓
+  下单时：
+  1. 从 DB 读 SKU 最新价格/库存
+  2. 与请求中快照金额对比
+  3. 不一致返回 PRICE_CHANGED
+  4. 一致则创建 order + order_items（快照锁定）
+```
+
+#### D1.3.2 Redis 数据结构
+
+```
+# 用户购物车
+Key:    cart:user:{user_id}
+Value:  Hash
+  Field: {sku_id}
+  Value: JSON { quantity, added_at, stale }
+
+# 游客购物车
+Key:    cart:guest:{session_id}
+Value:  Hash（同上）
+
+# session_id → user_id 映射（登录合并用）
+Key:    cart:session_map:{session_id}
+Value:  {user_id}
+TTL:    7d
+```
+
+#### D1.3.3 游客 → 登录合并流程
+
+```
+1. 用户登录成功
+2. 读取 cart:guest:{session_id} 和 cart:user:{user_id}
+3. 逐 SKU 合并：
+   - 两边都有：数量取较大值（上限库存）
+   - 仅一边有：直接合并
+4. 写入 cart:user:{user_id}
+5. 删除 cart:guest:{session_id}
+6. 删除 cart:session_map:{session_id}
+```
+
+#### D1.3.4 SKU 变更同步
+
+| 触发事件 | 购物车动作 |
+|---|---|
+| SKU 下架 | Celery 任务标记该 SKU 项 `stale=true, reason='off_shelf'` |
+| SKU 改价 | 标记 `stale=true, reason='price_changed'` |
+| SKU 库存变化 | 若库存 < 购物车数量，标记 `stale=true, reason='stock_insufficient'`，并调整数量 |
+| 前端展示 | `stale=true` 的项标黄/红，提示"价格已变更/已下架/库存不足" |
+| 结算校验 | 服务端取 SKU 最新数据，与请求快照对比 |
+
+#### D1.3.5 DB 购物车表（异步落库）
+
+```sql
+CREATE TABLE cart_items (
+    id          BIGSERIAL PRIMARY KEY,
+    user_id     BIGINT NOT NULL REFERENCES users(id),
+    sku_id      BIGINT NOT NULL REFERENCES skus(id),
+    quantity    INTEGER NOT NULL DEFAULT 1,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(user_id, sku_id)
+);
+
+CREATE INDEX idx_cart_items_user_id ON cart_items(user_id);
+```
+
+#### D1.3.6 下单金额校验
+
+```python
+# backend/app/order/service.py
+async def create_order(user_id: int, items: list[OrderItemInput]) -> Order:
+    # 从 DB 读 SKU 最新数据
+    sku_ids = [item.sku_id for item in items]
+    skus = await sku_repo.get_by_ids(sku_ids)
+
+    for item_input in items:
+        sku = skus[item_input.sku_id]
+        # 校验价格
+        if sku.price_cents != item_input.price_cents:
+            raise ApiError(
+                code='PRICE_CHANGED',
+                i18n_key='errors.price_changed',
+                message=f'商品 {sku.name} 价格已变更，请重新确认',
+                field='price_cents',
+                details={'sku_id': sku.id, 'old': item_input.price_cents, 'new': sku.price_cents}
+            )
+        # 校验库存
+        if sku.available_stock < item_input.quantity:
+            raise ApiError(code='STOCK_INSUFFICIENT', ...)
+
+    # 快照锁定：order_items 存下单时的价格/规格
+    order = await order_repo.create(user_id, items, skus)
+    # 清购物车对应项
+    await cart_service.remove_items(user_id, sku_ids)
+    return order
+```
+
+### D1.4 RBAC 权限模型（D-04）
+
+#### D1.4.1 一期权限模型（菜单 + 按钮）
+
+```sql
+-- 管理员表
+CREATE TABLE admins (
+    id          BIGSERIAL PRIMARY KEY,
+    username    VARCHAR(50) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    name        VARCHAR(50),
+    phone       VARCHAR(20),
+    avatar      VARCHAR(500),
+    is_super    BOOLEAN NOT NULL DEFAULT FALSE,  -- 超级管理员
+    status      VARCHAR(10) NOT NULL DEFAULT 'ACTIVE',  -- ACTIVE / DISABLED
+    last_login_at TIMESTAMPTZ,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 角色表
+CREATE TABLE roles (
+    id          BIGSERIAL PRIMARY KEY,
+    name        VARCHAR(50) NOT NULL UNIQUE,     -- super_admin / operator / finance / warehouse
+    label       VARCHAR(100) NOT NULL,           -- 超级管理员 / 运营 / 财务 / 仓管
+    description TEXT,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 管理员-角色关联
+CREATE TABLE admin_roles (
+    admin_id    BIGINT NOT NULL REFERENCES admins(id),
+    role_id     BIGINT NOT NULL REFERENCES roles(id),
+    PRIMARY KEY (admin_id, role_id)
+);
+
+-- 权限表
+CREATE TABLE permissions (
+    id          BIGSERIAL PRIMARY KEY,
+    parent_id   BIGINT REFERENCES permissions(id),
+    type        VARCHAR(10) NOT NULL,            -- MENU / BUTTON
+    code        VARCHAR(100) NOT NULL UNIQUE,    -- e.g. 'product:delete', 'order:export'
+    name        VARCHAR(100) NOT NULL,           -- e.g. '删除商品', '导出订单'
+    path        VARCHAR(200),                     -- 前端路由路径（MENU 类型）
+    icon        VARCHAR(50),
+    sort_order  INTEGER NOT NULL DEFAULT 0,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 角色-权限关联
+CREATE TABLE role_permissions (
+    role_id       BIGINT NOT NULL REFERENCES roles(id),
+    permission_id BIGINT NOT NULL REFERENCES permissions(id),
+    PRIMARY KEY (role_id, permission_id)
+);
+```
+
+#### D1.4.2 预置角色与权限
+
+| 角色 | 权限范围 |
+|---|---|
+| 超级管理员 (`super_admin`) | 全部菜单 + 全部按钮 + 系统设置 + 支付配置 + 自定义脚本 |
+| 运营 (`operator`) | 商品/订单/低代码/售后/会员菜单 + 对应操作按钮 |
+| 财务 (`finance`) | 订单/售后/财务/数据看板菜单 + 导出 + 退款审核按钮 |
+| 仓管 (`warehouse`) | 库存/订单(发货)/采购菜单 + 库存调整按钮 |
+
+#### D1.4.3 前端权限组件
+
+```tsx
+// packages/admin-app/src/components/Permission.tsx
+import { usePermission } from '@/hooks/usePermission';
+
+export function Permission({ code, children, fallback = null }: {
+  code: string;
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
+}) {
+  const { hasPermission } = usePermission();
+  return hasPermission(code) ? <>{children}</> : <>{fallback}</>;
+}
+
+// 使用
+<Permission code="order:delete">
+  <Button danger>删除订单</Button>
+</Permission>
+```
+
+#### D1.4.4 后端权限校验
+
+```python
+# backend/app/core/permission.py
+from functools import wraps
+from fastapi import HTTPException
+
+def require_permission(code: str):
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(*args, current_admin=Depends(get_current_admin), **kwargs):
+            if current_admin.is_super:
+                return await func(*args, current_admin=current_admin, **kwargs)
+            admin_permissions = await get_admin_permissions(current_admin.id)
+            if code not in admin_permissions:
+                raise HTTPException(status_code=403, detail='PERMISSION_DENIED')
+            return await func(*args, current_admin=current_admin, **kwargs)
+        return wrapper
+    return decorator
+
+# 使用
+@router.delete('/orders/{order_id}')
+@require_permission('order:delete')
+async def delete_order(order_id: int, current_admin=Depends(get_current_admin)):
+    ...
+```
+
+#### D1.4.5 二期数据权限预留
+
+二期数据权限扩展方案（一期不实现，仅预留设计）：
+
+```sql
+-- 二期新增：角色数据范围
+ALTER TABLE roles ADD COLUMN data_scope VARCHAR(20) DEFAULT 'ALL';
+-- ALL: 全部数据
+-- SELF: 仅自己创建的
+-- DEPT: 本部门
+-- DEPT_AND_SUB: 本部门及下属
+-- CUSTOM: 自定义（role_data_scope_rules 表定义）
+```
+
+### D1.5 物流公司枚举与配置（D-05）
+
+#### D1.5.1 shared-types 枚举
+
+```typescript
+// packages/shared-types/src/enums/logistics.ts
+
+export const LogisticsCompanyCode = {
+  SF: '顺丰速运',
+  YTO: '圆通速递',
+  ZTO: '中通快递',
+  STO: '申通快递',
+  YD: '韵达快递',
+  JT: '极兔速递',
+  EMS: '邮政EMS',
+  DBL: '德邦快递',
+  JD: '京东物流',
+  FAST: '快捷速递',
+  OTHER: '其他',
+} as const;
+
+export type LogisticsCompanyCodeType = keyof typeof LogisticsCompanyCode;
+```
+
+#### D1.5.2 后端配置表
+
+```sql
+-- 物流公司配置（后台可扩展）
+CREATE TABLE logistics_companies (
+    id          BIGSERIAL PRIMARY KEY,
+    code        VARCHAR(20) NOT NULL UNIQUE,     -- SF/YTO/ZTO/...
+    name        VARCHAR(50) NOT NULL,            -- 顺丰速运
+    tracking_url_template VARCHAR(500),           -- https://www.sf-express.com/track?id={tracking_no}
+    provider_code VARCHAR(20),                    -- 快递100/快递鸟编码（二期用）
+    sort_order  INTEGER NOT NULL DEFAULT 0,
+    enabled     BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 一期预置数据
+INSERT INTO logistics_companies (code, name, tracking_url_template, sort_order) VALUES
+('SF', '顺丰速运', 'https://www.sf-express.com/track?id={tracking_no}', 1),
+('YTO', '圆通速递', 'https://www.yto.net.cn/track?id={tracking_no}', 2),
+('ZTO', '中通快递', 'https://www.zto.com/track?id={tracking_no}', 3),
+('STO', '申通快递', 'https://www.sto.cn/track?id={tracking_no}', 4),
+('YD', '韵达快递', 'https://www.yundaex.com/track?id={tracking_no}', 5),
+('JT', '极兔速递', 'https://www.jtexpress.com.cn/track?id={tracking_no}', 6),
+('EMS', '邮政EMS', 'https://www.ems.com.cn/track?id={tracking_no}', 7),
+('DBL', '德邦快递', 'https://www.deppon.com/track?id={tracking_no}', 8),
+('JD', '京东物流', 'https://www.jdl.com/track?id={tracking_no}', 9);
+```
+
+### D1.6 统一主题配置（D-29）
+
+#### D1.6.1 site_themes 表
+
+商城与官网共享同一主题表，通过 `scope` 字段区分：
+
+```sql
+CREATE TABLE site_themes (
+    id          BIGSERIAL PRIMARY KEY,
+    scope       VARCHAR(20) NOT NULL,             -- 'h5' / 'site' / 'global'
+    key         VARCHAR(100) NOT NULL,             -- CSS 变量名
+    value       VARCHAR(500) NOT NULL,             -- CSS 变量值
+    label       VARCHAR(100),                      -- 后台展示名
+    group_name  VARCHAR(50),                       -- 分组：color / spacing / border / typography
+    sort_order  INTEGER NOT NULL DEFAULT 0,
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(scope, key)
+);
+```
+
+#### D1.6.2 预置主题变量
+
+| scope | key | 默认值 | label | group |
+|---|---|---|---|---|
+| global | --color-primary | #ff6b6b | 主色 | color |
+| global | --color-success | #52c41a | 成功色 | color |
+| global | --color-warning | #faad14 | 警告色 | color |
+| global | --color-error | #ff4d4f | 错误色 | color |
+| global | --color-text-primary | #1a1a1a | 主文字色 | color |
+| global | --color-text-secondary | #666666 | 辅文字色 | color |
+| global | --color-bg-primary | #ffffff | 主背景色 | color |
+| global | --border-radius-base | 8px | 圆角基准 | border |
+| global | --spacing-base | 16px | 间距基准 | spacing |
+| h5 | --h5-tabbar-height | 50px | Tabbar 高度 | spacing |
+| h5 | --h5-header-height | 44px | 顶部导航高度 | spacing |
+| site | --site-nav-height | 72px | 导航栏高度 | spacing |
+| site | --site-footer-bg | #1a1a1a | Footer 背景 | color |
+
+#### D1.6.3 前端主题加载
+
+```typescript
+// H5 端启动时
+async function loadTheme() {
+  const res = await api.get('/api/settings/theme', { params: { scope: 'h5' } });
+  const vars = res.data; // [{ key: '--color-primary', value: '#ff6b6b' }, ...]
+  vars.forEach(({ key, value }) => {
+    document.documentElement.style.setProperty(key, value);
+  });
+}
+
+// 官网端同理，scope='site'
+```
+
+#### D1.6.4 预设主题 seed 落库（2026-09 补充，衔接设计规范 §18.2）
+
+设计规范 §18.2 定义了 5 套预设主题（珊瑚红 #ff6b6b / 商务蓝 #1890ff / 自然绿 #52c41a / 高贵紫 #722ed1 / 稳重橙 #fa8c16），**预设主题只定义主色**，完整变量集按下述流程生成并落库：
+
+```
+预设主色（5 套）
+  ↓ generateColorScale(primaryHex)（设计规范 §18.1，10 档 50~900）
+  + D1.6.2 预置变量默认值（--color-success/--spacing-base 等 13 项）
+  ↓ 组成该预设的完整变量集
+  ↓ 幂等 seed 脚本（Alembic data migration，UNIQUE(scope, key) upsert）
+site_themes 表（scope='global'，key 前缀区分预设：--preset-coral-* / --preset-blue-* 等）
+```
+
+**规约**：
+- seed 时机：1b 期商城主题配置交付时（plan-14+）随迁移脚本执行，**1a 期不建此表不跑 seed**
+- 幂等：重复执行 upsert 不产生重复行（依赖 UNIQUE(scope, key)）
+- 商家套用预设：后台调 `/api/admin/settings/theme/apply-preset`，后端取该预设变量集覆盖 `site_themes` 中 scope='h5'/'site' 的当前值（用户自定义项保留逻辑见 1b 拆解时细化）
+- 默认主题（珊瑚红）seed 后即为 D1.6.2 默认值本身，商家未配置时前端可不拉取（有内置兜底）
+
+### D1.7 修订后的核心数据表清单
+
+在 v1.1 附录 11.2 基础上，v1.2 新增/修改的表：
+
+| 表名 | 说明 | 变更 |
+|---|---|---|
+| orders | 订单主表 | **修改**：status 枚举缩减为 5 个正向状态，新增 refund_status 字段，金额字段改为 INTEGER（分） |
+| after_sales | 售后单表 | **修改**：status 枚举扩展为 7+1 个独立状态，新增 type 字段 |
+| after_sale_items | 售后商品关联表 | **新增** |
+| cart_items | 购物车 DB 表 | **新增**（Redis 为主，DB 异步落库） |
+| logistics_companies | 物流公司配置表 | **新增** |
+| site_themes | 统一主题配置表 | **新增** |
+| freight_templates | 运费模板表 | **新增**（见 D6.5） |
+| freight_template_items | 运费模板项表 | **新增**（见 D6.5） |
+| notifications | 通知记录表 | **新增**（见 D6.1） |
+| notification_templates | 通知模板表 | **新增**（见 D6.1） |
+| reviews | 商品评价表 | **新增**（见 D6.2） |
+| review_images | 评价图片表 | **新增**（见 D6.2） |
+
+---
+
+## D2. 接口契约详细设计
+
+### D2.1 统一响应格式（D-02, D-08）
+
+#### D2.1.1 成功响应
+
+```json
+{
+  "code": 0,
+  "message": "ok",
+  "data": { ... },
+  "requestId": "req_abc123"
+}
+```
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| code | integer | 0 表示成功，非 0 表示业务错误 |
+| message | string | 默认中文消息，前端可基于 i18nKey 替换 |
+| data | object/null | 业务数据，错误时为 null |
+| requestId | string | 请求追踪 ID（UUID），与日志关联 |
+
+#### D2.1.2 分页响应
+
+```json
+{
+  "code": 0,
+  "message": "ok",
+  "data": {
+    "list": [...],
+    "total": 100,
+    "page": 1,
+    "size": 20
+  },
+  "requestId": "req_abc123"
+}
+```
+
+统一分页参数：
+- `page`：从 1 开始
+- `size`：默认 20，最大 100
+- 排序：`sort=created_at:desc`（字段:方向，多字段用逗号分隔）
+
+#### D2.1.3 错误响应（D-08 三层结构）
+
+```json
+{
+  "code": 40004,
+  "message": "商品价格已变更，请重新确认",
+  "i18nKey": "errors.price_changed",
+  "field": "price_cents",
+  "details": {
+    "skuId": 123,
+    "oldPrice": 1999,
+    "newPrice": 2099
+  },
+  "requestId": "req_abc123"
+}
+```
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| code | integer | 是 | 业务错误码（见 D2.2） |
+| message | string | 是 | 默认中文消息 |
+| i18nKey | string | 否 | i18n key，前端有翻译时替换 message |
+| field | string | 否 | 表单字段错误（用于表单校验高亮） |
+| details | object | 否 | 错误详情（不含敏感信息） |
+| requestId | string | 是 | 追踪 ID |
+
+#### D2.1.4 HTTP 状态码映射
+
+| HTTP | 场景 | code 范围 |
+|---|---|---|
+| 200 | 成功 | 0 |
+| 400 | 参数错误/校验失败 | 10000-19999 |
+| 401 | 未认证/Token 失效 | 40001 |
+| 403 | 权限不足 | 40003 |
+| 404 | 资源不存在 | 40400 |
+| 409 | 状态冲突（如订单已支付） | 40900-40999 |
+| 429 | 限流 | 42900 |
+| 500 | 服务端错误 | 50000 |
+
+### D2.2 错误码表（D-08）
+
+#### D2.2.1 错误码命名规则
+
+`{HTTP段}{模块}{序号}`，5 位数字：
+
+| 段 | HTTP | 模块 |
+|---|---|---|
+| 1xxxx | 400 | 参数校验 |
+| 2xxxx | 400 | 业务规则 |
+| 4xxxx | 401/403/404 | 认证/权限/资源 |
+| 429xx | 429 | 限流 |
+| 5xxxx | 500 | 服务端 |
+
+#### D2.2.2 核心错误码表
+
+| code | i18nKey | 默认 message | HTTP | 模块 |
+|---|---|---|---|---|
+| 0 | common.success | ok | 200 | — |
+| 10001 | common.param_invalid | 参数错误 | 400 | 通用 |
+| 10002 | common.param_missing | 缺少必填参数 | 400 | 通用 |
+| 10003 | common.param_type_error | 参数类型错误 | 400 | 通用 |
+| 20001 | auth.invalid_credentials | 用户名或密码错误 | 400 | 认证 |
+| 20002 | auth.sms_code_invalid | 验证码错误或已过期 | 400 | 认证 |
+| 20003 | auth.sms_code_rate_limit | 验证码发送过于频繁 | 429 | 认证 |
+| 20004 | auth.token_expired | Token 已过期 | 401 | 认证 |
+| 20005 | auth.token_invalid | Token 无效 | 401 | 认证 |
+| 20006 | auth.account_disabled | 账号已被禁用 | 403 | 认证 |
+| 20101 | product.not_found | 商品不存在 | 404 | 商品 |
+| 20102 | product.off_shelf | 商品已下架 | 400 | 商品 |
+| 20103 | product.sku_not_found | SKU 不存在 | 404 | 商品 |
+| 20201 | cart.empty | 购物车为空 | 400 | 购物车 |
+| 20202 | cart.sku_stale | 购物车商品信息已变更 | 400 | 购物车 |
+| 20203 | cart.quantity_exceed_stock | 购物车数量超出库存 | 400 | 购物车 |
+| 20301 | order.not_found | 订单不存在 | 404 | 订单 |
+| 20302 | order.status_conflict | 订单状态冲突 | 409 | 订单 |
+| 20303 | order.price_changed | 商品价格已变更 | 400 | 订单 |
+| 20304 | order.stock_insufficient | 库存不足 | 400 | 订单 |
+| 20305 | order.expired | 订单已超时 | 400 | 订单 |
+| 20306 | order.cannot_cancel | 订单当前状态不可取消 | 409 | 订单 |
+| 20307 | order.cannot_pay | 订单当前状态不可支付 | 409 | 订单 |
+| 20401 | stock.insufficient | 库存不足 | 400 | 库存 |
+| 20402 | stock.lock_failed | 库存锁定失败 | 409 | 库存 |
+| 20501 | payment.order_paid | 订单已支付 | 409 | 支付 |
+| 20502 | payment.amount_mismatch | 支付金额不匹配 | 400 | 支付 |
+| 20503 | payment.signature_invalid | 支付签名验证失败 | 400 | 支付 |
+| 20504 | payment.refund_failed | 退款失败 | 500 | 支付 |
+| 20601 | after_sale.not_found | 售后单不存在 | 404 | 售后 |
+| 20602 | after_sale.status_conflict | 售后状态冲突 | 409 | 售后 |
+| 20603 | after_sale.amount_exceed | 退款金额超出订单金额 | 400 | 售后 |
+| 20701 | upload.file_type_invalid | 文件类型不允许 | 400 | 上传 |
+| 20702 | upload.file_too_large | 文件大小超限 | 400 | 上传 |
+| 20703 | upload.signature_invalid | 上传签名无效 | 400 | 上传 |
+| 20801 | page.schema_invalid | 页面 Schema 格式错误 | 400 | 低代码 |
+| 20802 | page.component_not_found | 组件类型不存在 | 400 | 低代码 |
+| 40001 | auth.unauthorized | 未登录 | 401 | 认证 |
+| 40003 | auth.permission_denied | 权限不足 | 403 | 权限 |
+| 40400 | common.not_found | 资源不存在 | 404 | 通用 |
+| 40900 | common.conflict | 资源状态冲突 | 409 | 通用 |
+| 42900 | common.rate_limited | 请求过于频繁，请稍后重试 | 429 | 限流 |
+| 50000 | common.server_error | 服务器内部错误 | 500 | 通用 |
+| 50001 | common.service_unavailable | 服务暂时不可用 | 503 | 通用 |
+
 ### D2.3 i18n 国际化框架（D-21）
 
 #### D2.3.1 语言包结构
@@ -996,794 +1676,5 @@ document.documentElement.style.setProperty(key, value)
 1. 本地 `style.setProperty` 即时预览
 2. 保存时调 `/api/admin/settings/theme`，写 DB
 3. 发 `theme.updated` 事件 → 通知所有在线 H5/官网客户端（SSE）→ 客户端重新拉取主题
-
----
-
-## D5. 安全合规详细设计
-
-### D5.1 联系表单字段级加密（D-18）
-
-#### D5.1.1 加密策略
-
-- 字段级 AES-256-GCM 加密
-- 密钥通过云厂商 KMS（阿里云 KMS / 腾讯云 KMS）管理
-- 应用启动时从 KMS 获取数据密钥，缓存在内存（每 24h 轮换）
-- 密文存 DB，明文不入库不入日志
-
-#### D5.1.2 表结构
-
-```sql
-CREATE TABLE form_submissions (
-    id              BIGSERIAL PRIMARY KEY,
-    form_id         VARCHAR(50) NOT NULL,           -- 表单 ID（后台配置）
-    page_slug       VARCHAR(100),
-    -- 加密字段（密文 + IV + tag）
-    name_encrypted  BYTEA,
-    phone_encrypted BYTEA,
-    email_encrypted BYTEA,
-    message_encrypted BYTEA,
-    -- 非敏感字段明文
-    company         VARCHAR(200),
-    user_ip         INET,
-    user_agent      TEXT,
-    -- 元数据
-    status          VARCHAR(20) NOT NULL DEFAULT 'PENDING', -- PENDING / READ / PROCESSED
-    processed_by    BIGINT REFERENCES admins(id),
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    expires_at      TIMESTAMPTZ NOT NULL  -- 90 天后自动删除
-);
-
-CREATE INDEX idx_form_submissions_status ON form_submissions(status);
-CREATE INDEX idx_form_submissions_expires ON form_submissions(expires_at);
-```
-
-#### D5.1.3 加密实现
-
-```python
-# backend/app/core/crypto.py
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-import os
-import base64
-
-class FieldEncryptor:
-    def __init__(self, key: bytes):  # 32 bytes for AES-256
-        self.aesgcm = AESGCM(key)
-
-    def encrypt(self, plaintext: str) -> bytes:
-        iv = os.urandom(12)
-        ct = self.aesgcm.encrypt(iv, plaintext.encode('utf-8'), None)
-        return iv + ct  # IV 前置
-
-    def decrypt(self, data: bytes) -> str:
-        iv, ct = data[:12], data[12:]
-        return self.aesgcm.decrypt(iv, ct, None).decode('utf-8')
-
-# 从 KMS 获取密钥（伪代码）
-def get_data_key() -> bytes:
-    kms = boto3.client('kms', region_name='cn-hangzhou')
-    resp = kms.generate_data_key(KeyId=KMS_KEY_ID, KeySpec='AES_256')
-    return resp['Plaintext']  # 32 bytes，仅在内存
-```
-
-#### D5.1.4 访问审计
-
-```python
-# backend/app/form/service.py
-async def decrypt_form_submission(submission_id: int, admin_id: int) -> dict:
-    # 记录访问日志
-    await audit_log.record(
-        admin_id=admin_id,
-        action='form_submission.decrypt',
-        resource_id=submission_id,
-        ip=request.client.host
-    )
-    # 解密返回
-    submission = await form_repo.get(submission_id)
-    return {
-        'name': encryptor.decrypt(submission.name_encrypted),
-        'phone': encryptor.decrypt(submission.phone_encrypted),
-        # ...
-    }
-```
-
-#### D5.1.5 自动删除
-
-```python
-# backend/app/form/tasks.py
-@celery.task
-def cleanup_expired_submissions():
-    """每天清理 90 天前的表单提交"""
-    async def _cleanup():
-        await form_repo.delete_expired()
-    asyncio.run(_cleanup())
-```
-
-#### D5.1.6 被遗忘权
-
-提供管理员接口 `DELETE /api/admin/form-submissions/{id}`，物理删除指定提交记录。
-
-### D5.2 文件上传安全（D-20）
-
-#### D5.2.1 白名单
-
-| 文件用途 | 允许扩展名 | 允许 MIME | 大小限制 |
-|---|---|---|---|
-| 商品图/详情图 | jpg, png, webp | image/jpeg, image/png, image/webp | 5MB |
-| 评价图 | jpg, png, webp | 同上 | 3MB |
-| 视频组件 | mp4 | video/mp4 | 50MB |
-| 3D 模型 | glb, gltf | model/gltf-binary, model/gltf+json | 10MB |
-| 富文本附件 | pdf, doc, docx, xls, xlsx | application/pdf, ... | 10MB |
-
-#### D5.2.2 双重校验
-
-```python
-# backend/app/upload/service.py
-ALLOWED_MIME = {
-    'image/jpeg', 'image/png', 'image/webp', 'video/mp4',
-    'model/gltf-binary', 'model/gltf+json',
-    'application/pdf'
-}
-
-MAGIC_NUMBERS = {
-    b'\xff\xd8\xff': 'image/jpeg',                    # JPEG
-    b'\x89PNG\r\n\x1a\n': 'image/png',                # PNG
-    b'RIFF....WEBP': 'image/webp',                    # WebP
-    b'\x00\x00\x00': 'video/mp4',                      # MP4 (简化判断)
-    b'glTF': 'model/gltf-binary',                    # GLB
-}
-
-async def validate_file(file: UploadFile) -> bool:
-    # 1. 扩展名校验
-    ext = file.filename.rsplit('.', 1)[-1].lower()
-    if ext not in ALLOWED_EXTENSIONS[ext]:
-        raise ApiError(code=20701, message='文件类型不允许')
-
-    # 2. MIME 校验（可伪造，仅第一道）
-    if file.content_type not in ALLOWED_MIME:
-        raise ApiError(code=20701, message='文件类型不允许')
-
-    # 3. Magic Number 校验（读前 16 字节）
-    head = await file.read(16)
-    await file.seek(0)
-    detected_mime = detect_mime_by_magic(head)
-    if detected_mime != file.content_type:
-        raise ApiError(code=20701, message='文件类型与扩展名不匹配')
-
-    # 4. 大小校验
-    if file.size > MAX_FILE_SIZE[ext]:
-        raise ApiError(code=20702, message='文件大小超限')
-
-    return True
-```
-
-#### D5.2.3 OSS 数据处理流水线
-
-```
-前端请求签名 → 后端校验 + 生成临时签名
-       ↓
-前端直传 OSS
-       ↓
-OSS 上传完成回调后端
-       ↓
-后端触发 OSS 数据处理：
-  - 图片：转 WebP + 生成缩略图（OSS 数据处理服务）
-  - 视频：截图首帧 + 转码
-  - 模型：Draco 压缩
-       ↓
-更新 DB 文件记录（原 URL + 缩略图 URL + 处理状态）
-```
-
-#### D5.2.4 文件名安全化
-
-```python
-import uuid
-
-def generate_safe_filename(original: str) -> str:
-    """生成 UUID 文件名，原文件名存 metadata"""
-    ext = original.rsplit('.', 1)[-1].lower()
-    return f"{uuid.uuid4().hex}.{ext}"
-```
-
-### D5.3 支付环境隔离（D-19）
-
-#### D5.3.1 环境变量分层
-
-```bash
-# .env.development（开发环境，提交到 git）
-PAYMENT_MODE=sandbox
-WECHAT_SANDBOX_MCH_ID=...
-WECHAT_SANDBOX_API_KEY=...
-WECHAT_SANDBOX_CERT_PATH=./certs/sandbox/
-ALIPAY_SANDBOX_APP_ID=...
-ALIPAY_SANDBOX_PRIVATE_KEY=...
-
-# .env.staging（预发布环境，不提交到 git）
-PAYMENT_MODE=sandbox
-...
-
-# .env.production（生产环境，不提交到 git，部署时注入）
-PAYMENT_MODE=production
-WECHAT_MCH_ID=...
-WECHAT_API_KEY=...
-WECHAT_CERT_PATH=/data/certs/production/
-ALIPAY_APP_ID=...
-ALIPAY_PRIVATE_KEY=...
-```
-
-#### D5.3.2 CI 防护
-
-```yaml
-# .github/workflows/security-check.yml
-jobs:
-  secret-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Detect production secrets in dev code
-        run: |
-          # 阻止生产密钥进 .env.development
-          if grep -E 'MCH_ID=\d{10}|API_KEY=[a-f0-9]{32}' .env.development; then
-            echo "生产支付密钥出现在开发环境配置文件！"
-            exit 1
-          fi
-      - name: Detect secrets in code
-        run: |
-          # 阻止任何密钥进源码
-          if grep -rE 'sk_live_|api_key.*=.*["\x27][a-f0-9]{32}' src/; then
-            echo "源码中检测到密钥！"
-            exit 1
-          fi
-```
-
-### D5.4 a11y 合规（D-23）
-
-#### D5.4.1 共享组件规范
-
-```tsx
-// packages/shared-components/src/Button/Button.tsx
-export function Button({ children, variant, ...props }: ButtonProps) {
-  return (
-    <button
-      type="button"
-      aria-busy={props.loading}
-      aria-disabled={props.disabled}
-      className={cn(variantClasses[variant])}
-      {...props}
-    >
-      {children}
-    </button>
-  );
-}
-// 禁止：<div onClick={...}> 模拟 button
-```
-
-#### D5.4.2 关键 a11y 检查项
-
-| 检查项 | 规范 |
-|---|---|
-| 语义化标签 | 用 `<button>` `<a>` `<nav>` `<main>` `<article>` 等，禁止 `<div onClick>` 模拟交互 |
-| 键盘导航 | Tab 可达，Enter/Esc 可触发，焦点可见（不滥用 `outline: none`） |
-| ARIA | 动态组件（Dialog/Dropdown/Toast）完整标注 `role` `aria-expanded` `aria-hidden` |
-| 对比度 | 文字与背景对比度 ≥ 4.5:1（普通文字）/ 3:1（大文字） |
-| 图片 alt | 装饰图 `alt=""`，内容图描述性 alt |
-| 表单 label | 每个输入框关联 `<label>` |
-| 错误提示 | 表单错误用 `aria-invalid` + `aria-describedby` 关联错误信息 |
-
-#### D5.4.3 CI 自动检测
-
-```yaml
-# .github/workflows/a11y.yml
-jobs:
-  axe-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - run: pnpm install
-      - run: pnpm --filter shared-components run test:a11y
-      - run: pnpm --filter h5-app run test:a11y
-```
-
-```typescript
-// packages/shared-components/tests/a11y.test.ts
-import { render } from '@testing-library/react';
-import { AxePuppeteer } from '@axe-core/puppeteer';
-import { ProductGrid } from '../src';
-
-describe('a11y', () => {
-  it('ProductGrid 无违规', async () => {
-    const { container } = render(<ProductGrid products={[...]} />);
-    const results = await new AxePuppeteer({ page }).analyze();
-    expect(results.violations).toHaveLength(0);
-  });
-});
-```
-
----
-
-## D6. 新增功能详细设计
-
-### D6.1 消息通知中心（D-09）
-
-#### D6.1.1 渠道适配器
-
-```python
-# backend/app/notification/channels.py
-from abc import ABC, abstractmethod
-
-class NotificationChannel(ABC):
-    @abstractmethod
-    async def send(self, target: str, title: str, body: str) -> bool:
-        ...
-
-class SmsChannel(NotificationChannel):
-    def __init__(self, sms_provider):  # aliyun/tencent
-        self.provider = sms_provider
-
-    async def send(self, phone: str, title: str, body: str) -> bool:
-        try:
-            await self.provider.send_sms(phone, body)
-            return True
-        except Exception as e:
-            log.error(f'SMS send failed: {e}')
-            return False
-
-class EmailChannel(NotificationChannel):
-    async def send(self, email: str, title: str, body: str) -> bool:
-        ...
-
-class InAppChannel(NotificationChannel):
-    """站内信：写入 notifications 表，前端轮询/SSE 拉取"""
-    async def send(self, user_id: str, title: str, body: str) -> bool:
-        await notification_repo.create(user_id=int(user_id), title=title, body=body)
-        # 推 SSE 通知
-        await sse_notify(user_id, {'type': 'notification', 'title': title})
-        return True
-
-class WechatTemplateChannel(NotificationChannel):
-    async def send(self, openid: str, title: str, body: str) -> bool:
-        ...
-
-CHANNEL_REGISTRY = {
-    'sms': SmsChannel(sms_provider),
-    'email': EmailChannel(),
-    'in_app': InAppChannel(),
-    'wechat': WechatTemplateChannel(),
-}
-```
-
-#### D6.1.2 模板变量插值
-
-```python
-# backend/app/notification/template.py
-import re
-
-def render_template(template: str, context: dict) -> str:
-    """变量插值：'订单 {order_no} 已支付' → context={'order_no': 'ABC123'}"""
-    return re.sub(r'\{(\w+)\}', lambda m: str(context.get(m.group(1), '')), template)
-
-# 示例
-context = {'order_no': 'ABC123', 'amount': 1999, 'product_name': 'iPhone'}
-title = render_template('支付成功', context)
-body = render_template('您的订单 {order_no} 已支付 ¥{amount}', context)
-# → '您的订单 ABC123 已支付 ¥1999'
-```
-
-#### D6.1.3 通知偏好设置
-
-```sql
-CREATE TABLE user_notification_preferences (
-    user_id     BIGINT NOT NULL REFERENCES users(id),
-    event       VARCHAR(50) NOT NULL,              -- 'order.paid', 'order.shipped'
-    channels    JSONB NOT NULL,                     -- ["sms", "in_app"]，用户选择的渠道
-    enabled     BOOLEAN NOT NULL DEFAULT TRUE,
-    PRIMARY KEY (user_id, event)
-);
-```
-
-发送时优先取用户偏好，无偏好取模板默认渠道。
-
-#### D6.1.4 站内信 UI
-
-H5 端"我的消息"页：
-- 列表：未读置顶 + 时间倒序
-- 详情：标题 + 正文 + 时间
-- 操作：标记已读、全部已读、按类型筛选
-
-### D6.2 商品评价系统（D-10）
-
-#### D6.2.1 表结构
-
-```sql
-CREATE TABLE reviews (
-    id          BIGSERIAL PRIMARY KEY,
-    product_id  BIGINT NOT NULL REFERENCES products(id),
-    order_item_id BIGINT NOT NULL REFERENCES order_items(id),  -- 关联订单项（防刷评）
-    user_id     BIGINT NOT NULL REFERENCES users(id),
-    rating      SMALLINT NOT NULL CHECK (rating BETWEEN 1 AND 5),
-    content     TEXT,
-    is_anonymous BOOLEAN NOT NULL DEFAULT FALSE,
-    status      VARCHAR(20) NOT NULL DEFAULT 'PENDING',  -- PENDING / APPROVED / REJECTED
-    admin_reply TEXT,
-    replied_at  TIMESTAMPTZ,
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE(order_item_id)  -- 一个订单项只能评价一次
-);
-
-CREATE INDEX idx_reviews_product_id ON reviews(product_id) WHERE status = 'APPROVED';
-CREATE INDEX idx_reviews_user_id ON reviews(user_id);
-
-CREATE TABLE review_images (
-    id          BIGSERIAL PRIMARY KEY,
-    review_id   BIGINT NOT NULL REFERENCES reviews(id) ON DELETE CASCADE,
-    url         VARCHAR(500) NOT NULL,
-    sort_order  INTEGER NOT NULL DEFAULT 0,
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX idx_review_images_review_id ON review_images(review_id);
-```
-
-#### D6.2.2 评价流程
-
-```
-1. 用户确认收货（order.status = COMPLETED）
-2. 用户在订单详情点"评价"
-3. H5 评价页：评分（1-5 星）+ 文字评价 + 图片上传（最多 5 张）
-4. 提交：status = PENDING
-5. 后台审核：
-   - 敏感词过滤（自动）
-   - 通过 → status = APPROVED，展示在商品详情
-   - 拒绝 → status = REJECTED，通知用户修改
-6. 后台可回复评价（admin_reply）
-```
-
-#### D6.2.3 商品详情评价展示
-
-```typescript
-// H5 端商品详情页评价区
-GET /api/products/{productId}/reviews?page=1&size=10&sort=created_at:desc
-
-// 返回结构
-{
-  list: [{
-    id, rating, content, images: [{url}],
-    user: { nickname, avatar },  // 匿名时返回 '匿名用户'
-    adminReply, createdAt
-  }],
-  summary: {
-    averageRating: 4.5,    // 平均评分
-    totalCount: 128,        // 总评价数
-    distribution: { 5: 80, 4: 30, 3: 10, 2: 5, 1: 3 }  // 各星级数量
-  }
-}
-```
-
-#### D6.2.4 防刷评
-
-- 必须有有效订单（order_item_id 唯一约束）
-- 必须订单状态为 COMPLETED
-- 评价图片最多 5 张，单张 3MB
-- 敏感词过滤（D6.1.3 提到的反垃圾模块复用）
-
-### D6.3 搜索系统（一期 PG 全文索引）
-
-#### D6.3.1 一期方案：PostgreSQL 全文索引
-
-```sql
--- products 表增加全文索引字段
-ALTER TABLE products ADD COLUMN search_vector tsvector;
-
--- 触发器自动维护
-CREATE TRIGGER products_search_vector_trigger
-BEFORE INSERT OR UPDATE ON products
-FOR EACH ROW EXECUTE FUNCTION
-  tsvector_update_trigger(search_vector, 'pg_catalog.simple', name, description);
-
--- 中文分词扩展（需安装 pg_jieba 或 zhparser）
-CREATE INDEX idx_products_search ON products USING GIN(search_vector);
-
--- 查询
-SELECT * FROM products
-WHERE search_vector @@ to_tsquery('pg_catalog.simple', 'iPhone & 手机')
-ORDER BY ts_rank(search_vector, to_tsquery('iPhone & 手机')) DESC
-LIMIT 20;
-```
-
-#### D6.3.2 搜索 API
-
-```
-GET /api/products/search?q=iPhone&page=1&size=20&sort=relevance
-
-参数：
-  q: 关键词
-  sort: relevance / sales / price_asc / price_desc
-  category_id: 可选分类筛选
-  price_min, price_max: 可选价格区间
-
-响应：同商品列表接口结构
-```
-
-#### D6.3.3 三期升级路径
-
-三期接入 Meilisearch（轻量、自托管、性能好）：
-1. 商品变更时同步到 Meilisearch 索引（通过 page.updated 类似事件）
-2. 搜索 API 改为查 Meilisearch
-3. 一期的 PG 全文索引保留作为 fallback
-
-### D6.4 库存预警自动化（新增 3）
-
-#### D6.4.1 预警配置
-
-```sql
--- SKU 级安全库存
-ALTER TABLE skus ADD COLUMN safety_stock INTEGER NOT NULL DEFAULT 10;
-
--- 全局默认安全库存（settings 表）
-INSERT INTO settings (key, value) VALUES
-('stock.default_safety_stock', '10'),
-('stock.warning_enabled', 'true');
-```
-
-#### D6.4.2 预警触发
-
-```python
-# backend/app/stock/tasks.py
-@celery.task
-def check_stock_warning():
-    """每小时检查库存预警"""
-    threshold = int(settings.get('stock.default_safety_stock'))
-    low_stock_skus = await sku_repo.find_low_stock(threshold)
-
-    for sku in low_stock_skus:
-        # 发 stock.warning 事件（通知中心订阅）
-        event_bus.publish('stock.warning', {
-            'skuId': sku.id,
-            'productName': sku.product.name,
-            'currentStock': sku.available_stock,
-            'safetyStock': sku.safety_stock or threshold,
-        })
-
-    # 后台看板数据更新
-    await cache.set('stock:warning_list', low_stock_skus, ttl=3600)
-```
-
-#### D6.4.3 补货建议
-
-```python
-# backend/app/stock/replenishment.py
-async def get_replenishment_suggestions():
-    """补货建议：基于销量 + 安全库存 + 采购周期"""
-    suggestions = []
-    for sku in await sku_repo.all():
-        recent_sales = await get_recent_sales_30d(sku.id)
-        daily_avg = recent_sales / 30
-        lead_time = sku.supplier.lead_time_days if sku.supplier else 7
-        suggested_qty = max(
-            sku.safety_stock + daily_avg * lead_time - sku.available_stock,
-            0
-        )
-        if suggested_qty > 0:
-            suggestions.append({
-                'skuId': sku.id,
-                'productName': sku.product.name,
-                'currentStock': sku.available_stock,
-                'dailyAvgSales': daily_avg,
-                'suggestedQty': int(suggested_qty)
-            })
-    return suggestions
-```
-
-### D6.5 运费模板（D-11）
-
-#### D6.5.1 表结构
-
-```sql
-CREATE TABLE freight_templates (
-    id          BIGSERIAL PRIMARY KEY,
-    name        VARCHAR(100) NOT NULL,
-    type        VARCHAR(20) NOT NULL,              -- WEIGHT / PIECE / REGION
-    is_default  BOOLEAN NOT NULL DEFAULT FALSE,
-    enabled     BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE TABLE freight_template_items (
-    id              BIGSERIAL PRIMARY KEY,
-    template_id     BIGINT NOT NULL REFERENCES freight_templates(id) ON DELETE CASCADE,
-    region_codes    JSONB NOT NULL,               -- ["110000", "120000"] 省级编码
-    first_unit      NUMERIC(10,2) NOT NULL,       -- 首重 kg / 首件数
-    first_fee       INTEGER NOT NULL,               -- 首费（分）
-    additional_unit NUMERIC(10,2) NOT NULL,         -- 续重 kg / 续件数
-    additional_fee  INTEGER NOT NULL,               -- 续费（分）
-    free_condition  JSONB,                          -- {"min_amount": 9900} 满多少包邮
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX idx_freight_template_items_template_id ON freight_template_items(template_id);
-```
-
-#### D6.5.2 计费逻辑
-
-```python
-# backend/app/order/freight.py
-from decimal import Decimal
-
-async def calculate_freight(
-    items: list[OrderItem],
-    address: Address,
-    template_id: int | None = None
-) -> int:
-    """计算运费（返回分）"""
-    template = await freight_repo.get_template(template_id)
-    if not template:
-        return 0
-
-    # 找到匹配的运费项（按收货地区）
-    item = await freight_repo.find_item_by_region(template.id, address.province_code)
-    if not item:
-        return 0
-
-    # 检查包邮条件
-    if item.free_condition:
-        min_amount = item.free_condition.get('min_amount', 0)
-        if sum(i.total_amount for i in items) >= min_amount:
-            return 0
-
-    # 按类型计费
-    if template.type == 'WEIGHT':
-        total_weight = sum(i.weight * i.quantity for i in items)
-        if total_weight <= item.first_unit:
-            return item.first_fee
-        extra = Decimal(str(total_weight - item.first_unit)) / item.additional_unit
-        return item.first_fee + int(extra) * item.additional_fee
-
-    elif template.type == 'PIECE':
-        total_qty = sum(i.quantity for i in items)
-        if total_qty <= int(item.first_unit):
-            return item.first_fee
-        extra = total_qty - int(item.first_unit)
-        return item.first_fee + extra * item.additional_fee
-
-    return item.first_fee
-```
-
-#### D6.5.3 API
-
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| GET | /api/admin/freight-templates | 模板列表 |
-| POST | /api/admin/freight-templates | 创建模板 |
-| PUT | /api/admin/freight-templates/{id} | 编辑模板 |
-| DELETE | /api/admin/freight-templates/{id} | 删除模板 |
-| POST | /api/admin/freight-templates/{id}/items | 添加运费项 |
-| PUT | /api/admin/freight-templates/{id}/items/{itemId} | 编辑运费项 |
-| DELETE | /api/admin/freight-templates/{id}/items/{itemId} | 删除运费项 |
-| POST | /api/orders/freight-calc | 计算运费（前端下单页用） |
-
-### D6.6 优惠券预留（新增 6）
-
-#### D6.6.1 一期预留
-
-一期不实现优惠券，但在订单金额计算中预留字段：
-
-```sql
--- orders 表已预留 discount_amount（见 D1.1.3）
--- order_items 表预留 discount_amount
-ALTER TABLE order_items ADD COLUMN discount_amount INTEGER NOT NULL DEFAULT 0;
-
--- 二期实现时新增 coupons 表
--- coupon_users（用户优惠券）表
--- order_coupons（订单优惠券关联）表
-```
-
-#### D6.6.2 下单页 UI 预留
-
-H5 订单确认页保留"优惠券"入口，灰色显示"暂未开放"：
-
-```tsx
-// packages/h5-app/src/pages/OrderConfirm.tsx
-<div className="coupon-entry disabled">
-  <span>优惠券</span>
-  <span className="muted">暂未开放</span>
-</div>
-```
-
-二期实现时改为可点击的优惠券选择器。
-
-#### D6.6.3 计算函数预留
-
-```typescript
-// packages/shared-types/src/utils/order.ts
-export interface OrderAmountBreakdown {
-  productAmount: number;   // 商品总额（分）
-  freightAmount: number;   // 运费（分）
-  discountAmount: number;  // 优惠（分）一期固定 0
-  totalAmount: number;     // 应付（分）
-}
-
-export function calculateOrderAmount(
-  productAmount: number,
-  freightAmount: number,
-  discountAmount = 0  // 一期默认 0
-): OrderAmountBreakdown {
-  return {
-    productAmount,
-    freightAmount,
-    discountAmount,
-    totalAmount: productAmount + freightAmount - discountAmount,
-  };
-}
-```
-
-### D6.7 商品标签与推荐（新增 7）
-
-#### D6.7.1 一期手动推荐
-
-```sql
--- 商品关联推荐表
-CREATE TABLE product_recommendations (
-    id              BIGSERIAL PRIMARY KEY,
-    product_id      BIGINT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-    recommended_id  BIGINT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-    sort_order      INTEGER NOT NULL DEFAULT 0,
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE(product_id, recommended_id)
-);
-
-CREATE INDEX idx_product_recommendations_product_id ON product_recommendations(product_id);
-```
-
-#### D6.7.2 后台操作
-
-商品编辑页"相关推荐"Tab：搜索商品 → 添加 → 排序。
-
-#### D6.7.3 三期 AI 推荐
-
-三期接入 AI 推荐服务（基于用户浏览/购买历史的协同过滤或向量检索）。
-
-### D6.8 数据备份与恢复演练（新增 8）
-
-#### D6.8.1 备份策略
-
-```
-每日全量备份（pg_dump）：
-  - 时间：凌晨 3:00
-  - 内容：全库 pg_dump + WAL 归档
-  - 存储：OSS（加密 + 多区域复制）
-  - 保留：7 天
-
-WAL 归档：
-  - 实时归档到 OSS
-  - 支持时间点恢复（PITR）
-
-每周备份验证：
-  - 周日恢复到沙箱环境
-  - 跑核心业务验证脚本
-  - 记录恢复时间
-```
-
-#### D6.8.2 恢复演练
-
-```bash
-#!/bin/bash
-# scripts/backup-restore-drill.sh
-BACKUP_FILE=$(aws s3 ls s3://liteshop-backups/ | sort | tail -1 | awk '{print $4}')
-
-# 1. 恢复到沙箱
-docker run -d --name liteshop-restore-test -e POSTGRES_PASSWORD=test postgres:16
-docker exec liteshop-restore-test pg_restore -U postgres -d liteshop < <(aws s3 cp s3://liteshop-backups/$BACKUP_FILE -)
-
-# 2. 验证
-docker exec liteshop-restore-test psql -U postgres -d liteshop -c "SELECT COUNT(*) FROM orders WHERE created_at::date = CURRENT_DATE - 1"
-
-# 3. 记录恢复时间
-echo "Restore completed at $(date)" >> /var/log/restore-drill.log
-```
-
-#### D6.8.3 演练计划
-
-- 每月 1 日跑一次恢复演练
-- 演练记录归档（恢复时间、数据完整性验证结果）
-- 恢复时间目标 RTO < 30 分钟
 
 ---
