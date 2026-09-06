@@ -1,30 +1,34 @@
-import type { JSX, KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import type { JSX } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useDebounceAction } from '../../hooks/useDebounceAction';
 import { useProductQuery } from '../../hooks/useProductsQuery';
 import { addCartItem } from '../../service/cart';
 import {
   listFavoriteProductIds,
+  listServerFavoriteProductIds,
   toggleFavoriteProduct,
   toggleServerFavoriteProduct,
 } from '../../service/favorites';
 import { useCartStore } from '../../store/cart';
 import { formatPrice } from '../../utils/format-price';
 import { listProductReviews } from '../../service/reviews';
-
-const detailSlides = ['商品主图', '生活场景', '细节展示'];
+import { useSessionStore } from '../../store/session';
+import { ErrorState, FeedbackState } from '@liteshop/shared-components';
+import { ProductGallery, DETAIL_SLIDES } from './components/ProductGallery';
+import { ProductReviews } from './components/ProductReviews';
+import { SkuDrawer } from './components/SkuDrawer';
 
 /** 商品详情视图，SKU 抽屉是此页面的私有交互。 */
 export function ProductDetailPage(): JSX.Element {
   const [skuOpen, setSkuOpen] = useState(false);
   const [imageIndex, setImageIndex] = useState(0);
-  const drawerRef = useRef<HTMLElement | null>(null);
   const params = useParams<{ productId: string }>();
   const navigate = useNavigate();
   const productId = Number(params.productId ?? 1);
   const query = useProductQuery(productId);
+  const queryClient = useQueryClient();
   const reviewsQuery = useQuery({
     queryKey: ['product-reviews', productId],
     queryFn: () => listProductReviews(productId),
@@ -33,18 +37,34 @@ export function ProductDetailPage(): JSX.Element {
   const [selectedSkuId, setSelectedSkuId] = useState<number | null>(null);
   const [favorite, setFavorite] = useState(() => listFavoriteProductIds().includes(productId));
   const addLine = useCartStore((state) => state.addLine);
+  const authenticated = useSessionStore((state) => Boolean(state.accessToken));
+  const favoritesQuery = useQuery({
+    queryKey: ['favorites'],
+    queryFn: listServerFavoriteProductIds,
+    enabled: authenticated,
+  });
+  const closeSkuDrawer = useCallback(() => setSkuOpen(false), []);
   const selectedSku = product?.skus.find(
     (sku) => sku.skuId === (selectedSkuId ?? product.skus[0]?.skuId),
   );
   const [favoriteNotice, setFavoriteNotice] = useState('');
+  const [actionNotice, setActionNotice] = useState('');
+  useEffect(() => {
+    if (authenticated) {
+      if (favoritesQuery.data) setFavorite(favoritesQuery.data.includes(productId));
+      return;
+    }
+    setFavorite(listFavoriteProductIds().includes(productId));
+  }, [authenticated, favoritesQuery.data, productId]);
   const addAction = useCallback(async () => {
     if (!selectedSku) return;
+    setActionNotice('');
     addLine({
       skuId: selectedSku.skuId,
       quantity: 1,
       priceCents: selectedSku.priceCents,
     });
-    if (window.localStorage.getItem('liteshop.accessToken')) {
+    if (authenticated) {
       try {
         await addCartItem({
           skuId: selectedSku.skuId,
@@ -52,67 +72,38 @@ export function ProductDetailPage(): JSX.Element {
           priceCents: selectedSku.priceCents,
         });
       } catch {
-        /* 本地购物车仍可继续使用 */
+        setActionNotice('已加入本地购物车，但云端同步失败，请稍后重试。');
       }
     }
-    setSkuOpen(false);
-  }, [addLine, selectedSku]);
+    closeSkuDrawer();
+  }, [addLine, authenticated, closeSkuDrawer, selectedSku]);
   const [addToCart, loading] = useDebounceAction(addAction, 300);
   const [buyNow, buying] = useDebounceAction(async () => {
     await addAction();
     navigate('/cart');
   }, 300);
   const [toggleFavorite, togglingFavorite] = useDebounceAction(async () => {
-    const nextValue = window.localStorage.getItem('liteshop.accessToken')
+    const nextValue = authenticated
       ? await toggleServerFavoriteProduct(productId)
       : toggleFavoriteProduct(productId);
     setFavorite(nextValue);
     setFavoriteNotice(nextValue ? '已加入收藏' : '已取消收藏');
+    if (authenticated) void queryClient.invalidateQueries({ queryKey: ['favorites'] });
   }, 300);
   const moveImage = (offset: number): void => {
-    setImageIndex((current) => (current + offset + detailSlides.length) % detailSlides.length);
+    setImageIndex((current) => (current + offset + DETAIL_SLIDES.length) % DETAIL_SLIDES.length);
   };
-  const handleDrawerKeyDown = (event: ReactKeyboardEvent<HTMLElement>): void => {
-    if (event.key !== 'Tab') return;
-    const focusable = drawerRef.current?.querySelectorAll<HTMLElement>('button:not([disabled])');
-    if (!focusable?.length) return;
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  };
-  useEffect(() => {
-    if (!skuOpen) return undefined;
-    const previousFocus =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const closeOnEscape = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') setSkuOpen(false);
-    };
-    document.addEventListener('keydown', closeOnEscape);
-    document.body.style.overflow = 'hidden';
-    drawerRef.current?.focus();
-    return () => {
-      document.removeEventListener('keydown', closeOnEscape);
-      document.body.style.overflow = '';
-      previousFocus?.focus();
-    };
-  }, [skuOpen]);
   if (query.isError)
     return (
       <main className="trade-page">
-        <p className="feedback error-state">商品加载失败，请返回重试</p>
+        <ErrorState>商品加载失败，请返回重试</ErrorState>
         <Link to="/">返回首页</Link>
       </main>
     );
   if (query.isLoading || !product)
     return (
       <main className="trade-page">
-        <p className="feedback">商品加载中…</p>
+        <FeedbackState>商品加载中…</FeedbackState>
       </main>
     );
   const skuName = selectedSku?.name ?? '请选择规格';
@@ -121,43 +112,12 @@ export function ProductDetailPage(): JSX.Element {
       <Link className="back-link" to="/">
         ‹ 返回
       </Link>
-      <div
-        className={`detail-visual detail-visual-${imageIndex + 1}`}
-        aria-label={`${product.name} 商品图轮播`}
-        role="region"
-        aria-roledescription="carousel"
-      >
-        <button
-          className="visual-control visual-control-prev"
-          type="button"
-          onClick={() => moveImage(-1)}
-          aria-label="上一张商品图"
-        >
-          ‹
-        </button>
-        <span aria-live="polite">{detailSlides[imageIndex]}</span>
-        <button
-          className="visual-control visual-control-next"
-          type="button"
-          onClick={() => moveImage(1)}
-          aria-label="下一张商品图"
-        >
-          ›
-        </button>
-        <div className="hero-dots" role="tablist" aria-label="选择商品图片">
-          {detailSlides.map((slide, index) => (
-            <button
-              className={index === imageIndex ? 'active' : ''}
-              type="button"
-              role="tab"
-              aria-selected={index === imageIndex}
-              aria-label={`查看${slide}`}
-              key={slide}
-              onClick={() => setImageIndex(index)}
-            />
-          ))}
-        </div>
-      </div>
+      <ProductGallery
+        productName={product.name}
+        imageIndex={imageIndex}
+        onMove={moveImage}
+        onSelect={setImageIndex}
+      />
       <h1>{product.name}</h1>
       <p className="muted">{product.subtitle}</p>
       <strong className="detail-price">
@@ -172,37 +132,12 @@ export function ProductDetailPage(): JSX.Element {
           规格：{skuName} <span aria-hidden="true">›</span>
         </button>
       </section>
-      <section className="detail-section" aria-label="商品评价">
-        <div className="section-title">
-          <h2>用户评价</h2>
-          <span>
-            {reviewsQuery.data?.averageRating
-              ? `${reviewsQuery.data.averageRating} 分`
-              : '暂无评分'}
-          </span>
-        </div>
-        {reviewsQuery.isLoading && <p className="muted">评价加载中…</p>}
-        {reviewsQuery.isError && (
-          <p className="feedback error-state" role="alert">
-            评价加载失败，请稍后重试。
-          </p>
-        )}
-        {!reviewsQuery.isLoading && !reviewsQuery.isError && !reviewsQuery.data?.items.length && (
-          <p className="muted">暂无已审核评价</p>
-        )}
-        {reviewsQuery.data?.items.slice(0, 3).map((review) => (
-          <article className="review-item" key={review.id}>
-            <div aria-label={`${review.rating} 星评分`}>
-              {'★'.repeat(review.rating)}
-              {'☆'.repeat(5 - review.rating)}
-            </div>
-            <p>{review.content || '用户未填写文字评价'}</p>
-            <time dateTime={review.createdAt}>
-              {new Date(review.createdAt).toLocaleDateString('zh-CN')}
-            </time>
-          </article>
-        ))}
-      </section>
+      <ProductReviews
+        data={reviewsQuery.data}
+        isLoading={reviewsQuery.isLoading}
+        isError={reviewsQuery.isError}
+        onRetry={() => void reviewsQuery.refetch()}
+      />
       <section className="detail-section">
         <div className="section-title">
           <h2>商品详情</h2>
@@ -217,6 +152,11 @@ export function ProductDetailPage(): JSX.Element {
           </button>
         </div>
         <p>{product.description}</p>
+        {actionNotice && (
+          <p className="action-feedback" role="status" aria-live="polite">
+            {actionNotice}
+          </p>
+        )}
         {favoriteNotice && (
           <p className="action-feedback" role="status" aria-live="polite">
             {favoriteNotice}
@@ -244,47 +184,15 @@ export function ProductDetailPage(): JSX.Element {
           {buying ? '处理中…' : '立即购买'}
         </button>
       </div>
-      {skuOpen && (
-        <div className="drawer-backdrop" role="presentation" onClick={() => setSkuOpen(false)}>
-          <aside
-            ref={drawerRef}
-            tabIndex={-1}
-            className="sku-drawer"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="sku-title"
-            onClick={(event) => event.stopPropagation()}
-            onKeyDown={handleDrawerKeyDown}
-          >
-            <div className="drawer-grabber" />
-            <div className="drawer-header">
-              <h2 id="sku-title">选择规格</h2>
-              <button className="drawer-close" type="button" onClick={() => setSkuOpen(false)}>
-                关闭
-              </button>
-            </div>
-            {product.skus.map((sku) => (
-              <button
-                type="button"
-                className={`sku-option${sku.skuId === selectedSku?.skuId ? ' selected' : ''}`}
-                key={sku.skuId}
-                onClick={() => setSelectedSkuId(sku.skuId)}
-              >
-                {sku.name}
-                <span>{formatPrice(sku.priceCents)}</span>
-              </button>
-            ))}
-            <button
-              className="primary-action"
-              type="button"
-              onClick={() => void addToCart()}
-              disabled={loading || !selectedSku}
-            >
-              {loading ? '加入中…' : '确定'}
-            </button>
-          </aside>
-        </div>
-      )}
+      <SkuDrawer
+        open={skuOpen}
+        product={product}
+        selectedSku={selectedSku}
+        loading={loading}
+        onClose={closeSkuDrawer}
+        onSelect={setSelectedSkuId}
+        onConfirm={() => void addToCart()}
+      />
     </main>
   );
 }

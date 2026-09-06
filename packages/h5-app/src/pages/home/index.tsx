@@ -5,6 +5,7 @@ import { ProductCard } from '../../components/ProductCard';
 import { BottomTabBar } from '../../components/BottomTabBar';
 import { useProductsQuery } from '../../hooks/useProductsQuery';
 import { heroSlides, homeCategoryLabels } from '../../features/catalog';
+import { ErrorState } from '@liteshop/shared-components';
 
 /** H5 首页视图，页面只编排组件，不直接发起 API 请求。 */
 export function HomePage(): JSX.Element {
@@ -128,9 +129,9 @@ export function HomePage(): JSX.Element {
           </span>
         </div>
         {productsQuery.isError ? (
-          <div className="feedback error-state" role="alert">
+          <ErrorState onRetry={() => void productsQuery.refetch()}>
             商品加载失败，请稍后重试
-          </div>
+          </ErrorState>
         ) : visibleProducts.length === 0 ? (
           <div className="feedback">没有找到相关商品</div>
         ) : (

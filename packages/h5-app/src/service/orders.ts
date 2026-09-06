@@ -4,6 +4,7 @@ import type {
   FreightCalculateRequest,
   FreightCalculateResponse,
   OrderDetail,
+  OrderCreateRequest,
   PageResponse,
   PaymentProvider,
   PaymentResponse,
@@ -33,14 +34,7 @@ export async function listOrders(page = 1): Promise<PageResponse<OrderDetail>> {
   return response.data.data;
 }
 
-export async function createOrder(input: {
-  items: Array<{ skuId: number; quantity: number; priceCents: number }>;
-  addressSnapshot: Record<string, string>;
-  totalAmount: number;
-  productAmount: number;
-  freightAmount: number;
-  remark?: string;
-}): Promise<OrderDetail> {
+export async function createOrder(input: OrderCreateRequest): Promise<OrderDetail> {
   const response = await httpClient.post<ApiEnvelope<OrderDetail>>('/orders', input);
   return response.data.data;
 }

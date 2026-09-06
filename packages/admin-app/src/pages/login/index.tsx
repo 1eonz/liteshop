@@ -3,17 +3,19 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDebounceAction } from '../../hooks/useDebounceAction';
 import { loginAdmin } from '../../service/auth';
+import { useSessionStore } from '../../store/session';
 
 /** 后台管理员登录页，开发环境复用短信登录接口。 */
 export function AdminLoginPage(): JSX.Element {
   const navigate = useNavigate();
+  const setAccessToken = useSessionStore((state) => state.setAccessToken);
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const login = async (): Promise<void> => {
     try {
       const response = await loginAdmin({ phone, code });
-      window.localStorage.setItem('liteshop.admin.accessToken', response.accessToken);
+      setAccessToken(response.accessToken);
       navigate('/', { replace: true });
     } catch {
       setError('登录失败，请检查手机号和验证码。');

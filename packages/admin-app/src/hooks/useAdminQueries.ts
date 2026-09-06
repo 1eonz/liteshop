@@ -13,6 +13,10 @@ import type {
   OrderDetail,
   PageResponse,
   ProductDetailResponse,
+  ProductCreateInput,
+  ProductUpdateInput,
+  ShipOrderInput,
+  OrderManagementInput,
   ProductSummary,
 } from '@liteshop/shared-types';
 import {
@@ -41,10 +45,6 @@ import {
   updateAdminCategory,
   updateAdminOrder,
   updateAdminProduct,
-  type OrderManagementInput,
-  type ProductCreateInput,
-  type ProductUpdateInput,
-  type ShipOrderInput,
 } from '../service/admin';
 import { isRecoverableApiError } from '../service/http';
 

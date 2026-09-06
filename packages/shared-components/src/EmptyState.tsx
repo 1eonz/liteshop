@@ -9,8 +9,8 @@ export interface EmptyStateProps {
 
 /** 空状态组件，使用语义化区域向辅助技术说明当前状态。 */
 export function EmptyState({
-  title = '暂无内容',
-  description = '这里还没有可展示的数据。',
+  title = 'No content',
+  description = 'There is nothing to display.',
 }: EmptyStateProps): JSX.Element {
   return (
     <section className="liteshop-empty" role="status">

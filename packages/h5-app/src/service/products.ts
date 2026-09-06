@@ -3,15 +3,10 @@ import type {
   CategorySummary,
   PageResponse,
   ProductDetailResponse,
+  ProductListQuery,
   ProductSummary,
 } from '@liteshop/shared-types';
 import { httpClient } from './http';
-
-export interface ProductListQuery {
-  page?: number;
-  pageSize?: number;
-  q?: string;
-}
 
 /** 商品 API 管理层，页面和组件禁止直接发起 HTTP 请求。 */
 export async function listProducts(

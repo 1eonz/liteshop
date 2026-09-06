@@ -1,19 +1,5 @@
-import type { ApiEnvelope } from '@liteshop/shared-types';
+import type { ApiEnvelope, NotificationResponse } from '@liteshop/shared-types';
 import { httpClient } from './http';
-
-export interface NotificationItem {
-  id: number;
-  type: string;
-  title: string;
-  content: string;
-  readAt: string | null;
-  createdAt: string;
-}
-
-export interface NotificationResponse {
-  items: NotificationItem[];
-  unreadCount: number;
-}
 
 /** 读取当前用户站内通知。 */
 export async function listNotifications(): Promise<NotificationResponse> {

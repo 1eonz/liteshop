@@ -7,6 +7,8 @@ import { calculateFreight, createOrder, listAddresses } from '../../service/orde
 import { removeCartItem } from '../../service/cart';
 import { useCartStore } from '../../store/cart';
 import { formatPrice } from '../../utils/format-price';
+import { useSessionStore } from '../../store/session';
+import { ErrorState } from '@liteshop/shared-components';
 
 interface OrderConfirmLocationState {
   selectedIds?: number[];
@@ -18,6 +20,7 @@ export function OrderConfirmPage(): JSX.Element {
   const location = useLocation();
   const allLines = useCartStore((state) => state.lines);
   const clearCart = useCartStore((state) => state.clear);
+  const authenticated = useSessionStore((state) => Boolean(state.accessToken));
   const selectedIds = (location.state as OrderConfirmLocationState | null)?.selectedIds;
   const lines = useMemo(
     () =>
@@ -28,11 +31,9 @@ export function OrderConfirmPage(): JSX.Element {
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const addressesQuery = useQuery({
-    queryKey: ['addresses'],
-    queryFn: async () => {
-      if (!window.localStorage.getItem('liteshop.accessToken')) return [];
-      return listAddresses();
-    },
+    queryKey: ['addresses', authenticated],
+    enabled: authenticated,
+    queryFn: listAddresses,
   });
   const address = addressesQuery.data?.find((item) => item.isDefault) ?? addressesQuery.data?.[0];
   const productAmount = useMemo(
@@ -58,7 +59,7 @@ export function OrderConfirmPage(): JSX.Element {
   const total = productAmount + freightAmount;
   const [submit, loading] = useDebounceAction(async () => {
     if (!address || !lines.length) return;
-    if (!window.localStorage.getItem('liteshop.accessToken')) {
+    if (!authenticated) {
       navigate('/login', { state: { from: '/order-confirm' } });
       return;
     }
@@ -113,16 +114,9 @@ export function OrderConfirmPage(): JSX.Element {
   if (addressesQuery.isError)
     return (
       <main className="trade-page">
-        <p className="feedback error-state" role="alert">
+        <ErrorState onRetry={() => void addressesQuery.refetch()}>
           收货地址读取失败，请先登录或重试。
-        </p>
-        <button
-          className="primary-action"
-          type="button"
-          onClick={() => void addressesQuery.refetch()}
-        >
-          重试
-        </button>
+        </ErrorState>
       </main>
     );
   return (

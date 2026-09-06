@@ -6,7 +6,12 @@ import type {
   OrderDetail,
   PageResponse,
   ProductDetailResponse,
+  ProductCreateInput,
+  ProductUpdateInput,
   ProductSummary,
+  AdminProductQuery,
+  ShipOrderInput,
+  OrderManagementInput,
   AdminPermission,
   AdminRole,
   AuditLogEntry,
@@ -15,63 +20,6 @@ import type {
   MemberSummary,
 } from '@liteshop/shared-types';
 import { httpClient } from './http';
-
-export interface AdminProductQuery {
-  page?: number;
-  pageSize?: number;
-  q?: string;
-}
-export interface ProductUpdateInput {
-  name?: string;
-  subtitle?: string;
-  brand?: string;
-  description?: string;
-  detailHtml?: string;
-  detailImages?: string[];
-  status?: 'DRAFT' | 'ON_SHELF' | 'OFF_SHELF';
-}
-export interface ProductSkuCreateInput {
-  code: string;
-  name: string;
-  priceCents: number;
-  costCents?: number;
-  physicalStock?: number;
-  safetyStock?: number;
-  weightGrams?: number | null;
-  image?: string;
-  barCode?: string;
-  status?: 'ACTIVE' | 'DISABLED';
-  sortOrder?: number;
-  specs?: Record<string, string>;
-}
-export interface ProductCreateInput {
-  categoryId?: number | null;
-  name: string;
-  subtitle?: string;
-  brand?: string;
-  mainImages?: Array<Record<string, unknown>>;
-  detailImages?: string[];
-  detailHtml?: string;
-  seoTitle?: string | null;
-  seoDescription?: string | null;
-  seoKeywords?: string | null;
-  specDefinitions?: Array<{
-    name: string;
-    sortOrder?: number;
-    values?: Array<{ value: string; sortOrder?: number }>;
-  }>;
-  description?: string;
-  status?: 'DRAFT' | 'ON_SHELF' | 'OFF_SHELF';
-  skus: ProductSkuCreateInput[];
-}
-export interface ShipOrderInput {
-  logisticsCompanyCode: string;
-  trackingNo: string;
-}
-export interface OrderManagementInput {
-  remark?: string;
-  addressSnapshot?: Record<string, string>;
-}
 
 /** 后台商品列表。 */
 export async function listAdminProducts(

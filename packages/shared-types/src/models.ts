@@ -159,6 +159,7 @@ export interface LoginRequest {
 export interface CartItemInput {
   skuId: number;
   quantity: number;
+  priceCents: number;
 }
 /** 订单明细快照。 */
 export interface OrderItemInput {
@@ -173,6 +174,7 @@ export interface OrderCreateRequest {
   totalAmount: number;
   productAmount?: number;
   freightAmount?: number;
+  remark?: string;
 }
 /** 支付创建请求。 */
 export interface PaymentCreateRequest {
@@ -350,4 +352,147 @@ export interface RefundResponse {
 
 /** 管理后台数据看板与库存行。 */
 export interface DashboardData {
- 
+  metrics: {
+    salesAmount: number;
+    orderCount: number;
+    productCount: number;
+    pendingShipmentCount: number;
+  };
+  trend: Array<{ date: string; amount: number; orderCount?: number }>;
+  ranking: Array<{ name: string; salesCount: number }>;
+  todo?: { pendingShipments: number; lowStockSkus: number; auditItems: number };
+}
+export interface InventoryRow {
+  skuId: number;
+  skuCode: string;
+  name: string;
+  physicalStock: number;
+  availableStock: number;
+  lockedStock: number;
+  safetyStock: number;
+  warning: boolean;
+}
+
+export interface CategorySummary {
+  id: number;
+  parentId: number | null;
+  name: string;
+  icon: string;
+  sortOrder: number;
+  isActive?: boolean;
+}
+export interface AuditLogEntry {
+  id: number;
+  adminId: number | null;
+  resourceType: string;
+  resourceId: number | null;
+  action: string;
+  requestId: string;
+  beforeData: Record<string, unknown> | null;
+  afterData: Record<string, unknown> | null;
+  ip: string;
+  userAgent: string;
+  createdAt: string;
+}
+export interface AdminRole {
+  id: number;
+  name: string;
+  permissions: string[];
+}
+export interface AdminPermission {
+  id: number;
+  code: string;
+}
+
+export type MemberLevel = 'NORMAL' | 'MEMBER';
+
+export interface MemberSummary {
+  id: number;
+  nickname: string;
+  avatar: string;
+  phone: string;
+  memberLevel: MemberLevel;
+  points: number;
+  tags: string[];
+  createdAt: string;
+  orderCount: number;
+  totalSpent: number;
+}
+
+export interface MemberDetail extends MemberSummary {
+  addresses: Array<{
+    id: number;
+    receiverName: string;
+    phone: string;
+    detail: string;
+    isDefault: boolean;
+  }>;
+  orders: Array<{
+    id: number;
+    orderNo: string;
+    status: string;
+    totalAmount: number;
+  }>;
+}
+
+export interface FreightTemplateItem {
+  id: number;
+  regionCodes: string[];
+  firstUnit: string;
+  firstFee: number;
+  additionalUnit: string;
+  additionalFee: number;
+  freeCondition: Record<string, unknown> | null;
+}
+
+export type StoreComponentType =
+  | 'SearchBar'
+  | 'Carousel'
+  | 'CategoryGrid'
+  | 'ProductGrid'
+  | 'ActivityBanner'
+  | 'Tabbar'
+  | 'RichText'
+  | 'ImageBanner'
+  | 'Spacer'
+  | 'ProductList';
+
+export interface StoreComponentSchema {
+  id: string;
+  type: StoreComponentType;
+  props: Record<string, unknown>;
+  style: Record<string, string>;
+}
+
+export interface StorePageSchema {
+  id: number;
+  slug: string;
+  version: number;
+  isHome: boolean;
+  components: StoreComponentSchema[];
+}
+export interface FreightTemplate {
+  id: number;
+  name: string;
+  type: 'WEIGHT' | 'PIECE' | 'REGION';
+  isDefault: boolean;
+  enabled: boolean;
+  items: FreightTemplateItem[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InventoryLedgerEntry {
+  id: number;
+  skuId: number;
+  eventType: InventoryEventType;
+  quantity: number;
+  availableAfter: number;
+  lockedAfter: number;
+  referenceNo?: string;
+  reason?: string | null;
+  physicalBefore?: number;
+  physicalAfter?: number;
+  lockedBefore?: number;
+  createdAt: string;
+}

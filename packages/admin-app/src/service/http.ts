@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getAccessToken } from '../store/session';
 
 /** 后台统一 HTTP 客户端，认证、请求 ID 和错误转换在此处集中接入。 */
 export const httpClient = axios.create({
@@ -14,9 +15,7 @@ export function isRecoverableApiError(error: unknown): boolean {
 }
 
 httpClient.interceptors.request.use((config) => {
-  const accessToken =
-    window.localStorage.getItem('liteshop.admin.accessToken') ??
-    window.localStorage.getItem('liteshop.accessToken');
+  const accessToken = getAccessToken();
   if (accessToken) config.headers.set('Authorization', `Bearer ${accessToken}`);
   config.headers.set('X-Request-Id', crypto.randomUUID());
   return config;

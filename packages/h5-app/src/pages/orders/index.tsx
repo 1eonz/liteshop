@@ -4,6 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { BottomTabBar } from '../../components/BottomTabBar';
 import { listOrders } from '../../service/orders';
 import { formatPrice } from '../../utils/format-price';
+import { useSessionStore } from '../../store/session';
+import { ErrorState, FeedbackState } from '@liteshop/shared-components';
 
 const statusLabels: Record<string, string> = {
   PENDING_PAYMENT: '待付款',
@@ -15,26 +17,23 @@ const statusLabels: Record<string, string> = {
 
 /** 用户订单列表，所有订单状态来自共享状态机枚举值。 */
 export function OrdersPage(): JSX.Element {
-  const authenticated = Boolean(window.localStorage.getItem('liteshop.accessToken'));
+  const authenticated = useSessionStore((state) => Boolean(state.accessToken));
   const query = useQuery({
     queryKey: ['orders'],
     queryFn: () => listOrders(),
     enabled: authenticated,
   });
-  if (!authenticated)
-    return <Navigate to="/login" state={{ from: '/orders' }} replace />;
+  if (!authenticated) return <Navigate to="/login" state={{ from: '/orders' }} replace />;
   if (query.isLoading)
     return (
       <main className="trade-page">
-        <p className="feedback">订单加载中…</p>
+        <FeedbackState>订单加载中…</FeedbackState>
       </main>
     );
   if (query.isError)
     return (
       <main className="trade-page">
-        <p className="feedback error-state" role="alert">
-          订单加载失败，请刷新重试。
-        </p>
+        <ErrorState onRetry={() => void query.refetch()}>订单加载失败，请刷新重试。</ErrorState>
       </main>
     );
   const orders = query.data?.items ?? [];

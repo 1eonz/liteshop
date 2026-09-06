@@ -1,10 +1,12 @@
 import type { JSX } from 'react';
 import { useCallback } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, Navigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDebounceAction } from '../../hooks/useDebounceAction';
 import { cancelOrder, confirmOrder, getOrder } from '../../service/orders';
 import { formatPrice } from '../../utils/format-price';
+import { useSessionStore } from '../../store/session';
+import { ErrorState, FeedbackState } from '@liteshop/shared-components';
 
 const statusLabels: Record<string, string> = {
   PENDING_PAYMENT: '待付款',
@@ -16,12 +18,13 @@ const statusLabels: Record<string, string> = {
 
 /** 用户订单详情，取消和确认收货均通过状态机接口完成。 */
 export function OrderDetailPage(): JSX.Element {
+  const authenticated = useSessionStore((state) => Boolean(state.accessToken));
   const params = useParams<{ orderId: string }>();
   const orderId = Number(params.orderId);
   const queryClient = useQueryClient();
   const query = useQuery({
     queryKey: ['order', orderId],
-    enabled: Number.isInteger(orderId) && orderId > 0,
+    enabled: authenticated && Number.isInteger(orderId) && orderId > 0,
     queryFn: () => getOrder(orderId),
   });
   const mutateOrder = useCallback(
@@ -35,18 +38,17 @@ export function OrderDetailPage(): JSX.Element {
   );
   const [runCancel, cancelling] = useDebounceAction(() => mutateOrder('cancel'), 500);
   const [runConfirm, confirming] = useDebounceAction(() => mutateOrder('confirm'), 500);
+  if (!authenticated) return <Navigate to="/login" state={{ from: '/orders' }} replace />;
   if (query.isLoading)
     return (
       <main className="trade-page">
-        <p className="feedback">订单加载中…</p>
+        <FeedbackState>订单加载中…</FeedbackState>
       </main>
     );
   if (query.isError || !query.data)
     return (
       <main className="trade-page">
-        <p className="feedback error-state" role="alert">
-          订单不存在或加载失败。
-        </p>
+        <ErrorState onRetry={() => void query.refetch()}>订单不存在或加载失败。</ErrorState>
         <Link to="/orders">返回订单列表</Link>
       </main>
     );

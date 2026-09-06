@@ -1,14 +1,17 @@
 import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { PaymentProvider } from '@liteshop/shared-types';
 import { useDebounceAction } from '../../hooks/useDebounceAction';
 import { createPayment, getOrder } from '../../service/orders';
 import { formatPrice } from '../../utils/format-price';
+import { ErrorState, FeedbackState } from '@liteshop/shared-components';
+import { useSessionStore } from '../../store/session';
 
 /** H5 支付页面，创建支付单后等待渠道 SDK 或沙箱回调接入。 */
 export function PaymentPage(): JSX.Element {
+  const authenticated = useSessionStore((state) => Boolean(state.accessToken));
   const params = useParams<{ orderId: string }>();
   const orderId = Number(params.orderId);
   const navigate = useNavigate();
@@ -17,7 +20,7 @@ export function PaymentPage(): JSX.Element {
   const [error, setError] = useState('');
   const query = useQuery({
     queryKey: ['order', orderId],
-    enabled: Number.isInteger(orderId) && orderId > 0,
+    enabled: authenticated && Number.isInteger(orderId) && orderId > 0,
     queryFn: () => getOrder(orderId),
   });
   const startPayment = useCallback(async () => {
@@ -31,16 +34,17 @@ export function PaymentPage(): JSX.Element {
     }
   }, [orderId, provider, query.data]);
   const [pay, paying] = useDebounceAction(startPayment, 800);
+  if (!authenticated) return <Navigate to="/login" state={{ from: '/payment' }} replace />;
   if (query.isLoading)
     return (
       <main className="trade-page">
-        <p className="feedback">支付信息加载中…</p>
+        <FeedbackState>支付信息加载中…</FeedbackState>
       </main>
     );
   if (query.isError || !query.data)
     return (
       <main className="trade-page">
-        <p className="feedback error-state">订单不存在或已失效。</p>
+        <ErrorState>订单不存在或已失效。</ErrorState>
         <Link to="/orders">返回订单列表</Link>
       </main>
     );

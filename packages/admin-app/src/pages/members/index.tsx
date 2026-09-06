@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useDebounceAction } from '../../hooks';
 import { useMemberMutations, useMemberQuery, useMembersQuery } from '../../hooks/useAdminQueries';
 import { formatPrice } from '../../utils/format-price';
+import { ErrorState, FeedbackState } from '@liteshop/shared-components';
 
 /** 会员管理页面，列表与详情在同一工作区内完成审阅和维护。 */
 export function MembersPage(): JSX.Element {
@@ -41,16 +42,16 @@ export function MembersPage(): JSX.Element {
   if (membersQuery.isLoading) {
     return (
       <div className="editor-page">
-        <div className="feedback">会员加载中…</div>
+        <FeedbackState>会员加载中…</FeedbackState>
       </div>
     );
   }
   if (membersQuery.isError) {
     return (
       <div className="editor-page">
-        <div className="feedback error-state" role="alert">
+        <ErrorState onRetry={() => void membersQuery.refetch()}>
           会员加载失败，请检查权限后重试。
-        </div>
+        </ErrorState>
       </div>
     );
   }

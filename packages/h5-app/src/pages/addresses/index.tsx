@@ -1,16 +1,17 @@
 import type { FormEvent, JSX } from 'react';
 import { useCallback, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { Address } from '@liteshop/shared-types';
+import type { Address, AddressInput } from '@liteshop/shared-types';
 import { useDebounceAction } from '../../hooks/useDebounceAction';
 import {
   createAddress,
   deleteAddress,
   listAddresses as listUserAddresses,
   updateAddress,
-  type AddressInput,
 } from '../../service/user';
+import { useSessionStore } from '../../store/session';
+import { ErrorState, FeedbackState } from '@liteshop/shared-components';
 
 const blankAddress: AddressInput = {
   receiverName: '',
@@ -24,9 +25,11 @@ const blankAddress: AddressInput = {
 
 /** 收货地址管理页面，新增、编辑、删除均通过幂等 API。 */
 export function AddressesPage(): JSX.Element {
+  const authenticated = useSessionStore((state) => Boolean(state.accessToken));
   const queryClient = useQueryClient();
   const query = useQuery({
     queryKey: ['addresses'],
+    enabled: authenticated,
     queryFn: listUserAddresses,
   });
   const [editing, setEditing] = useState<Address | null>(null);
@@ -86,6 +89,7 @@ export function AddressesPage(): JSX.Element {
     event.preventDefault();
     void runSave();
   };
+  if (!authenticated) return <Navigate to="/login" state={{ from: '/addresses' }} replace />;
   return (
     <main className="trade-page">
       <header className="trade-header">
@@ -94,8 +98,10 @@ export function AddressesPage(): JSX.Element {
         </Link>
         <h1>收货地址</h1>
       </header>
-      {query.isLoading && <p className="feedback">地址加载中…</p>}
-      {query.isError && <p className="feedback error-state">地址加载失败，请重试。</p>}
+      {query.isLoading && <FeedbackState>地址加载中…</FeedbackState>}
+      {query.isError && (
+        <ErrorState onRetry={() => void query.refetch()}>地址加载失败，请重试。</ErrorState>
+      )}
       <section className="address-list">
         {(query.data ?? []).map((address) => (
           <article className="address-item" key={address.id}>

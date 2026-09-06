@@ -1,6 +1,6 @@
 import type { JSX } from 'react';
 import { useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDebounceAction } from '../../hooks/useDebounceAction';
 import {
@@ -8,11 +8,18 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
 } from '../../service/notifications';
+import { ErrorState, FeedbackState } from '@liteshop/shared-components';
+import { useSessionStore } from '../../store/session';
 
 /** 站内通知页面，提供未读状态和已读操作。 */
 export function NotificationsPage(): JSX.Element {
+  const authenticated = useSessionStore((state) => Boolean(state.accessToken));
   const queryClient = useQueryClient();
-  const notificationQuery = useQuery({ queryKey: ['notifications'], queryFn: listNotifications });
+  const notificationQuery = useQuery({
+    queryKey: ['notifications'],
+    enabled: authenticated,
+    queryFn: listNotifications,
+  });
   const readMutation = useMutation({
     mutationFn: markNotificationRead,
     retry: 0,
@@ -32,26 +39,20 @@ export function NotificationsPage(): JSX.Element {
     () => notificationQuery.data?.unreadCount ?? 0,
     [notificationQuery.data],
   );
+  if (!authenticated) return <Navigate to="/login" state={{ from: '/notifications' }} replace />;
   if (notificationQuery.isLoading) {
     return (
       <main className="trade-page">
-        <p className="feedback">通知加载中…</p>
+        <FeedbackState>通知加载中…</FeedbackState>
       </main>
     );
   }
   if (notificationQuery.isError) {
     return (
       <main className="trade-page">
-        <p className="feedback error-state" role="alert">
+        <ErrorState onRetry={() => void notificationQuery.refetch()}>
           通知加载失败，请重试。
-        </p>
-        <button
-          className="primary-action"
-          type="button"
-          onClick={() => void notificationQuery.refetch()}
-        >
-          重试
-        </button>
+        </ErrorState>
       </main>
     );
   }

@@ -1,6 +1,7 @@
 import type { FormEvent, JSX } from 'react';
 import { useState } from 'react';
 import { useAdminCategoriesQuery, useAdminCategoryMutations, useDebounceAction } from '../../hooks';
+import { ErrorState, FeedbackState } from '@liteshop/shared-components';
 
 /** 商品分类管理页面，支持新增、重命名和停用。 */
 export function CategoriesPage(): JSX.Element {
@@ -47,7 +48,13 @@ export function CategoriesPage(): JSX.Element {
   if (query.isLoading)
     return (
       <div className="editor-page">
-        <div className="feedback">分类加载中…</div>
+        <FeedbackState>分类加载中…</FeedbackState>
+      </div>
+    );
+  if (query.isError)
+    return (
+      <div className="editor-page">
+        <ErrorState onRetry={() => void query.refetch()}>分类加载失败，请刷新重试。</ErrorState>
       </div>
     );
   return (

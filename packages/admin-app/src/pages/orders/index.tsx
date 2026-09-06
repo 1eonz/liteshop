@@ -7,6 +7,7 @@ import {
   useShipAdminOrderMutation,
 } from '../../hooks';
 import { formatPrice } from '../../utils/format-price';
+import { ErrorState, FeedbackState } from '@liteshop/shared-components';
 
 const statusLabels: Record<string, string> = {
   PENDING_PAYMENT: '待付款',
@@ -91,15 +92,15 @@ export function OrdersPage(): JSX.Element {
   if (ordersQuery.isLoading)
     return (
       <div className="editor-page">
-        <div className="feedback">订单加载中…</div>
+        <FeedbackState>订单加载中…</FeedbackState>
       </div>
     );
   if (ordersQuery.isError)
     return (
       <div className="editor-page">
-        <div className="feedback error-state" role="alert">
+        <ErrorState onRetry={() => void ordersQuery.refetch()}>
           订单加载失败，请刷新重试。
-        </div>
+        </ErrorState>
       </div>
     );
   const orders = ordersQuery.data?.items ?? [];

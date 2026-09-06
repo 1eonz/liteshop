@@ -1,8 +1,14 @@
 import type { JSX } from 'react';
-import { Link, NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Navigate, Outlet, useLocation } from 'react-router-dom';
+import { useSessionStore } from '../store/session';
 
 /** 后台统一路由布局，页面视图通过 Outlet 注入，导航状态由路由驱动。 */
 export function AdminLayout(): JSX.Element {
+  const location = useLocation();
+  const authenticated = useSessionStore((state) => Boolean(state.accessToken));
+  if (!authenticated) {
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  }
   return (
     <main className="admin-shell">
       <aside className="admin-nav">

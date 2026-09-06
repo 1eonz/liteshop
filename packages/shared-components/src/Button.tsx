@@ -1,9 +1,10 @@
 'use client';
 
-import type { ButtonHTMLAttributes, PropsWithChildren, JSX } from 'react';
+import type { ButtonHTMLAttributes, PropsWithChildren, JSX, ReactNode } from 'react';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
+  loadingLabel?: ReactNode;
   variant?: 'primary' | 'secondary' | 'danger';
 }
 
@@ -11,6 +12,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 export function Button({
   children,
   loading = false,
+  loadingLabel = 'Loading…',
   variant = 'primary',
   disabled,
   className,
@@ -25,7 +27,7 @@ export function Button({
       disabled={disabled || loading}
       aria-busy={loading}
     >
-      {loading ? '处理中…' : children}
+      {loading ? loadingLabel : children}
     </button>
   );
 }

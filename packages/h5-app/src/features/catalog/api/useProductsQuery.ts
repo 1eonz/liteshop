@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import type { ProductDetailResponse } from '@liteshop/shared-types';
-import { demoProducts } from '../../../store/catalog';
-import { getProduct, listProducts, type ProductListQuery } from '../../../service/products';
+import type { ProductDetailResponse, ProductListQuery } from '@liteshop/shared-types';
+import { demoProducts } from '../model/demo-products';
+import { getProduct, listProducts } from '../../../service/products';
 import { isRecoverableApiError } from '../../../service/http';
 
 const demoPage = (

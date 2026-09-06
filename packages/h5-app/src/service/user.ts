@@ -1,28 +1,5 @@
-import type { Address, ApiEnvelope } from '@liteshop/shared-types';
+import type { Address, AddressInput, ApiEnvelope, UserProfile } from '@liteshop/shared-types';
 import { httpClient } from './http';
-
-export interface UserProfile {
-  id: number;
-  phone: string;
-  nickname: string;
-  avatar: string;
-  gender: string;
-  status: string;
-  birthday: string | null;
-  lastLoginAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface AddressInput {
-  receiverName: string;
-  phone: string;
-  provinceCode: string;
-  cityCode: string;
-  districtCode: string;
-  detail: string;
-  isDefault: boolean;
-}
 
 /** 读取当前用户资料。 */
 export async function getProfile(): Promise<UserProfile> {

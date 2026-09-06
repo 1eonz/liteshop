@@ -9,8 +9,9 @@
 - `packages/shared-types/`：导出订单、支付、库存、商品、分类、RBAC、审计和整数分工具；前端禁止重复声明领域类型。
 - `packages/shared-tokens/`：提供颜色、图表、字体、间距、圆角、阴影和画廊风格 CSS 变量。
 - `packages/shared-components/`：提供 Button、EmptyState、ProductCard 等基础组件。
-- `packages/h5-app/`：按 `pages/components/hooks/service/store/utils/router` 分层，并在 `features/catalog`、`features/cart` 承载领域查询、首页配置和购物车模型；首页、分类、搜索、详情、SKU 抽屉、购物车、确认订单、支付、订单、地址、用户中心已接入；SKU 抽屉支持 Escape、焦点恢复和滚动锁定。
-- `packages/admin-app/`：按同样分层，并在 `features/dashboard` 承载看板指标模型；看板、商品列表/真实新建/编辑、分类、订单、库存、审计、RBAC、设置已接入；写操作统一走同一语义的 `useDebounceAction`，登录 API 位于 `service/auth.ts`。
+- `packages/h5-app/`：按 `pages/components/features/hooks/service/store/utils/router` 分层；`features/catalog` 承载商品查询、首页配置，`features/cart` 承载购物车领域模型；商品详情的轮播、评价、SKU 抽屉位于 `pages/product-detail/components`，购物车商品行位于 `pages/cart/components`；认证状态统一由 `store/session.ts` 管理，地址、通知、订单详情和支付页面有登录守卫，访客购物车和商品浏览保持匿名可用。
+- `packages/admin-app/`：按同样分层，并在 `features/dashboard` 承载看板指标模型；看板、商品列表/真实新建/编辑、分类、订单、库存、审计、RBAC、设置已接入；认证状态由 `store/session.ts` 管理，`AdminLayout` 对后台路由执行管理员令牌守卫，写操作统一走共享 `useDebounceAction`。
+- `packages/shared-components/`：提供 `Button`、`EmptyState`、`FeedbackState`、`ErrorState`、`ProductCard` 和唯一的 `useDebounceAction` 实现。
 - `packages/site-app/`：Next.js 官网包骨架，属于后续阶段。
 - `backend/app/`：FastAPI 分层骨架：api/core/models/schemas/services/repositories/tasks/enums/errors；订单、库存、支付、用户、设置和后台 API 已实现，领域异常集中于 `errors/domain.py`，主题设置由 `services/settings.py` 编排。
 - `backend/alembic/`：异步 Alembic 迁移及 5 个可逆迁移文件。
@@ -37,6 +38,8 @@
 
 - ✅ 生产/预发布环境若未启用 `LITESHOP_USE_DATABASE` 会拒绝启动；前端演示回退仅在 Vite 开发模式启用。
 - ✅ API 不再直接依赖仓储异常或系统设置仓储；前端登录不再绕过 service 层。
+- ✅ 前端认证令牌统一由各端 `store/session.ts` 管理；后台不再复用 H5 用户令牌，后台布局和受保护页面均有认证守卫。
+- ✅ H5 登录验证码按钮实现 60 秒前端冷却，发送动作仍由 `useDebounceAction` 防重复点击，后端继续执行 Redis/接口限流。
 
 ### 当前未处理
 
@@ -44,6 +47,8 @@
 - 真实生产数据库仓储、微信/支付宝 SDK 和支付沙箱尚未接入；当前支付回调为本地签名验证实现。
 - 收藏为浏览器本地存储；settings/page schema 为开发进程内存储；均属于后续持久化范围。
 - Impeccable 完整 HTML/CSS 解析模块在当前环境缺失，但机械 detector 已对 H5/Admin 返回空结果。
+- 页面层仍保留少量直接调用 `service` 方法的交易编排代码（未出现组件内裸 Axios）；后续若交易规则继续增长，应把对应查询/mutation 下沉到 `features/*/api`，页面只组合 Hook。
+- H5/Admin 中的兼容入口 `src/useDebounceAction.ts` 和 `hooks/useDebounceAction.ts` 仍保留用于旧调用方，不得再增加新的实现或入口。
 
 ## Agent 工作流适配建议
 

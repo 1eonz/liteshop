@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAdminProductsQuery } from '../../hooks';
 import { formatPrice } from '../../utils/format-price';
+import { ErrorState, FeedbackState } from '@liteshop/shared-components';
 
 const statusLabels: Record<string, string> = {
   DRAFT: '草稿',
@@ -17,15 +18,13 @@ export function ProductsPage(): JSX.Element {
   if (query.isLoading)
     return (
       <div className="editor-page">
-        <div className="feedback">商品加载中…</div>
+        <FeedbackState>商品加载中…</FeedbackState>
       </div>
     );
   if (query.isError)
     return (
       <div className="editor-page">
-        <div className="feedback error-state" role="alert">
-          商品加载失败，请刷新重试。
-        </div>
+        <ErrorState onRetry={() => void query.refetch()}>商品加载失败，请刷新重试。</ErrorState>
       </div>
     );
   const products = query.data?.items ?? [];

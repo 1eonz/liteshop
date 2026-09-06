@@ -9,6 +9,9 @@ import { isRecoverableApiError } from '../../service/http';
 import { useCartStore } from '../../store/cart';
 import { formatPrice } from '../../utils/format-price';
 import { toLocalCartItem } from '../../features/cart';
+import { useSessionStore } from '../../store/session';
+import { ErrorState, FeedbackState } from '@liteshop/shared-components';
+import { CartLineItem } from './components/CartLineItem';
 
 const EMPTY_CART_ITEMS: CartItem[] = [];
 
@@ -20,10 +23,13 @@ export function CartPage(): JSX.Element {
   const updateLocal = useCartStore((state) => state.updateLine);
   const removeLocal = useCartStore((state) => state.removeLine);
   const setLines = useCartStore((state) => state.setLines);
-  const isAuthenticated = Boolean(window.localStorage.getItem('liteshop.accessToken'));
+  const isAuthenticated = useSessionStore((state) => Boolean(state.accessToken));
   const hydratedRef = useRef(false);
   const [selectedIds, setSelectedIds] = useState<number[]>(localLines.map((line) => line.skuId));
   const [actionFeedback, setActionFeedback] = useState('');
+  useEffect(() => {
+    if (!isAuthenticated) hydratedRef.current = false;
+  }, [isAuthenticated]);
   const cartQuery = useQuery({
     queryKey: ['cart', isAuthenticated],
     enabled: isAuthenticated,
@@ -124,18 +130,13 @@ export function CartPage(): JSX.Element {
   if (isAuthenticated && cartQuery.isLoading)
     return (
       <main className="trade-page">
-        <p className="feedback">购物车加载中…</p>
+        <FeedbackState>购物车加载中…</FeedbackState>
       </main>
     );
   if (isAuthenticated && cartQuery.isError)
     return (
       <main className="trade-page">
-        <p className="feedback error-state" role="alert">
-          购物车读取失败，请重试。
-        </p>
-        <button className="primary-action" type="button" onClick={() => void cartQuery.refetch()}>
-          重试
-        </button>
+        <ErrorState onRetry={() => void cartQuery.refetch()}>购物车读取失败，请重试。</ErrorState>
       </main>
     );
   return (
@@ -176,54 +177,20 @@ export function CartPage(): JSX.Element {
           </label>
           <section className="cart-list" aria-label="购物车商品">
             {lines.map((line) => (
-              <article className="cart-item" key={line.skuId}>
-                <input
-                  type="checkbox"
-                  checked={selectedIds.includes(line.skuId)}
-                  onChange={(event) =>
-                    setSelectedIds((ids) =>
-                      event.target.checked
-                        ? [...ids, line.skuId]
-                        : ids.filter((id) => id !== line.skuId),
-                    )
-                  }
-                  aria-label={`选择商品 ${line.name}`}
-                />
-                <div className="cart-thumb" aria-hidden="true" />
-                <div className="cart-line-content">
-                  <h2>{line.name}</h2>
-                  <p className="muted">{line.skuCode}</p>
-                  <strong>{formatPrice(line.priceCents)}</strong>
-                </div>
-                <div className="quantity-control">
-                  <button
-                    type="button"
-                    onClick={() => void changeQuantity(line.skuId, Math.max(1, line.quantity - 1))}
-                    disabled={changing || line.quantity <= 1}
-                    aria-label="减少数量"
-                  >
-                    −
-                  </button>
-                  <span>{line.quantity}</span>
-                  <button
-                    type="button"
-                    onClick={() => void changeQuantity(line.skuId, line.quantity + 1)}
-                    disabled={changing}
-                    aria-label="增加数量"
-                  >
-                    ＋
-                  </button>
-                </div>
-                <button
-                  className="icon-action"
-                  type="button"
-                  onClick={() => void remove(line.skuId)}
-                  disabled={removing}
-                  aria-label={`删除 ${line.name}`}
-                >
-                  ×
-                </button>
-              </article>
+              <CartLineItem
+                key={line.skuId}
+                line={line}
+                selected={selectedIds.includes(line.skuId)}
+                changing={changing}
+                removing={removing}
+                onToggleSelected={(checked) =>
+                  setSelectedIds((ids) =>
+                    checked ? [...ids, line.skuId] : ids.filter((id) => id !== line.skuId),
+                  )
+                }
+                onChangeQuantity={(quantity) => void changeQuantity(line.skuId, quantity)}
+                onRemove={() => void remove(line.skuId)}
+              />
             ))}
           </section>
           <footer className="checkout-bar">

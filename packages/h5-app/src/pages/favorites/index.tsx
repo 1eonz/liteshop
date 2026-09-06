@@ -5,37 +5,31 @@ import { ProductCard } from '../../components/ProductCard';
 import { useProductsQuery } from '../../hooks/useProductsQuery';
 import { listServerFavoriteProductIds } from '../../service/favorites';
 import { useQuery } from '@tanstack/react-query';
+import { useSessionStore } from '../../store/session';
+import { ErrorState, FeedbackState } from '@liteshop/shared-components';
 
 /** 收藏页面，登录用户读取服务端持久化收藏。 */
 export function FavoritesPage(): JSX.Element {
-  const authenticated = Boolean(window.localStorage.getItem('liteshop.accessToken'));
+  const authenticated = useSessionStore((state) => Boolean(state.accessToken));
   const productsQuery = useProductsQuery();
   const favoritesQuery = useQuery({
     queryKey: ['favorites'],
     queryFn: listServerFavoriteProductIds,
     enabled: authenticated,
   });
-  if (!authenticated)
-    return <Navigate to="/login" state={{ from: '/favorites' }} replace />;
+  if (!authenticated) return <Navigate to="/login" state={{ from: '/favorites' }} replace />;
   if (favoritesQuery.isLoading)
     return (
       <main className="trade-page">
-        <p className="feedback">收藏加载中…</p>
+        <FeedbackState>收藏加载中…</FeedbackState>
       </main>
     );
   if (favoritesQuery.isError)
     return (
       <main className="trade-page">
-        <p className="feedback error-state" role="alert">
+        <ErrorState onRetry={() => void favoritesQuery.refetch()}>
           收藏加载失败，请重试。
-        </p>
-        <button
-          className="primary-action"
-          type="button"
-          onClick={() => void favoritesQuery.refetch()}
-        >
-          重试
-        </button>
+        </ErrorState>
       </main>
     );
   const ids = favoritesQuery.data ?? [];

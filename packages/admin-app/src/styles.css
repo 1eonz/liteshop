@@ -298,6 +298,11 @@ button:disabled {
 .feedback {
   margin-block: var(--spacing-2);
 }
+
+.feedback-group {
+  display: grid;
+  gap: var(--spacing-3);
+}
 .chart-loading {
   min-height: var(--admin-chart-large-height);
   display: grid;

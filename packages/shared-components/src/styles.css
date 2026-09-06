@@ -62,12 +62,16 @@
   color: var(--color-text-primary);
   font-size: var(--font-size-sm);
 }
+.liteshop-product-card__subtitle {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
 .liteshop-product-card__price {
   color: var(--color-primary-700);
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
 }
-.liteshop-product-card small {
+.liteshop-product-card__sales {
   padding-bottom: var(--spacing-3);
   color: var(--color-text-tertiary);
 }

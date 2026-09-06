@@ -1,8 +1,8 @@
 export { httpClient } from './http';
 export { loginAdmin } from './auth';
-export type { AdminLoginInput, AdminLoginResult } from './auth';
+export type { AdminLoginInput, AdminLoginResult } from '@liteshop/shared-types';
 export { listProducts } from './products';
-export type { ProductListQuery } from './products';
+export type { ProductListQuery } from '@liteshop/shared-types';
 export {
   adjustInventory,
   getAdminProduct,
@@ -20,4 +20,4 @@ export type {
   ProductSkuCreateInput,
   ProductUpdateInput,
   ShipOrderInput,
-} from './admin';
+} from '@liteshop/shared-types';

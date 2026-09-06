@@ -1,8 +1,9 @@
 import type { FormEvent, JSX } from 'react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDebounceAction } from '../../hooks/useDebounceAction';
 import { login, sendSmsCode } from '../../service/auth';
+import { useSessionStore } from '../../store/session';
 
 interface LoginLocationState {
   from?: string;
@@ -12,11 +13,21 @@ interface LoginLocationState {
 export function LoginPage(): JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
+  const setAccessToken = useSessionStore((state) => state.setAccessToken);
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [feedback, setFeedback] = useState('');
   const [sent, setSent] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+  useEffect(() => {
+    if (countdown <= 0) return undefined;
+    const timer = window.setInterval(() => {
+      setCountdown((current) => Math.max(0, current - 1));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [countdown]);
   const [requestCode, sending] = useDebounceAction(async () => {
+    if (countdown > 0) return;
     if (!/^1\d{10}$/.test(phone)) {
       setFeedback('请输入有效的手机号。');
       return;
@@ -25,6 +36,7 @@ export function LoginPage(): JSX.Element {
     try {
       await sendSmsCode({ phone, purpose: 'LOGIN' });
       setSent(true);
+      setCountdown(60);
       setFeedback('验证码已发送，开发环境验证码为 123456。');
     } catch {
       setFeedback('验证码发送失败，请稍后重试。');
@@ -38,13 +50,13 @@ export function LoginPage(): JSX.Element {
     setFeedback('');
     try {
       const result = await login({ phone, code });
-      window.localStorage.setItem('liteshop.accessToken', result.accessToken);
+      setAccessToken(result.accessToken);
       const target = (location.state as LoginLocationState | null)?.from ?? '/me';
       navigate(target, { replace: true });
     } catch {
       setFeedback('登录失败，请检查验证码后重试。');
     }
-  }, [code, location.state, navigate, phone]);
+  }, [code, location.state, navigate, phone, setAccessToken]);
   const [submit, submitting] = useDebounceAction(submitLogin, 1000);
   const onSubmit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
@@ -87,10 +99,16 @@ export function LoginPage(): JSX.Element {
               <button
                 className="text-action code-action"
                 type="button"
-                disabled={sending || !phone}
+                disabled={sending || countdown > 0 || !phone}
                 onClick={() => void requestCode()}
               >
-                {sending ? '发送中…' : sent ? '重新发送' : '获取验证码'}
+                {sending
+                  ? '发送中…'
+                  : countdown > 0
+                    ? `${countdown}s 后重发`
+                    : sent
+                      ? '重新发送'
+                      : '获取验证码'}
               </button>
             </div>
           </label>

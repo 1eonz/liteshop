@@ -4,6 +4,7 @@ import { useDashboardQuery } from '../../hooks/useAdminQueries';
 import { useDebounceAction } from '../../hooks/useDebounceAction';
 import { formatPrice } from '../../utils/format-price';
 import { buildDashboardMetrics } from '../../features/dashboard';
+import { ErrorState, FeedbackState } from '@liteshop/shared-components';
 
 const SalesTrendChart = lazy(async () => {
   const module = await import('../../components/SalesTrendChart');
@@ -53,11 +54,9 @@ export function DashboardPage(): JSX.Element {
         </button>
       </header>
       {query.isLoading ? (
-        <div className="feedback">看板数据加载中…</div>
+        <FeedbackState>看板数据加载中…</FeedbackState>
       ) : query.isError ? (
-        <div className="feedback error-state" role="alert">
-          看板数据加载失败，请刷新重试。
-        </div>
+        <ErrorState onRetry={() => void query.refetch()}>看板数据加载失败，请刷新重试。</ErrorState>
       ) : (
         <>
           <div className="metrics">

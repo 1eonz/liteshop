@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getAccessToken } from '../store/session';
 
 /** H5 统一 HTTP 客户端，认证、错误转换和请求 ID 在 service 层集中接入。 */
 export const httpClient = axios.create({
@@ -14,7 +15,7 @@ export function isRecoverableApiError(error: unknown): boolean {
 }
 
 httpClient.interceptors.request.use((config) => {
-  const accessToken = window.localStorage.getItem('liteshop.accessToken');
+  const accessToken = getAccessToken();
   if (accessToken) config.headers.set('Authorization', `Bearer ${accessToken}`);
   config.headers.set('X-Request-Id', crypto.randomUUID());
   return config;

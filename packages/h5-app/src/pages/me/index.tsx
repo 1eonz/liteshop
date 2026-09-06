@@ -6,11 +6,13 @@ import { BottomTabBar } from '../../components/BottomTabBar';
 import { useDebounceAction } from '../../hooks/useDebounceAction';
 import { logout } from '../../service/auth';
 import { getProfile } from '../../service/user';
+import { useSessionStore } from '../../store/session';
 
 /** 用户中心页面，集中展示账号、订单、地址和收藏入口。 */
 export function MePage(): JSX.Element {
   const navigate = useNavigate();
-  const authenticated = Boolean(window.localStorage.getItem('liteshop.accessToken'));
+  const authenticated = useSessionStore((state) => Boolean(state.accessToken));
+  const clearSession = useSessionStore((state) => state.clear);
   const profileQuery = useQuery({
     queryKey: ['profile'],
     enabled: authenticated,
@@ -22,9 +24,9 @@ export function MePage(): JSX.Element {
     } catch {
       /* access token 清理仍需完成 */
     }
-    window.localStorage.removeItem('liteshop.accessToken');
+    clearSession();
     navigate('/login', { replace: true });
-  }, [navigate]);
+  }, [clearSession, navigate]);
   const [runSignOut, signingOut] = useDebounceAction(signOut, 500);
   if (!authenticated)
     return (

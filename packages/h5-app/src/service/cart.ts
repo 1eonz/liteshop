@@ -1,11 +1,5 @@
-import type { ApiEnvelope, CartItem, CartResponse } from '@liteshop/shared-types';
+import type { ApiEnvelope, CartItem, CartItemInput, CartResponse } from '@liteshop/shared-types';
 import { httpClient } from './http';
-
-export interface CartItemInput {
-  skuId: number;
-  quantity: number;
-  priceCents: number;
-}
 
 /** 读取服务端购物车。 */
 export async function getCart(): Promise<CartResponse> {

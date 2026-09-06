@@ -6,6 +6,7 @@ import {
   useInventoryLedgerQuery,
   useInventoryQuery,
 } from '../../hooks';
+import { ErrorState, FeedbackState } from '@liteshop/shared-components';
 
 /** 库存台账页面，实时展示三层库存并通过原因明确的表单调整。 */
 export function InventoryPage(): JSX.Element {
@@ -44,15 +45,15 @@ export function InventoryPage(): JSX.Element {
   if (inventoryQuery.isLoading)
     return (
       <div className="editor-page">
-        <div className="feedback">库存加载中…</div>
+        <FeedbackState>库存加载中…</FeedbackState>
       </div>
     );
   if (inventoryQuery.isError)
     return (
       <div className="editor-page">
-        <div className="feedback error-state" role="alert">
+        <ErrorState onRetry={() => void inventoryQuery.refetch()}>
           库存加载失败，请刷新重试。
-        </div>
+        </ErrorState>
       </div>
     );
   const rows = inventoryQuery.data?.items ?? [];

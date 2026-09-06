@@ -21,4 +21,4 @@ export {
   listAddresses as listUserAddresses,
   updateAddress,
 } from './user';
-export type { ProductListQuery } from './products';
+export type { ProductListQuery } from '@liteshop/shared-types';

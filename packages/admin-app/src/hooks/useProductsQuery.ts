@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { listProducts, type ProductListQuery } from '../service/products';
+import type { ProductListQuery } from '@liteshop/shared-types';
+import { listProducts } from '../service/products';
 
 /** 后台商品服务端状态查询，统一由 React Query 管理缓存。 */
 export function useProductsQuery(query: ProductListQuery = {}) {
