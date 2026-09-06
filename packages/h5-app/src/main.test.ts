@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { products } from './app-data';
 import { toLocalCartItem } from './features/cart';
+import { formatPrice } from '@liteshop/shared-types';
 
 describe('H5 首页数据', () => {
   it('包含四个精选商品', () => {
@@ -14,5 +15,10 @@ describe('H5 首页数据', () => {
       quantity: 2,
       priceCents: 1999,
     });
+  });
+
+  it('统一使用整数分金额格式化', () => {
+    expect(formatPrice(1999)).toBe('¥19.99');
+    expect(formatPrice(Number.NaN)).toBe('-');
   });
 });

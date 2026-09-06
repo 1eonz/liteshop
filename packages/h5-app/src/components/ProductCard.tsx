@@ -1,6 +1,6 @@
 import type { JSX } from 'react';
 import type { ProductSummary } from '@liteshop/shared-types';
-import { formatPrice } from '../utils/format-price';
+import { ProductCard as SharedProductCard } from '@liteshop/shared-components';
 
 interface ProductCardProps {
   product: ProductSummary & { imageIndex?: number };
@@ -8,20 +8,14 @@ interface ProductCardProps {
 
 /** 商品卡片，只接收展示数据，不拥有业务状态。 */
 export function ProductCard({ product }: ProductCardProps): JSX.Element {
-  const imageClass = product.imageIndex
-    ? `product-image product-image-${product.imageIndex}`
-    : 'product-image';
+  const className = product.imageIndex ? `product-image-${product.imageIndex}` : undefined;
   return (
-    <article className="product-card">
-      <div className={imageClass} aria-hidden="true">
-        {product.coverUrl ? <img src={product.coverUrl} alt="" /> : null}
-      </div>
-      <h3>{product.name}</h3>
-      <p>轻盈质感，日常陪伴</p>
-      <div className="product-meta">
-        <strong>{formatPrice(product.minPrice)}</strong>
-        <span>已售 {product.salesCount}</span>
-      </div>
-    </article>
+    <SharedProductCard
+      product={product}
+      className={className}
+      subtitle="轻盈质感，日常陪伴"
+      salesLabel="已售"
+      imageAlt={product.name}
+    />
   );
 }

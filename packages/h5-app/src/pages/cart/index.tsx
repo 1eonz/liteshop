@@ -1,14 +1,13 @@
 import type { JSX } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import type { CartItem } from '@liteshop/shared-types';
+import { formatPrice } from '@liteshop/shared-types';
 import { useDebounceAction } from '../../hooks/useDebounceAction';
-import { getCart, removeCartItem, updateCartItem } from '../../service/cart';
-import { isRecoverableApiError } from '../../service/http';
+import { removeCartItem, updateCartItem } from '../../service/cart';
 import { useCartStore } from '../../store/cart';
-import { formatPrice } from '../../utils/format-price';
-import { toLocalCartItem } from '../../features/cart';
+import { toLocalCartItem, useCartQuery } from '../../features/cart';
 import { useSessionStore } from '../../store/session';
 import { ErrorState, FeedbackState } from '@liteshop/shared-components';
 import { CartLineItem } from './components/CartLineItem';
@@ -30,18 +29,7 @@ export function CartPage(): JSX.Element {
   useEffect(() => {
     if (!isAuthenticated) hydratedRef.current = false;
   }, [isAuthenticated]);
-  const cartQuery = useQuery({
-    queryKey: ['cart', isAuthenticated],
-    enabled: isAuthenticated,
-    queryFn: async () => {
-      try {
-        return await getCart();
-      } catch (error) {
-        if (!isRecoverableApiError(error)) throw error;
-        return { items: [] };
-      }
-    },
-  });
+  const cartQuery = useCartQuery(isAuthenticated);
   useEffect(() => {
     if (!isAuthenticated || !cartQuery.data || hydratedRef.current) return;
     const remoteLines = cartQuery.data.items.map((item) => ({

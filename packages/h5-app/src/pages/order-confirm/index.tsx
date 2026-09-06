@@ -1,14 +1,14 @@
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { useDebounceAction } from '../../hooks/useDebounceAction';
-import { calculateFreight, createOrder, listAddresses } from '../../service/orders';
+import { createOrder } from '../../service/orders';
 import { removeCartItem } from '../../service/cart';
 import { useCartStore } from '../../store/cart';
-import { formatPrice } from '../../utils/format-price';
+import { formatPrice } from '@liteshop/shared-types';
 import { useSessionStore } from '../../store/session';
 import { ErrorState } from '@liteshop/shared-components';
+import { useCheckoutAddressesQuery, useFreightQuery } from '../../features/checkout';
 
 interface OrderConfirmLocationState {
   selectedIds?: number[];
@@ -30,30 +30,19 @@ export function OrderConfirmPage(): JSX.Element {
   const [remark, setRemark] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState('');
-  const addressesQuery = useQuery({
-    queryKey: ['addresses', authenticated],
-    enabled: authenticated,
-    queryFn: listAddresses,
-  });
+  const addressesQuery = useCheckoutAddressesQuery(authenticated);
   const address = addressesQuery.data?.find((item) => item.isDefault) ?? addressesQuery.data?.[0];
   const productAmount = useMemo(
     () => lines.reduce((sum, line) => sum + line.priceCents * line.quantity, 0),
     [lines],
   );
-  const freightQuery = useQuery({
-    queryKey: ['freight', lines, address?.provinceCode],
-    enabled: Boolean(address && lines.length),
-    queryFn: async () => {
-      if (!address) return { freightAmount: 0 };
-      return calculateFreight({
-        items: lines.map((line) => ({
-          skuId: line.skuId,
-          quantity: line.quantity,
-        })),
-        provinceCode: address.provinceCode,
-        productAmount,
-      });
-    },
+  const freightQuery = useFreightQuery({
+    items: lines.map((line) => ({
+      skuId: line.skuId,
+      quantity: line.quantity,
+    })),
+    provinceCode: address?.provinceCode,
+    productAmount,
   });
   const freightAmount = freightQuery.data?.freightAmount ?? 0;
   const total = productAmount + freightAmount;

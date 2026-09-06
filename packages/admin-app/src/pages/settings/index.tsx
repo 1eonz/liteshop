@@ -1,7 +1,7 @@
 import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { getThemeSettings, listFeatureFlags, updateThemeSettings } from '../../service/admin';
+import { getThemeSettings, listFeatureFlags, updateThemeSettings } from '../../features/settings';
 import { useDebounceAction } from '../../hooks';
 
 interface LocalSettings {

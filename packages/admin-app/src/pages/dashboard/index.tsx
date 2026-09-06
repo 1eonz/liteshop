@@ -1,6 +1,6 @@
 import type { JSX } from 'react';
 import { lazy, Suspense, useCallback } from 'react';
-import { useDashboardQuery } from '../../hooks/useAdminQueries';
+import { useDashboardQuery } from '../../features/dashboard';
 import { useDebounceAction } from '../../hooks/useDebounceAction';
 import { formatPrice } from '../../utils/format-price';
 import { buildDashboardMetrics } from '../../features/dashboard';

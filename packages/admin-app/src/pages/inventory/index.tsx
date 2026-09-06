@@ -2,10 +2,10 @@ import type { JSX } from 'react';
 import { useCallback, useState } from 'react';
 import {
   useAdjustInventoryMutation,
-  useDebounceAction,
   useInventoryLedgerQuery,
   useInventoryQuery,
-} from '../../hooks';
+} from '../../features/inventory';
+import { useDebounceAction } from '../../hooks';
 import { ErrorState, FeedbackState } from '@liteshop/shared-components';
 
 /** 库存台账页面，实时展示三层库存并通过原因明确的表单调整。 */

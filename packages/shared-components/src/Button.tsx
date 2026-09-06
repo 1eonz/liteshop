@@ -3,8 +3,11 @@
 import type { ButtonHTMLAttributes, PropsWithChildren, JSX, ReactNode } from 'react';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  /** 是否显示加载态并禁用按钮。 */
   loading?: boolean;
+  /** 加载态文案，由调用方传入已翻译内容；未提供时保留按钮内容。 */
   loadingLabel?: ReactNode;
+  /** 按钮视觉变体。 */
   variant?: 'primary' | 'secondary' | 'danger';
 }
 
@@ -12,7 +15,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 export function Button({
   children,
   loading = false,
-  loadingLabel = 'Loading…',
+  loadingLabel,
   variant = 'primary',
   disabled,
   className,
@@ -27,7 +30,7 @@ export function Button({
       disabled={disabled || loading}
       aria-busy={loading}
     >
-      {loading ? loadingLabel : children}
+      {loading ? (loadingLabel ?? children) : children}
     </button>
   );
 }

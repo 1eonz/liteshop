@@ -1,6 +1,6 @@
 import type { JSX } from 'react';
 import type { CartItem } from '@liteshop/shared-types';
-import { formatPrice } from '../../../utils/format-price';
+import { formatPrice } from '@liteshop/shared-types';
 
 interface CartLineItemProps {
   line: CartItem;

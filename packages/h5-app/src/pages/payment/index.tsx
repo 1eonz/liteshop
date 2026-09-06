@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { PaymentProvider } from '@liteshop/shared-types';
 import { useDebounceAction } from '../../hooks/useDebounceAction';
 import { createPayment, getOrder } from '../../service/orders';
-import { formatPrice } from '../../utils/format-price';
+import { formatPrice } from '@liteshop/shared-types';
 import { ErrorState, FeedbackState } from '@liteshop/shared-components';
 import { useSessionStore } from '../../store/session';
 

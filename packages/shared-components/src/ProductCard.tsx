@@ -39,9 +39,9 @@ export type ProductCardProps = ProductCardFlatProps | ProductCardProductProps;
 /** 商品卡片，兼容扁平展示数据和共享商品摘要模型。 */
 export function ProductCard({
   imageUrl,
-  imageAlt = '',
+  imageAlt,
   subtitle,
-  salesLabel = 'Sold',
+  salesLabel,
   currency = '¥',
   className,
   ...props
@@ -52,21 +52,25 @@ export function ProductCard({
   const resolvedImageUrl = imageUrl ?? product?.coverUrl;
   const salesCount =
     product?.salesCount ?? ('salesCount' in props ? (props.salesCount ?? 0) : undefined);
+  const imageIsDecorative = imageAlt === '';
+  const imageRole = resolvedImageUrl && !imageIsDecorative ? 'img' : undefined;
 
   return (
     <article className={`liteshop-product-card${className ? ` ${className}` : ''}`}>
       <div
         className="liteshop-product-card__image"
         style={resolvedImageUrl ? { backgroundImage: `url(${resolvedImageUrl})` } : undefined}
-        aria-label={imageAlt}
-        role={resolvedImageUrl ? 'img' : undefined}
+        aria-label={imageRole ? (imageAlt ?? name) : undefined}
+        aria-hidden={imageRole ? undefined : true}
+        role={imageRole}
       />
       <h3>{name}</h3>
       {subtitle ? <p className="liteshop-product-card__subtitle">{subtitle}</p> : null}
       <p className="liteshop-product-card__price">{formatPrice(priceCents, currency)}</p>
       {salesCount !== undefined ? (
         <small className="liteshop-product-card__sales">
-          {salesLabel} {salesCount}
+          {salesLabel ? <>{salesLabel} </> : null}
+          {salesCount}
         </small>
       ) : null}
     </article>

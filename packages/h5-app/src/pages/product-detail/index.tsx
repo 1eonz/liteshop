@@ -12,7 +12,7 @@ import {
   toggleServerFavoriteProduct,
 } from '../../service/favorites';
 import { useCartStore } from '../../store/cart';
-import { formatPrice } from '../../utils/format-price';
+import { formatPrice } from '@liteshop/shared-types';
 import { listProductReviews } from '../../service/reviews';
 import { useSessionStore } from '../../store/session';
 import { ErrorState, FeedbackState } from '@liteshop/shared-components';

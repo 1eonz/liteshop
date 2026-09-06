@@ -1,7 +1,7 @@
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAdminProductsQuery } from '../../hooks';
+import { useAdminProductsQuery } from '../../features/catalog';
 import { formatPrice } from '../../utils/format-price';
 import { ErrorState, FeedbackState } from '@liteshop/shared-components';
 

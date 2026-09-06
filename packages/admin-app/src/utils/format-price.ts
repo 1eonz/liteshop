@@ -1,4 +1,2 @@
-/** 将整数分格式化为后台展示金额。 */
-export function formatPrice(priceCents: number): string {
-  return `¥${(priceCents / 100).toFixed(2)}`;
-}
+/** 兼容旧入口，金额格式化唯一事实源位于 shared-types。 */
+export { formatPrice } from '@liteshop/shared-types';

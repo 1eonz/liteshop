@@ -1,5 +1,6 @@
 import type { JSX } from 'react';
-import { useAuditLogsQuery, useRbacQuery } from '../../hooks';
+import { useAuditLogsQuery } from '../../hooks';
+import { useRbacQuery } from '../../features/rbac';
 
 /** 审计与 RBAC 页面，帮助管理员核对菜单按钮权限和操作轨迹。 */
 export function AuditPage(): JSX.Element {

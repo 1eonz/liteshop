@@ -1,17 +1,11 @@
 import type { FormEvent, JSX } from 'react';
 import { useCallback, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Address, AddressInput } from '@liteshop/shared-types';
 import { useDebounceAction } from '../../hooks/useDebounceAction';
-import {
-  createAddress,
-  deleteAddress,
-  listAddresses as listUserAddresses,
-  updateAddress,
-} from '../../service/user';
 import { useSessionStore } from '../../store/session';
 import { ErrorState, FeedbackState } from '@liteshop/shared-components';
+import { useAddressBook } from '../../features/address';
 
 const blankAddress: AddressInput = {
   receiverName: '',
@@ -26,50 +20,31 @@ const blankAddress: AddressInput = {
 /** 收货地址管理页面，新增、编辑、删除均通过幂等 API。 */
 export function AddressesPage(): JSX.Element {
   const authenticated = useSessionStore((state) => Boolean(state.accessToken));
-  const queryClient = useQueryClient();
-  const query = useQuery({
-    queryKey: ['addresses'],
-    enabled: authenticated,
-    queryFn: listUserAddresses,
-  });
+  const { addressesQuery: query, saveAddressMutation, deleteAddressMutation } =
+    useAddressBook(authenticated);
   const [editing, setEditing] = useState<Address | null>(null);
   const [form, setForm] = useState<AddressInput>(blankAddress);
   const [error, setError] = useState('');
-  const saveMutation = useMutation({
-    mutationFn: (input: AddressInput) =>
-      editing ? updateAddress(editing.id, input) : createAddress(input),
-    retry: 0,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['addresses'] });
-      setEditing(null);
-      setForm(blankAddress);
-    },
-  });
-  const deleteMutation = useMutation({
-    mutationFn: deleteAddress,
-    retry: 0,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['addresses'] });
-    },
-  });
   const save = useCallback(async () => {
     setError('');
     try {
-      await saveMutation.mutateAsync(form);
+      await saveAddressMutation.mutateAsync({ addressId: editing?.id, input: form });
+      setEditing(null);
+      setForm(blankAddress);
     } catch {
       setError('地址保存失败，请检查填写内容。');
     }
-  }, [form, saveMutation]);
+  }, [editing?.id, form, saveAddressMutation]);
   const remove = useCallback(
     async (addressId: number) => {
       setError('');
       try {
-        await deleteMutation.mutateAsync(addressId);
+        await deleteAddressMutation.mutateAsync(addressId);
       } catch {
         setError('地址删除失败，请稍后重试。');
       }
     },
-    [deleteMutation],
+    [deleteAddressMutation],
   );
   const [runSave, saving] = useDebounceAction(save, 800);
   const [runDelete, deleting] = useDebounceAction(remove, 500);

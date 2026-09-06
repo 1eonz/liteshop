@@ -3,7 +3,7 @@ import { Link, Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { BottomTabBar } from '../../components/BottomTabBar';
 import { listOrders } from '../../service/orders';
-import { formatPrice } from '../../utils/format-price';
+import { formatPrice } from '@liteshop/shared-types';
 import { useSessionStore } from '../../store/session';
 import { ErrorState, FeedbackState } from '@liteshop/shared-components';
 

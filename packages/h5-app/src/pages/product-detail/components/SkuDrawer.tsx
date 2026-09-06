@@ -1,7 +1,7 @@
 import type { JSX, KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useEffect, useRef } from 'react';
 import type { ProductDetailResponse } from '@liteshop/shared-types';
-import { formatPrice } from '../../../utils/format-price';
+import { formatPrice } from '@liteshop/shared-types';
 
 interface SkuDrawerProps {
   open: boolean;

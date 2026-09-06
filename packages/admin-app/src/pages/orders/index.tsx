@@ -3,9 +3,9 @@ import { useCallback, useState } from 'react';
 import {
   useAdminOrderMutations,
   useAdminOrdersQuery,
-  useDebounceAction,
   useShipAdminOrderMutation,
-} from '../../hooks';
+} from '../../features/orders';
+import { useDebounceAction } from '../../hooks';
 import { formatPrice } from '../../utils/format-price';
 import { ErrorState, FeedbackState } from '@liteshop/shared-components';
 

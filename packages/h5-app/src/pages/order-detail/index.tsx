@@ -4,7 +4,7 @@ import { Link, Navigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDebounceAction } from '../../hooks/useDebounceAction';
 import { cancelOrder, confirmOrder, getOrder } from '../../service/orders';
-import { formatPrice } from '../../utils/format-price';
+import { formatPrice } from '@liteshop/shared-types';
 import { useSessionStore } from '../../store/session';
 import { ErrorState, FeedbackState } from '@liteshop/shared-components';
 

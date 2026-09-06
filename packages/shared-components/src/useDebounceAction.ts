@@ -99,20 +99,19 @@ export function useDebounceAction<T extends unknown[]>(
   actionRef.current = action;
   delayRef.current = delay;
 
-  if (controllerRef.current === null) {
+  useEffect(() => {
+    mountedRef.current = true;
     controllerRef.current = createDebouncedAction((...args: T) => actionRef.current(...args), {
       getDelay: () => delayRef.current,
       onStateChange: (running) => {
         if (mountedRef.current) setLoading(running);
       },
     });
-  }
 
-  useEffect(() => {
-    mountedRef.current = true;
     return () => {
       mountedRef.current = false;
       controllerRef.current?.dispose();
+      controllerRef.current = null;
     };
   }, []);
 

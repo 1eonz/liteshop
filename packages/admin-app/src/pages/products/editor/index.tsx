@@ -5,9 +5,9 @@ import type { ProductCreateInput } from '@liteshop/shared-types';
 import {
   useAdminProductQuery,
   useCreateAdminProductMutation,
-  useDebounceAction,
   useUpdateAdminProductMutation,
-} from '../../../hooks';
+} from '../../../features/catalog';
+import { useDebounceAction } from '../../../hooks';
 import { ErrorState, FeedbackState } from '@liteshop/shared-components';
 import { ProductBasicFields } from './components/ProductBasicFields';
 import { ProductSkuTable, type ProductSkuRow } from './components/ProductSkuTable';

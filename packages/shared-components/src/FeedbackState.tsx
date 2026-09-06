@@ -24,6 +24,7 @@ export function FeedbackState({
 export interface ErrorStateProps {
   children: ReactNode;
   onRetry?: () => void;
+  /** 重试按钮文案，由调用方传入已翻译内容。 */
   retryLabel?: ReactNode;
 }
 
