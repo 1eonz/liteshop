@@ -1,0 +1,8 @@
+openapi: 3.0.3
+info: {title: LiteShop Product API, version: 1.0.0}
+servers: [{url: /api/v1}]
+paths:
+  /products: {get: {summary: Product list, parameters: [{in: query, name: page, schema: {type: integer, minimum: 1, default: 1}}, {in: query, name: pageSize, schema: {type: integer, maximum: 100, default: 20}}], responses: {'200': {description: Paginated products}}}}
+  /products/{id}: {get: {parameters: [{in: path, name: id, required: true, schema: {type: integer}}], responses: {'200': {description: Product detail}}}}
+  /products/search: {get: {parameters: [{in: query, name: q, required: true, schema: {type: string}}], responses: {'200': {description: Search results}}}}
+  /categories: {get: {responses: {'200': {description: Category tree}}}}

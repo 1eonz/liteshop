@@ -1,0 +1,7 @@
+openapi: 3.0.3
+info: {title: LiteShop Notification API, version: 1.0.0}
+servers: [{url: /api/v1}]
+paths:
+  /notifications: {get: {security: [{bearerAuth: []}], responses: {'200': {description: Notifications}}}}
+  /notifications/{id}/read: {put: {security: [{bearerAuth: []}], parameters: [{in: path, name: id, required: true, schema: {type: integer}}], responses: {'200': {description: Marked read}}}}
+components: {securitySchemes: {bearerAuth: {type: http, scheme: bearer}}}

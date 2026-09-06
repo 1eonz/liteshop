@@ -1,0 +1,14 @@
+openapi: 3.0.3
+info: {title: LiteShop Settings API, version: 1.0.0}
+servers: [{url: /api/v1}]
+paths:
+  /settings/theme:
+    get: {responses: {'200': {description: Theme variables, content: {application/json: {schema: {$ref: '#/components/schemas/ThemeResponse'}}}}}}
+    put: {security: [{bearerAuth: []}], parameters: [{in: header, name: X-Request-Id, required: true, schema: {type: string, format: uuid}}], requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ThemeSettings'}}}}, responses: {'200': {description: Updated, content: {application/json: {schema: {$ref: '#/components/schemas/ThemeResponse'}}}}}}
+  /settings/shipping-companies: {get: {responses: {'200': {description: Shipping companies}}}}
+  /settings/feature-flags: {get: {responses: {'200': {description: Feature flags}}}}
+components:
+  securitySchemes: {bearerAuth: {type: http, scheme: bearer}}
+  schemas:
+    ThemeSettings: {type: object, required: [primaryColor, navigationStyle, tabbarStyle], properties: {primaryColor: {type: string, pattern: '^#[0-9a-fA-F]{6}$'}, navigationStyle: {type: string, enum: [glass, solid]}, tabbarStyle: {type: string, enum: [gallery, minimal]}}}
+    ThemeResponse: {$ref: '#/components/schemas/ThemeSettings'}

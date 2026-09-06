@@ -1,0 +1,13 @@
+openapi: 3.0.3
+info: {title: LiteShop Order API, version: 1.0.0}
+servers: [{url: /api/v1}]
+paths:
+  /orders: {post: {summary: Create order, security: [{bearerAuth: []}], parameters: [{in: header, name: X-Request-Id, required: true, schema: {type: string, format: uuid}}], requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/OrderCreate'}}}}, responses: {'200': {description: Created, content: {application/json: {schema: {$ref: '#/components/schemas/Order'}}}}, '409': {description: Price or stock conflict}}}, get: {summary: List orders, security: [{bearerAuth: []}], parameters: [{in: query, name: page, schema: {type: integer, minimum: 1}}, {in: query, name: pageSize, schema: {type: integer, maximum: 100}}], responses: {'200': {description: Paginated orders}}}}
+  /orders/{id}: {get: {security: [{bearerAuth: []}], parameters: [{in: path, name: id, required: true, schema: {type: integer}}], responses: {'200': {description: Detail}}}}
+  /orders/{id}/cancel: {post: {security: [{bearerAuth: []}], parameters: [{in: path, name: id, required: true, schema: {type: integer}}, {in: header, name: X-Request-Id, required: true, schema: {type: string, format: uuid}}], responses: {'200': {description: Cancelled}, '409': {description: Invalid transition}}}}
+  /orders/{id}/confirm: {post: {security: [{bearerAuth: []}], parameters: [{in: path, name: id, required: true, schema: {type: integer}}, {in: header, name: X-Request-Id, required: true, schema: {type: string, format: uuid}}], responses: {'200': {description: Completed}}}}
+components:
+  securitySchemes: {bearerAuth: {type: http, scheme: bearer}}
+  schemas:
+    OrderCreate: {type: object, required: [items, addressSnapshot, totalAmount], properties: {items: {type: array, items: {type: object}}, addressSnapshot: {type: object}, totalAmount: {type: integer, description: Amount in cents}, productAmount: {type: integer, description: Amount in cents}, freightAmount: {type: integer, description: Amount in cents}}}
+    Order: {type: object, properties: {id: {type: integer}, orderNo: {type: string}, status: {type: string, enum: [PENDING_PAYMENT, PAID, SHIPPED, COMPLETED, CANCELLED]}, totalAmount: {type: integer, description: Amount in cents}}}

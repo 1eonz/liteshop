@@ -1,0 +1,8 @@
+openapi: 3.0.3
+info: {title: LiteShop Page API, version: 1.0.0}
+servers: [{url: /api/v1}]
+paths:
+  /pages/{id}/schema: {get: {parameters: [{in: path, name: id, required: true, schema: {type: integer}}], responses: {'200': {description: Versioned page schema, content: {application/json: {schema: {$ref: '#/components/schemas/PageSchema'}}}}}}}
+components:
+  schemas:
+    PageSchema: {type: object, required: [id, version, components], properties: {id: {type: integer}, version: {type: integer}, slug: {type: string}, components: {type: array, items: {type: object}}}}

@@ -1,0 +1,195 @@
+openapi: 3.0.3
+info:
+  title: LiteShop Admin API
+  version: 1.0.0
+servers:
+  - url: /api/v1/admin
+security:
+  - bearerAuth: []
+paths:
+  /products:
+    get:
+      summary: 商品列表
+      parameters: [{$ref: '#/components/parameters/Page'}, {$ref: '#/components/parameters/PageSize'}, {$ref: '#/components/parameters/Search'}]
+      responses: {'200': {$ref: '#/components/responses/Envelope'}}
+    post:
+      summary: 创建商品及 SKU
+      parameters: [{$ref: '#/components/parameters/RequestId'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ProductCreate'}}}}
+      responses: {'200': {$ref: '#/components/responses/Envelope'}, '409': {description: 业务校验失败}}
+  /products/{id}:
+    put:
+      summary: 更新商品 SPU
+      parameters: [{$ref: '#/components/parameters/Id'}, {$ref: '#/components/parameters/RequestId'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ProductUpdate'}}}}
+      responses: {'200': {$ref: '#/components/responses/Envelope'}, '409': {description: 业务校验失败}}
+    delete:
+      summary: 商品下架（软删除）
+      parameters: [{$ref: '#/components/parameters/Id'}, {$ref: '#/components/parameters/RequestId'}]
+      responses: {'200': {$ref: '#/components/responses/Envelope'}}
+  /categories:
+    get:
+      summary: 分类列表
+      responses: {'200': {$ref: '#/components/responses/Envelope'}}
+    post:
+      summary: 创建分类
+      parameters: [{$ref: '#/components/parameters/RequestId'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/CategoryInput'}}}}
+      responses: {'200': {$ref: '#/components/responses/Envelope'}}
+  /categories/{categoryId}:
+    put:
+      summary: 更新分类
+      parameters: [{$ref: '#/components/parameters/CategoryId'}, {$ref: '#/components/parameters/RequestId'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/CategoryInput'}}}}
+      responses: {'200': {$ref: '#/components/responses/Envelope'}}
+    delete:
+      summary: 停用分类
+      parameters: [{$ref: '#/components/parameters/CategoryId'}, {$ref: '#/components/parameters/RequestId'}]
+      responses: {'200': {$ref: '#/components/responses/Envelope'}}
+  /orders:
+    get:
+      summary: 订单列表
+      parameters: [{$ref: '#/components/parameters/Page'}, {$ref: '#/components/parameters/PageSize'}]
+      responses: {'200': {$ref: '#/components/responses/Envelope'}}
+  /orders/{orderId}/ship:
+    post:
+      summary: 订单发货
+      parameters: [{$ref: '#/components/parameters/OrderId'}, {$ref: '#/components/parameters/RequestId'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ShipOrder'}}}}
+      responses: {'200': {$ref: '#/components/responses/Envelope'}, '409': {description: 非法状态流转}}
+  /orders/{orderId}/price:
+    post:
+      summary: 待付款订单改价
+      parameters: [{$ref: '#/components/parameters/OrderId'}, {$ref: '#/components/parameters/RequestId'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/OrderPrice'}}}}
+      responses: {'200': {$ref: '#/components/responses/Envelope'}, '409': {description: 非法状态流转}}
+  /orders/{orderId}/cancel:
+    post:
+      summary: 后台取消订单
+      parameters: [{$ref: '#/components/parameters/OrderId'}, {$ref: '#/components/parameters/RequestId'}]
+      responses: {'200': {$ref: '#/components/responses/Envelope'}, '409': {description: 非法状态流转}}
+  /orders/{orderId}:
+    put:
+      summary: 更新订单备注和地址快照
+      parameters: [{$ref: '#/components/parameters/OrderId'}, {$ref: '#/components/parameters/RequestId'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/OrderManagement'}}}}
+      responses: {'200': {$ref: '#/components/responses/Envelope'}}
+  /inventory:
+    get:
+      summary: 库存列表
+      parameters: [{$ref: '#/components/parameters/Page'}, {$ref: '#/components/parameters/PageSize'}]
+      responses: {'200': {$ref: '#/components/responses/Envelope'}}
+  /members:
+    get:
+      summary: 会员分页列表
+      parameters: [{$ref: '#/components/parameters/Page'}, {$ref: '#/components/parameters/PageSize'}]
+      responses: {'200': {$ref: '#/components/responses/Envelope'}}
+  /members/{userId}:
+    get:
+      summary: 会员详情
+      parameters: [{$ref: '#/components/parameters/UserId'}]
+      responses: {'200': {$ref: '#/components/responses/Envelope'}}
+  /members/{userId}/tags:
+    put:
+      summary: 更新会员标签
+      parameters: [{$ref: '#/components/parameters/UserId'}, {$ref: '#/components/parameters/RequestId'}]
+      requestBody: {required: true, content: {application/json: {schema: {type: object, required: [tags], properties: {tags: {type: array, items: {type: string}}}}}}}
+      responses: {'200': {$ref: '#/components/responses/Envelope'}}
+  /members/{userId}/level:
+    put:
+      summary: 更新会员等级
+      parameters: [{$ref: '#/components/parameters/UserId'}, {$ref: '#/components/parameters/RequestId'}]
+      requestBody: {required: true, content: {application/json: {schema: {type: object, required: [memberLevel], properties: {memberLevel: {type: string, enum: [NORMAL, MEMBER]}}}}}}
+      responses: {'200': {$ref: '#/components/responses/Envelope'}}
+  /inventory/{skuId}/adjust:
+    post:
+      summary: 手工调整库存
+      parameters: [{$ref: '#/components/parameters/SkuId'}, {$ref: '#/components/parameters/RequestId'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/InventoryAdjust'}}}}
+      responses: {'200': {$ref: '#/components/responses/Envelope'}, '409': {description: 库存不足}}
+  /inventory/{skuId}/ledger:
+    get:
+      summary: SKU 库存流水
+      parameters: [{$ref: '#/components/parameters/SkuId'}]
+      responses: {'200': {$ref: '#/components/responses/Envelope'}}
+  /dashboard:
+    get:
+      summary: 数据看板
+      responses: {'200': {$ref: '#/components/responses/Envelope'}}
+  /audit-logs:
+    get:
+      summary: 操作日志
+      responses: {'200': {$ref: '#/components/responses/Envelope'}}
+  /roles:
+    get:
+      summary: RBAC 角色
+      responses: {'200': {$ref: '#/components/responses/Envelope'}}
+  /permissions:
+    get:
+      summary: RBAC 权限点
+      responses: {'200': {$ref: '#/components/responses/Envelope'}}
+  /freight-templates:
+    get:
+      summary: 运费模板列表
+      responses: {'200': {$ref: '#/components/responses/Envelope'}}
+    post:
+      summary: 创建运费模板
+      parameters: [{$ref: '#/components/parameters/RequestId'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/FreightTemplateCreate'}}}}
+      responses: {'200': {$ref: '#/components/responses/Envelope'}}
+  /freight-templates/{templateId}:
+    put:
+      summary: 更新运费模板
+      parameters: [{$ref: '#/components/parameters/TemplateId'}, {$ref: '#/components/parameters/RequestId'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/FreightTemplateUpdate'}}}}
+      responses: {'200': {$ref: '#/components/responses/Envelope'}}
+    delete:
+      summary: 删除运费模板
+      parameters: [{$ref: '#/components/parameters/TemplateId'}, {$ref: '#/components/parameters/RequestId'}]
+      responses: {'200': {$ref: '#/components/responses/Envelope'}}
+  /freight-templates/{templateId}/items:
+    post:
+      summary: 增加运费地区计费项
+      parameters: [{$ref: '#/components/parameters/TemplateId'}, {$ref: '#/components/parameters/RequestId'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/FreightTemplateItem'}}}}
+      responses: {'200': {$ref: '#/components/responses/Envelope'}}
+  /freight-templates/{templateId}/items/{itemId}:
+    put:
+      summary: 更新运费地区计费项
+      parameters: [{$ref: '#/components/parameters/TemplateId'}, {$ref: '#/components/parameters/ItemId'}, {$ref: '#/components/parameters/RequestId'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/FreightTemplateItem'}}}}
+      responses: {'200': {$ref: '#/components/responses/Envelope'}}
+    delete:
+      summary: 删除运费地区计费项
+      parameters: [{$ref: '#/components/parameters/TemplateId'}, {$ref: '#/components/parameters/ItemId'}, {$ref: '#/components/parameters/RequestId'}]
+      responses: {'200': {$ref: '#/components/responses/Envelope'}}
+components:
+  securitySchemes:
+    bearerAuth: {type: http, scheme: bearer}
+  parameters:
+    Id: {in: path, name: id, required: true, schema: {type: integer, minimum: 1}}
+    CategoryId: {in: path, name: categoryId, required: true, schema: {type: integer, minimum: 1}}
+    OrderId: {in: path, name: orderId, required: true, schema: {type: integer, minimum: 1}}
+    SkuId: {in: path, name: skuId, required: true, schema: {type: integer, minimum: 1}}
+    TemplateId: {in: path, name: templateId, required: true, schema: {type: integer, minimum: 1}}
+    ItemId: {in: path, name: itemId, required: true, schema: {type: integer, minimum: 1}}
+    UserId: {in: path, name: userId, required: true, schema: {type: integer, minimum: 1}}
+    RequestId: {in: header, name: X-Request-Id, required: true, schema: {type: string, format: uuid}}
+    Page: {in: query, name: page, schema: {type: integer, minimum: 1, default: 1}}
+    PageSize: {in: query, name: pageSize, schema: {type: integer, minimum: 1, maximum: 100, default: 20}}
+    Search: {in: query, name: q, required: false, schema: {type: string, minLength: 1, maxLength: 100}}
+  schemas:
+    Envelope: {type: object, required: [code, data, requestId], properties: {code: {type: integer}, data: {}, requestId: {type: string}}}
+    ProductSku: {type: object, required: [code, name, priceCents], properties: {code: {type: string}, name: {type: string}, priceCents: {type: integer, minimum: 0, description: Amount in cents}, costCents: {type: integer, minimum: 0}, physicalStock: {type: integer, minimum: 0}, safetyStock: {type: integer, minimum: 0}, specs: {type: object, additionalProperties: {type: string}}}}
+    ProductCreate: {type: object, required: [name, skus], properties: {categoryId: {type: integer, nullable: true}, name: {type: string}, subtitle: {type: string}, brand: {type: string}, description: {type: string}, status: {type: string, enum: [DRAFT, ON_SHELF, OFF_SHELF]}, skus: {type: array, minItems: 1, items: {$ref: '#/components/schemas/ProductSku'}}}}
+    ProductUpdate: {type: object, properties: {categoryId: {type: integer, nullable: true}, name: {type: string}, subtitle: {type: string}, brand: {type: string}, description: {type: string}, status: {type: string, enum: [DRAFT, ON_SHELF, OFF_SHELF]}}}
+    CategoryInput: {type: object, properties: {parentId: {type: integer, nullable: true}, name: {type: string}, icon: {type: string}, sortOrder: {type: integer}, isActive: {type: boolean}}}
+    ShipOrder: {type: object, required: [logisticsCompanyCode, trackingNo], properties: {logisticsCompanyCode: {type: string}, trackingNo: {type: string}}}
+    OrderPrice: {type: object, required: [totalAmount], properties: {totalAmount: {type: integer, minimum: 0, description: Amount in cents}}}
+    OrderManagement: {type: object, properties: {remark: {type: string}, addressSnapshot: {type: object, additionalProperties: {type: string}}}}
+    InventoryAdjust: {type: object, required: [quantity, reason], properties: {quantity: {type: integer, minimum: -1000000, maximum: 1000000}, reason: {type: string, minLength: 1}}}
+    FreightTemplateCreate: {type: object, required: [name, type], properties: {name: {type: string}, type: {type: string, enum: [WEIGHT, PIECE, REGION]}, isDefault: {type: boolean}, enabled: {type: boolean}, items: {type: array, items: {$ref: '#/components/schemas/FreightTemplateItem'}}}}
+    FreightTemplateUpdate: {type: object, properties: {name: {type: string}, type: {type: string, enum: [WEIGHT, PIECE, REGION]}, isDefault: {type: boolean}, enabled: {type: boolean}}}
+    FreightTemplateItem: {type: object, required: [firstUnit, firstFee, additionalUnit, additionalFee], properties: {regionCodes: {type: array, items: {type: string}}, firstUnit: {type: number, exclusiveMinimum: 0}, firstFee: {type: integer, minimum: 0, description: Amount in cents}, additionalUnit: {type: number, exclusiveMinimum: 0}, additionalFee: {type: integer, minimum: 0, description: Amount in cents}, freeCondition: {type: object}}}
+  responses:
+    Envelope: {description: Unified response envelope, content: {application/json: {schema: {$ref: '#/components/schemas/Envelope'}}}}

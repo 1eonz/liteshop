@@ -1,0 +1,6 @@
+openapi: 3.0.3
+info: {title: LiteShop Upload API, version: 1.0.0}
+servers: [{url: /api/v1}]
+paths:
+  /upload/sign: {post: {security: [{bearerAuth: []}], requestBody: {required: true, content: {application/json: {schema: {type: object, required: [fileName, fileSize, contentType], properties: {fileName: {type: string}, fileSize: {type: integer}, contentType: {type: string}}}}}}, responses: {'200': {description: Signed upload}}}}
+components: {securitySchemes: {bearerAuth: {type: http, scheme: bearer}}}

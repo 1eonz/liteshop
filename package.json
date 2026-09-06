@@ -1,0 +1,31 @@
+{
+  "name": "liteshop",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "format": "npx --yes prettier@3.6.2 --write \"packages/**/*.{ts,tsx,css}\"",
+    "format:check": "npx --yes prettier@3.6.2 --check \"packages/**/*.{ts,tsx,css}\"",
+    "dev": "turbo run dev --parallel"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.62.1",
+    "@vitejs/plugin-react": "^6.1.1",
+    "eslint": "^10.9.1",
+    "globals": "^17.12.0",
+    "turbo": "^2.3.0",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.69.0",
+    "vite": "^8.2.2",
+    "vitest": "^5.0.0",
+    "yaml": "^2.9.0"
+  }
+}

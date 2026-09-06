@@ -1,0 +1,6 @@
+openapi: 3.0.3
+info: {title: LiteShop After-sale API, version: 1.0.0}
+servers: [{url: /api/v1}]
+paths:
+  /after-sales: {post: {security: [{bearerAuth: []}], parameters: [{in: header, name: X-Request-Id, required: true, schema: {type: string, format: uuid}}], responses: {'200': {description: Created}}}, get: {security: [{bearerAuth: []}], responses: {'200': {description: List}}}}
+components: {securitySchemes: {bearerAuth: {type: http, scheme: bearer}}}

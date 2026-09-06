@@ -1,0 +1,1 @@
+"""LiteShop backend application package."""

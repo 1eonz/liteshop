@@ -1,0 +1,8 @@
+openapi: 3.0.3
+info: {title: LiteShop Review API, version: 1.0.0}
+servers: [{url: /api/v1}]
+paths:
+  /reviews: {post: {security: [{bearerAuth: []}], parameters: [{in: header, name: X-Request-Id, required: true, schema: {type: string, format: uuid}}], requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ReviewCreate'}}}}, responses: {'200': {description: Created}}}}
+  /reviews/products/{productId}: {get: {parameters: [{in: path, name: productId, required: true, schema: {type: integer}}], responses: {'200': {description: Product reviews}}}}
+components: {securitySchemes: {bearerAuth: {type: http, scheme: bearer}}, schemas: {ReviewCreate: {type: object, required: [orderItemId, rating], properties: {orderItemId: {type: integer}, rating: {type: integer, minimum: 1, maximum: 5}, content: {type: string}, images: {type: array, items: {type: string}}}}}}
+components: {securitySchemes: {bearerAuth: {type: http, scheme: bearer}}}
