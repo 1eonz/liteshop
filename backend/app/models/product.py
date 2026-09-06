@@ -38,6 +38,8 @@ class Spu(Base):
     detail_images: Mapped[list[str]] = mapped_column(JSONB, default=list)
     description: Mapped[str] = mapped_column(Text, default="")
     detail_html: Mapped[str] = mapped_column(Text, default="")
+    tags: Mapped[list[str]] = mapped_column(JSONB, default=list)
+    recommended_product_ids: Mapped[list[int]] = mapped_column(JSONB, default=list)
     seo_title: Mapped[str | None] = mapped_column(String(200), nullable=True)
     seo_description: Mapped[str | None] = mapped_column(String(500), nullable=True)
     seo_keywords: Mapped[str | None] = mapped_column(String(200), nullable=True)

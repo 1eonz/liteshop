@@ -1,0 +1,16 @@
+openapi: 3.0.3
+info: {title: LiteShop Logistics API, version: 1.0.0}
+servers: [{url: /api/v1}]
+paths:
+  /orders/{orderId}/tracking:
+    parameters: [{in: path, name: orderId, required: true, schema: {type: integer}}]
+    get: {security: [{bearerAuth: []}], responses: {'200': {description: Tracking events}}}
+    post:
+      security: [{bearerAuth: []}]
+      parameters: [{in: header, name: X-Request-Id, required: true, schema: {type: string, format: uuid}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/TrackingEvent'}}}}
+      responses: {'201': {description: Event created}}
+components:
+  securitySchemes: {bearerAuth: {type: http, scheme: bearer}}
+  schemas:
+    TrackingEvent: {type: object, required: [status, description, occurredAt], properties: {status: {type: string}, description: {type: string}, location: {type: string}, occurredAt: {type: string, format: date-time}}}

@@ -1,5 +1,7 @@
 """官网联系表单 DTO。"""
 
+from typing import Literal
+
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -29,3 +31,9 @@ class ContactFormResponse(BaseModel):
     id: int
     status: str
     accepted: bool = True
+
+
+class ContactFormStatusUpdate(BaseModel):
+    """后台更新联系表单处理状态。"""
+
+    status: Literal["NEW", "IN_PROGRESS", "RESOLVED", "SPAM"]

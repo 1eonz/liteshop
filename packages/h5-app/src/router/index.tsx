@@ -33,6 +33,9 @@ const CategoriesPage = lazy(async () => ({
 const NotificationsPage = lazy(async () => ({
   default: (await import('../pages/notifications')).NotificationsPage,
 }));
+const PreviewPage = lazy(async () => ({
+  default: (await import('../pages/preview')).PreviewPage,
+}));
 
 function withSuspense(element: JSX.Element): JSX.Element {
   return <Suspense fallback={<RouteFallback />}>{element}</Suspense>;
@@ -53,6 +56,7 @@ export const routes: RouteObject[] = [
   { path: H5_ROUTE_PATHS.favorites, element: withSuspense(<FavoritesPage />) },
   { path: H5_ROUTE_PATHS.categories, element: withSuspense(<CategoriesPage />) },
   { path: H5_ROUTE_PATHS.notifications, element: withSuspense(<NotificationsPage />) },
+  { path: H5_ROUTE_PATHS.preview, element: withSuspense(<PreviewPage />) },
   { path: '*', element: <Navigate to="/" replace /> },
 ];
 

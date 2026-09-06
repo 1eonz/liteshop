@@ -1,0 +1,22 @@
+openapi: 3.0.3
+info: {title: LiteShop Marketing API, version: 1.0.0}
+servers: [{url: /api/v1}]
+paths:
+  /coupons:
+    get: {responses: {'200': {description: Coupon list}}}
+  /coupons/claim:
+    post:
+      security: [{bearerAuth: []}]
+      parameters: [{in: header, name: X-Request-Id, required: true, schema: {type: string, format: uuid}}]
+      requestBody: {required: true, content: {application/json: {schema: {type: object, required: [couponCode], properties: {couponCode: {type: string}}}}}}
+      responses: {'200': {description: Claimed}}
+  /admin/coupons:
+    post:
+      security: [{bearerAuth: []}]
+      parameters: [{in: header, name: X-Request-Id, required: true, schema: {type: string, format: uuid}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/CouponCreate'}}}}
+      responses: {'201': {description: Created}}
+components:
+  securitySchemes: {bearerAuth: {type: http, scheme: bearer}}
+  schemas:
+    CouponCreate: {type: object, required: [code, name, startsAt, endsAt], properties: {code: {type: string}, name: {type: string}, couponType: {type: string}, thresholdCents: {type: integer, description: 单位：分}, discountCents: {type: integer, description: 单位：分}, discountPercent: {type: integer}, totalCount: {type: integer}, startsAt: {type: string, format: date-time}, endsAt: {type: string, format: date-time}, enabled: {type: boolean}}}

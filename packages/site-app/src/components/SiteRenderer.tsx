@@ -2,6 +2,7 @@
 
 import type { CSSProperties, FormEvent, JSX } from 'react';
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 
 import type { SiteAnimationConfig, SiteComponentSchema, SitePageSchema } from '../site-data';
 
@@ -15,6 +16,15 @@ interface ActionLink {
   label: string;
   href: string;
 }
+
+const Hero3DBackground = dynamic(
+  () => import('./ThreeSceneFallback').then((module) => module.Hero3DBackground),
+  { ssr: false, loading: () => <div className="site-3d-placeholder" aria-label="3D 加载中" /> },
+);
+const Product3DViewer = dynamic(
+  () => import('./ThreeSceneFallback').then((module) => module.Product3DViewer),
+  { ssr: false, loading: () => <div className="site-3d-placeholder" aria-label="产品预览加载中" /> },
+);
 
 const asRecord = (value: unknown): Record<string, unknown> =>
   typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
@@ -509,11 +519,7 @@ function renderComponent(component: SiteComponentSchema): JSX.Element {
       );
     case 'Hero3D':
     case 'Hero3DBackground':
-      return (
-        <div key={key} className="site-hero-3d" role="img" aria-label="动态几何背景">
-          <Hero props={props} />
-        </div>
-      );
+      return <Hero3DBackground key={key} title={stringProp(props, 'title')} description={stringProp(props, 'description')} fallbackUrl={stringProp(props, 'fallbackUrl')} />;
     case 'Features':
       return (
         <div key={key} className={animationClass(component.animation)}>
@@ -556,15 +562,7 @@ function renderComponent(component: SiteComponentSchema): JSX.Element {
         </Section>
       );
     case 'Product3DViewer':
-      return (
-        <section key={key} className="site-3d-placeholder">
-          <div className="site-container">
-            <p className="site-eyebrow">3D PREVIEW</p>
-            <h2>{stringProp(props, 'title', '产品空间预览')}</h2>
-            <p>当前设备使用轻量化预览；接入 GLTF 模型后可启用完整交互。</p>
-          </div>
-        </section>
-      );
+      return <Product3DViewer key={key} title={stringProp(props, 'title', '产品空间预览')} description={stringProp(props, 'description', '当前设备使用轻量化预览。')} fallbackUrl={stringProp(props, 'fallbackUrl')} />;
     default:
       return <div key={key} />;
   }

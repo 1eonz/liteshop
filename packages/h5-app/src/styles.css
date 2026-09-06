@@ -840,6 +840,25 @@ a {
   text-align: center;
 }
 
+.schema-preview-shell {
+  min-height: 100vh;
+}
+
+.schema-preview-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-3);
+  min-height: var(--gallery-tabbar-height);
+  padding: var(--spacing-3) var(--spacing-4);
+  border-bottom: 1px solid var(--color-line);
+  background: var(--gallery-glass-bg);
+  backdrop-filter: blur(14px);
+}
+
 .feedback-group {
   display: grid;
   gap: var(--spacing-3);
@@ -1089,6 +1108,73 @@ a {
 .action-feedback {
   margin: var(--spacing-3) 0 0;
   color: var(--color-success-700);
+  font-size: var(--font-size-sm);
+}
+
+.schema-product-carousel,
+.schema-coupon,
+.schema-announcement {
+  display: grid;
+  gap: var(--spacing-3);
+  margin: var(--spacing-4);
+  padding: var(--spacing-4);
+  border: 1px solid var(--color-line);
+  border-radius: var(--gallery-card-radius);
+  background: var(--color-surface);
+}
+.schema-product-carousel h2 {
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+.schema-product-carousel__track {
+  display: flex;
+  gap: var(--spacing-3);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+}
+.schema-product-carousel__item {
+  display: grid;
+  min-width: 150px;
+  gap: var(--spacing-2);
+  padding: var(--spacing-4);
+  border-radius: var(--radius-md);
+  background: var(--color-primary-50);
+  scroll-snap-align: start;
+}
+.schema-product-carousel__item span {
+  color: var(--color-primary-700);
+  font-size: var(--font-size-sm);
+}
+.schema-coupon {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  background: var(--color-warning-50);
+}
+.schema-coupon div {
+  display: grid;
+  gap: var(--spacing-1);
+}
+.schema-coupon span,
+.schema-announcement span {
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+}
+.schema-coupon button {
+  min-height: var(--h5-touch-target);
+  padding-inline: var(--spacing-4);
+  border: 0;
+  border-radius: var(--radius-full);
+  color: var(--color-text-inverse);
+  background: var(--color-primary-600);
+}
+.schema-announcement {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  border-color: var(--color-primary-200);
+  background: var(--color-primary-50);
+}
+.schema-announcement strong {
+  color: var(--color-primary-700);
   font-size: var(--font-size-sm);
 }
 

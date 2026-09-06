@@ -46,3 +46,15 @@ class ContactRepository:
             FormSubmission | None,
             await session.scalar(select(FormSubmission).where(FormSubmission.id == submission_id)),
         )
+
+    async def get_for_update(self, session: AsyncSession, submission_id: int) -> FormSubmission | None:
+        """锁定一条联系表单，供后台状态流转使用。"""
+        return cast(FormSubmission | None, await session.get(FormSubmission, submission_id, with_for_update=True))
+
+    async def list(self, session: AsyncSession, *, status: str | None = None, limit: int = 100) -> list[FormSubmission]:
+        """按创建时间倒序读取联系表单。"""
+        statement = select(FormSubmission).order_by(FormSubmission.created_at.desc(), FormSubmission.id.desc())
+        if status is not None:
+            statement = statement.where(FormSubmission.status == status)
+        result = await session.scalars(statement.limit(limit))
+        return list(result.all())

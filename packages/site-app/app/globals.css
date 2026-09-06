@@ -671,6 +671,104 @@ img {
   padding-block: var(--site-space-7);
   background: var(--site-primary-soft);
 }
+.site-scene-3d {
+  position: relative;
+  min-height: 360px;
+  overflow: hidden;
+  isolation: isolate;
+  color: var(--color-text-inverse);
+  background: var(--site-ink);
+}
+.site-scene-3d__mesh {
+  position: absolute;
+  inset: 12% 8%;
+  z-index: -1;
+  border: var(--site-border);
+  border-color: color-mix(in srgb, var(--color-primary-300) 45%, transparent);
+  border-radius: 50%;
+  opacity: var(--scene-opacity, 0.72);
+  transform: rotate(-12deg);
+  animation: scene-orbit calc(var(--scene-speed, 0.35s) * 8) ease-in-out infinite alternate;
+}
+.site-scene-3d__mesh::after {
+  position: absolute;
+  inset: 15%;
+  border: var(--site-border);
+  border-color: color-mix(in srgb, var(--color-info-500) 32%, transparent);
+  border-radius: 50%;
+  content: '';
+}
+.site-scene-3d__fallback {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: var(--scene-opacity, 0.72);
+}
+.site-scene-3d__content {
+  display: grid;
+  min-height: 360px;
+  align-content: center;
+  gap: var(--site-space-3);
+}
+.site-scene-3d__content h2,
+.site-scene-3d__content p {
+  max-width: 34rem;
+  margin: 0;
+}
+.site-scene-3d__content h2 {
+  font-size: var(--font-size-4xl);
+}
+.site-scene-3d__content > p:last-child {
+  color: color-mix(in srgb, var(--color-text-inverse) 78%, transparent);
+}
+.site-product-3d {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--site-space-6);
+  align-items: center;
+  padding-block: var(--site-space-7);
+}
+.site-product-3d img,
+.site-product-3d__placeholder {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: var(--site-radius-lg);
+  object-fit: cover;
+  background: var(--site-primary-soft);
+}
+.site-product-3d__placeholder {
+  display: grid;
+  place-items: center;
+  color: var(--color-primary-700);
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
+}
+.site-product-3d h2,
+.site-product-3d p {
+  margin: 0;
+}
+.site-product-3d > div:last-child {
+  display: grid;
+  gap: var(--site-space-3);
+}
+@keyframes scene-orbit {
+  from { transform: rotate(-12deg) scale(0.96); }
+  to { transform: rotate(12deg) scale(1.04); }
+}
+@media (max-width: 720px) {
+  .site-product-3d {
+    grid-template-columns: 1fr;
+    gap: var(--site-space-4);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-scene-3d__mesh {
+    animation: none;
+  }
+}
 .site-reveal {
   animation: site-reveal-up 600ms ease-out both;
 }

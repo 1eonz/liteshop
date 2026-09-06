@@ -455,7 +455,10 @@ export type StoreComponentType =
   | 'RichText'
   | 'ImageBanner'
   | 'Spacer'
-  | 'ProductList';
+  | 'ProductList'
+  | 'ProductCarousel'
+  | 'CouponBlock'
+  | 'AnnouncementBar';
 
 export interface StoreComponentSchema {
   id: string;
@@ -467,6 +470,9 @@ export interface StoreComponentSchema {
 export interface StorePageSchema {
   id: number;
   slug: string;
+  name?: string;
+  title?: string;
+  seo?: Record<string, unknown>;
   version: number;
   isHome: boolean;
   components: StoreComponentSchema[];

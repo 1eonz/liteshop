@@ -10,15 +10,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .api.admin import router as admin_router
+from .api.ai_copy import router as ai_copy_router
 from .api.auth import router as auth_router
 from .api.cart import router as cart_router
+from .api.contact import admin_router as admin_contact_router
 from .api.contact import router as contact_router
 from .api.favorites import router as favorites_router
 from .api.health import router as health_router
+from .api.logistics import router as logistics_router
+from .api.marketing import admin_router as admin_marketing_router
+from .api.marketing import router as marketing_router
 from .api.navigation import admin_router as admin_navigation_router
 from .api.navigation import router as navigation_router
 from .api.notifications import router as notifications_router
 from .api.orders import router as orders_router
+from .api.pages import public_router as public_pages_router
 from .api.pages import router as pages_router
 from .api.products import router as products_router
 from .api.reviews import router as reviews_router
@@ -45,13 +51,19 @@ app.include_router(auth_router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")
 app.include_router(cart_router, prefix="/api/v1")
 app.include_router(contact_router, prefix="/api/v1")
+app.include_router(admin_contact_router, prefix="/api/v1")
 app.include_router(products_router, prefix="/api/v1")
 app.include_router(orders_router, prefix="/api/v1")
 app.include_router(notifications_router, prefix="/api/v1")
 app.include_router(navigation_router, prefix="/api/v1")
 app.include_router(admin_navigation_router, prefix="/api/v1")
+app.include_router(marketing_router, prefix="/api/v1")
+app.include_router(admin_marketing_router, prefix="/api/v1")
+app.include_router(logistics_router, prefix="/api/v1")
+app.include_router(ai_copy_router, prefix="/api/v1")
 app.include_router(reviews_router, prefix="/api/v1")
 app.include_router(pages_router, prefix="/api/v1")
+app.include_router(public_pages_router, prefix="/api/v1")
 app.include_router(settings_router, prefix="/api/v1")
 app.include_router(users_router, prefix="/api/v1")
 app.include_router(favorites_router, prefix="/api/v1")

@@ -53,6 +53,8 @@ class ProductCatalogService:
         return {
             **cls.summary(product),
             "description": product.description,
+            "tags": product.tags,
+            "recommendedProductIds": product.recommended_product_ids,
             "subtitle": product.subtitle,
             "brand": product.brand,
             "detailHtml": product.detail_html,
@@ -179,6 +181,8 @@ class ProductCatalogService:
             seo_description=payload.seo_description,
             seo_keywords=payload.seo_keywords,
             description=payload.description,
+            tags=payload.tags,
+            recommended_product_ids=payload.recommended_product_ids,
             status=payload.status,
             created_at=now,
             updated_at=now,

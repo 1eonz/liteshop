@@ -33,9 +33,9 @@ class NavigationService:
             "enabled": item.enabled,
         }
 
-    async def list_enabled(self, session: AsyncSession) -> list[dict[str, object]]:
-        """读取全部启用导航。"""
-        return [self.response(item) for item in await self.repository.list_enabled(session)]
+    async def list_enabled(self, session: AsyncSession, location: str | None = None) -> list[dict[str, object]]:
+        """按位置读取启用导航。"""
+        return [self.response(item) for item in await self.repository.list_enabled(session, location)]
 
     async def list_admin(self, session: AsyncSession) -> list[dict[str, object]]:
         """读取后台导航配置。"""

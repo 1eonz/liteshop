@@ -44,6 +44,9 @@ class Settings:
     cors_origins: tuple[str, ...] = tuple(
         origin.strip() for origin in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",") if origin.strip()
     )
+    nextjs_base_url: str = os.getenv("NEXTJS_BASE_URL", "")
+    revalidate_token: str = os.getenv("REVALIDATE_TOKEN", "")
+    revalidate_timeout_seconds: float = float(os.getenv("REVALIDATE_TIMEOUT_SECONDS", "2"))
 
     def payment_callback_secret_for(self, provider: str) -> str:
         """按支付渠道读取回调密钥，未知渠道不允许回退。"""

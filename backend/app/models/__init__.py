@@ -5,11 +5,13 @@ from .form_submission import FormSubmission
 from .freight import FreightTemplate, FreightTemplateItem
 from .idempotency import IdempotencyRecord
 from .inventory import InventoryLedger
+from .logistics import ShipmentTrackingEvent
+from .marketing import Coupon, CouponClaim
 from .navigation import NavigationItem
 from .notification import Notification
 from .operation_log import OperationLog
 from .order import Order, OrderItem, Payment
-from .page import StorePage
+from .page import PageConversionEvent, PageVariant, StorePage
 from .product import Category, ProductSpec, ProductSpecValue, Sku, Spu
 from .refund import Refund
 from .review import ProductReview
@@ -21,10 +23,15 @@ __all__ = [
     "Address",
     "IdempotencyRecord",
     "InventoryLedger",
+    "Coupon",
+    "CouponClaim",
+    "ShipmentTrackingEvent",
     "Order",
     "OrderItem",
     "OperationLog",
     "StorePage",
+    "PageVariant",
+    "PageConversionEvent",
     "Notification",
     "NavigationItem",
     "Payment",

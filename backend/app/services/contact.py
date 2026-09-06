@@ -2,10 +2,12 @@
 
 from collections.abc import Mapping
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from email.utils import parseaddr
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..models.form_submission import FormSubmission
 from ..repositories.contact import ContactRepository
 
 
@@ -58,6 +60,37 @@ class ContactService:
             message=values["message"].strip(),
         )
         return ContactResult(id=submission.id, status=submission.status)
+
+    @staticmethod
+    def _summary(submission: FormSubmission) -> dict[str, object]:
+        """将联系表单转换为后台安全摘要。"""
+        item = submission
+        return {
+            "id": item.id,
+            "name": item.name,
+            "email": item.email,
+            "phone": item.phone,
+            "company": item.company,
+            "message": item.message,
+            "status": item.status,
+            "source": item.source,
+            "createdAt": item.created_at.isoformat(),
+            "updatedAt": item.updated_at.isoformat(),
+        }
+
+    async def list_submissions(self, session: AsyncSession, status: str | None = None) -> list[dict[str, object]]:
+        """读取后台联系表单列表。"""
+        return [self._summary(item) for item in await self.repository.list(session, status=status)]
+
+    async def update_status(self, session: AsyncSession, submission_id: int, status: str) -> dict[str, object]:
+        """更新联系表单处理状态。"""
+        submission = await self.repository.get_for_update(session, submission_id)
+        if submission is None:
+            raise ContactFormError("联系表单不存在")
+        submission.status = status
+        submission.updated_at = datetime.now(UTC)
+        await session.flush()
+        return self._summary(submission)
 
 
 contact_service = ContactService()

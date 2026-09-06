@@ -13,9 +13,9 @@
 - `packages/admin-app/`：按同样分层，并在 `features/dashboard` 承载看板指标模型；看板、商品列表/真实新建/编辑、分类、订单、库存、审计、RBAC、设置已接入；认证状态由 `store/session.ts` 管理，`AdminLayout` 对后台路由执行管理员令牌守卫，写操作统一走共享 `useDebounceAction`。
 - `packages/shared-components/`：提供 `Button`、`EmptyState`、`FeedbackState`、`ErrorState`、`ProductCard` 和唯一的 `useDebounceAction` 实现。
 - `packages/site-app/`：Next.js App Router 官网，页面 Schema 位于 `src/site-data.ts`，组件渲染器位于 `src/components/SiteRenderer.tsx`，包含动态 slug、SEO、sitemap、robots 和联系表单 Route Handler。
-- `packages/shared-3d-components/`：三期 3D 场景配置、设备降级和速度约束工具；当前不依赖 Three.js/R3F。
+- `packages/shared-3d-components/`：三期 3D 场景配置、设备降级和速度约束工具；官网通过动态组件接入轻量回退，当前不依赖 Three.js/R3F。
 - `backend/app/`：FastAPI 分层骨架：api/core/models/schemas/services/repositories/tasks/enums/errors；订单、库存、支付、用户、设置和后台 API 已实现，领域异常集中于 `errors/domain.py`，主题设置由 `services/settings.py` 编排。
-- `backend/alembic/`：异步 Alembic 迁移及可逆迁移文件；当前 head 为 `20260906_150000`。
+- `backend/alembic/`：异步 Alembic 迁移及可逆迁移文件；当前 head 为 `20260906_190000`。
 - `tests/e2e/`：Playwright H5 冒烟测试。
 - `docs/api-contracts/v1/`：14 个 OpenAPI 文件，后台契约已补齐分类、订单、库存、RBAC、审计和运费模板接口。
 - `plans/`：plan-01 到 plan-13 及索引，覆盖 1a 需求。
@@ -42,14 +42,17 @@
 - ✅ 前端认证令牌统一由各端 `store/session.ts` 管理；后台不再复用 H5 用户令牌，后台布局和受保护页面均有认证守卫。
 - ✅ H5 登录验证码按钮实现 60 秒前端冷却，发送动作仍由 `useDebounceAction` 防重复点击，后端继续执行 Redis/接口限流。
 - ✅ 官网基础动态路由、SEO 元数据、sitemap/robots 与联系表单幂等入口已建立。
+- ✅ 官网导航、全局设置、页面管理 CRUD、A/B 变体和转化事件已建立。
+- ✅ 3D 组件动态导入和设备降级已接入官网；优惠券、物流轨迹、AI 本地 Provider 已建立可插拔基础。
 
 ### 当前未处理
 
 - ✅ Docker Desktop Engine 已恢复；PostgreSQL 16 与 Redis 7 已通过本机 Compose healthcheck，Alembic 已完成 upgrade/downgrade 往返。
 - 真实生产数据库仓储、微信/支付宝 SDK 和支付沙箱尚未接入；当前支付回调为本地签名验证实现。
 - 收藏为浏览器本地存储；settings/page schema 为开发进程内存储；均属于后续持久化范围。
-- 官网导航/全局设置落库、ISR revalidate、商城搭建器增强和官网 API 数据接入仍待二期后续计划。
+- 官网 API/ISR revalidate、联系表单后台处理、页面发布 E2E 和动态数据接入仍待补齐。
 - Three.js/R3F、GSAP、Lenis、Framer Motion 属于待确认的新依赖；当前使用 CSS 与原生 API 保持可构建。
+- 多租户遵循独立部署优先；共享数据库 `tenant_id` 隔离、真实物流/AI/营销供应商仍待决策。
 - Impeccable 完整 HTML/CSS 解析模块在当前环境缺失，但机械 detector 已对 H5/Admin 返回空结果。
 - 页面层仍保留少量直接调用 `service` 方法的交易编排代码（未出现组件内裸 Axios）；H5 购物车、地址、结算和 Admin 主要领域已有 `features/*/api` 出口，后续若交易规则继续增长继续下沉。
 - Admin `useAdminQueries.ts` 与 `service/admin.ts`、后端 `api/admin.py`/`api/orders.py` 仍为历史聚合文件，属于 plan-26 后续拆分项。

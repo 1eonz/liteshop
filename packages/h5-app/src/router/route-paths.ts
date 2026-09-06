@@ -13,4 +13,5 @@ export const H5_ROUTE_PATHS = {
   favorites: '/favorites',
   categories: '/categories',
   notifications: '/notifications',
+  preview: '/preview',
 } as const;

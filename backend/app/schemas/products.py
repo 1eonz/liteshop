@@ -59,6 +59,8 @@ class ProductCreate(BaseModel):
     seo_keywords: str | None = Field(default=None, alias="seoKeywords", max_length=200)
     specs: list["ProductSpecCreate"] = Field(default_factory=list, alias="specDefinitions")
     description: str = ""
+    tags: list[str] = Field(default_factory=list, max_length=20)
+    recommended_product_ids: list[int] = Field(default_factory=list, alias="recommendedProductIds", max_length=20)
     status: str = Field(default="DRAFT", pattern="^(DRAFT|ON_SHELF|OFF_SHELF)$")
     skus: Annotated[list[SkuCreate], Field(min_length=1)]
     model_config = {"populate_by_name": True}
@@ -78,6 +80,8 @@ class ProductUpdate(BaseModel):
     seo_description: str | None = Field(default=None, alias="seoDescription", max_length=500)
     seo_keywords: str | None = Field(default=None, alias="seoKeywords", max_length=200)
     description: str | None = None
+    tags: list[str] | None = Field(default=None, max_length=20)
+    recommended_product_ids: list[int] | None = Field(default=None, alias="recommendedProductIds", max_length=20)
     status: str | None = Field(default=None, pattern="^(DRAFT|ON_SHELF|OFF_SHELF)$")
     model_config = {"populate_by_name": True}
 

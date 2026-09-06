@@ -1,0 +1,25 @@
+openapi: 3.0.3
+info: {title: LiteShop Contact Form API, version: 1.0.0}
+servers: [{url: /api/v1}]
+paths:
+  /contact/forms:
+    post:
+      parameters: [{in: header, name: X-Request-Id, required: true, schema: {type: string}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ContactFormCreate'}}}}
+      responses: {'202': {description: Accepted}}
+  /admin/contact/forms:
+    get:
+      security: [{bearerAuth: []}]
+      parameters: [{in: query, name: status, required: false, schema: {type: string, enum: [NEW, IN_PROGRESS, RESOLVED, SPAM]}}]
+      responses: {'200': {description: Contact form list}}
+  /admin/contact/forms/{submissionId}:
+    put:
+      security: [{bearerAuth: []}]
+      parameters: [{in: path, name: submissionId, required: true, schema: {type: integer}}, {in: header, name: X-Request-Id, required: true, schema: {type: string}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ContactFormStatusUpdate'}}}}
+      responses: {'200': {description: Updated}}
+components:
+  securitySchemes: {bearerAuth: {type: http, scheme: bearer}}
+  schemas:
+    ContactFormCreate: {type: object, required: [name, email, message], properties: {name: {type: string}, email: {type: string, format: email}, phone: {type: string}, company: {type: string}, message: {type: string}, website: {type: string}}}
+    ContactFormStatusUpdate: {type: object, required: [status], properties: {status: {type: string, enum: [NEW, IN_PROGRESS, RESOLVED, SPAM]}}}
