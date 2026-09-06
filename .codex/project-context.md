@@ -1,6 +1,6 @@
 # LiteShop Project Context
 
-> 由 project-radar 增量更新：2026-09-05。本文件是主 Agent 的最小上下文入口，子 Agent 若重新启用必须先读取相关章节。
+> 由 project-radar 增量更新：2026-09-06。本文件是主 Agent 的最小上下文入口，子 Agent 若重新启用必须先读取相关章节。
 
 ## 代码索引
 
@@ -14,7 +14,7 @@
 - `packages/shared-components/`：提供 `Button`、`EmptyState`、`FeedbackState`、`ErrorState`、`ProductCard` 和唯一的 `useDebounceAction` 实现。
 - `packages/site-app/`：Next.js 官网包骨架，属于后续阶段。
 - `backend/app/`：FastAPI 分层骨架：api/core/models/schemas/services/repositories/tasks/enums/errors；订单、库存、支付、用户、设置和后台 API 已实现，领域异常集中于 `errors/domain.py`，主题设置由 `services/settings.py` 编排。
-- `backend/alembic/`：异步 Alembic 迁移及 5 个可逆迁移文件。
+- `backend/alembic/`：异步 Alembic 迁移及可逆迁移文件；当前 head 为 `20260906_150000`。
 - `tests/e2e/`：Playwright H5 冒烟测试。
 - `docs/api-contracts/v1/`：14 个 OpenAPI 文件，后台契约已补齐分类、订单、库存、RBAC、审计和运费模板接口。
 - `plans/`：plan-01 到 plan-13 及索引，覆盖 1a 需求。
@@ -43,7 +43,7 @@
 
 ### 当前未处理
 
-- Docker Desktop Engine 当前返回 500/无响应，PostgreSQL 16 与 Redis 7 尚未在本机健康检查通过。
+- ✅ Docker Desktop Engine 已恢复；PostgreSQL 16 与 Redis 7 已通过本机 Compose healthcheck，Alembic 已完成 upgrade/downgrade 往返。
 - 真实生产数据库仓储、微信/支付宝 SDK 和支付沙箱尚未接入；当前支付回调为本地签名验证实现。
 - 收藏为浏览器本地存储；settings/page schema 为开发进程内存储；均属于后续持久化范围。
 - Impeccable 完整 HTML/CSS 解析模块在当前环境缺失，但机械 detector 已对 H5/Admin 返回空结果。
