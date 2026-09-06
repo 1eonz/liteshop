@@ -54,6 +54,8 @@ def upgrade() -> None:
     op.add_column("orders", sa.Column("completed_at", sa.DateTime(timezone=True), nullable=True))
     op.add_column("orders", sa.Column("cancelled_at", sa.DateTime(timezone=True), nullable=True))
     op.add_column("orders", sa.Column("cancel_reason", sa.String(200), nullable=True))
+    # PostgreSQL 不会自动把 TEXT 默认值转换为 JSONB，类型转换前必须先移除旧默认值。
+    op.alter_column("orders", "address_snapshot", existing_type=sa.Text(), server_default=None)
     op.alter_column(
         "orders",
         "address_snapshot",
@@ -61,6 +63,12 @@ def upgrade() -> None:
         type_=postgresql.JSONB(astext_type=sa.Text()),
         existing_nullable=False,
         postgresql_using="address_snapshot::jsonb",
+    )
+    op.alter_column(
+        "orders",
+        "address_snapshot",
+        existing_type=postgresql.JSONB(astext_type=sa.Text()),
+        server_default=sa.text("'{}'::jsonb"),
     )
     op.create_index("ix_orders_refund_status", "orders", ["refund_status"])
     op.create_check_constraint("ck_orders_paid_nonnegative", "orders", "paid_amount IS NULL OR paid_amount >= 0")
@@ -137,6 +145,13 @@ def downgrade() -> None:
         op.drop_column("stock_logs", column)
     op.drop_constraint("ck_orders_paid_nonnegative", "orders", type_="check")
     op.drop_index("ix_orders_refund_status", table_name="orders")
+    # downgrade 同样先移除 JSONB 默认值，避免默认表达式阻止类型回退。
+    op.alter_column(
+        "orders",
+        "address_snapshot",
+        existing_type=postgresql.JSONB(astext_type=sa.Text()),
+        server_default=None,
+    )
     op.alter_column(
         "orders",
         "address_snapshot",
@@ -144,6 +159,12 @@ def downgrade() -> None:
         type_=sa.Text(),
         existing_nullable=False,
         postgresql_using="address_snapshot::text",
+    )
+    op.alter_column(
+        "orders",
+        "address_snapshot",
+        existing_type=sa.Text(),
+        server_default=sa.text("'{}'"),
     )
     for column in ("cancel_reason", "cancelled_at", "completed_at", "paid_at", "remark", "refund_status"):
         op.drop_column("orders", column)
