@@ -16,6 +16,15 @@ class SettingsService:
             "navigationStyle": "glass",
             "tabbarStyle": "gallery",
         }
+        self._site: dict[str, object] = {
+            "siteName": "LiteShop",
+            "logoUrl": "",
+            "faviconUrl": "",
+            "defaultTitle": "LiteShop",
+            "defaultDescription": "",
+            "allowDarkMode": False,
+            "animationEnabled": True,
+        }
 
     async def get_theme(self, session: AsyncSession) -> dict[str, object]:
         """读取主题配置，开发模式使用进程内默认值。"""
@@ -38,6 +47,24 @@ class SettingsService:
             return await self.repository.upsert(session, "theme", updated)
         self._theme.update(updated)
         return dict(self._theme)
+
+    async def get_site(self, session: AsyncSession) -> dict[str, object]:
+        """读取官网全局设置。"""
+        if settings.use_database:
+            stored = await self.repository.get(session, "site")
+            if stored is not None:
+                return stored
+        return dict(self._site)
+
+    async def update_site(self, session: AsyncSession | None, values: dict[str, object]) -> dict[str, object]:
+        """更新官网全局设置，数据库模式由调用方事务提交。"""
+        updated = {key: value for key, value in values.items()}
+        if settings.use_database:
+            if session is None:
+                raise RuntimeError("数据库事务会话未初始化")
+            return await self.repository.upsert(session, "site", updated)
+        self._site.update(updated)
+        return dict(self._site)
 
 
 settings_service = SettingsService()

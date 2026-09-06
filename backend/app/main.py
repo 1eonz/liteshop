@@ -15,6 +15,8 @@ from .api.cart import router as cart_router
 from .api.contact import router as contact_router
 from .api.favorites import router as favorites_router
 from .api.health import router as health_router
+from .api.navigation import admin_router as admin_navigation_router
+from .api.navigation import router as navigation_router
 from .api.notifications import router as notifications_router
 from .api.orders import router as orders_router
 from .api.pages import router as pages_router
@@ -46,6 +48,8 @@ app.include_router(contact_router, prefix="/api/v1")
 app.include_router(products_router, prefix="/api/v1")
 app.include_router(orders_router, prefix="/api/v1")
 app.include_router(notifications_router, prefix="/api/v1")
+app.include_router(navigation_router, prefix="/api/v1")
+app.include_router(admin_navigation_router, prefix="/api/v1")
 app.include_router(reviews_router, prefix="/api/v1")
 app.include_router(pages_router, prefix="/api/v1")
 app.include_router(settings_router, prefix="/api/v1")

@@ -15,6 +15,7 @@ from app.models import (  # noqa: F401
     idempotency,
     inventory,
     notification,
+    navigation,
     operation_log,
     order,
     page,

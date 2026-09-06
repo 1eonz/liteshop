@@ -36,6 +36,17 @@ def test_theme_update_is_idempotent() -> None:
     )
 
 
+def test_site_settings_and_navigation_are_available() -> None:
+    """官网公开配置在开发模式提供稳定的默认值。"""
+    client = TestClient(app)
+    settings_response = client.get("/api/v1/settings/site")
+    navigation_response = client.get("/api/v1/site/navigation?location=header")
+    assert settings_response.status_code == 200
+    assert settings_response.json()["data"]["siteName"] == "LiteShop"
+    assert navigation_response.status_code == 200
+    assert len(navigation_response.json()["data"]["items"]) == 3
+
+
 def test_memory_order_list_reports_total() -> None:
     """无数据库开发模式的订单列表也返回完整分页契约。"""
     token = create_access_token("orders-list-user")

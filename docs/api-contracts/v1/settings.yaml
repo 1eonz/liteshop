@@ -5,6 +5,9 @@ paths:
   /settings/theme:
     get: {responses: {'200': {description: Theme variables, content: {application/json: {schema: {$ref: '#/components/schemas/ThemeResponse'}}}}}}
     put: {security: [{bearerAuth: []}], parameters: [{in: header, name: X-Request-Id, required: true, schema: {type: string, format: uuid}}], requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ThemeSettings'}}}}, responses: {'200': {description: Updated, content: {application/json: {schema: {$ref: '#/components/schemas/ThemeResponse'}}}}}}
+  /settings/site:
+    get: {responses: {'200': {description: Public website settings, content: {application/json: {schema: {$ref: '#/components/schemas/SiteSettings'}}}}}}
+    put: {security: [{bearerAuth: []}], parameters: [{in: header, name: X-Request-Id, required: true, schema: {type: string, format: uuid}}], requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/SiteSettings'}}}}, responses: {'200': {description: Updated, content: {application/json: {schema: {$ref: '#/components/schemas/SiteSettings'}}}}}}
   /settings/shipping-companies: {get: {responses: {'200': {description: Shipping companies}}}}
   /settings/feature-flags: {get: {responses: {'200': {description: Feature flags}}}}
 components:
@@ -12,3 +15,4 @@ components:
   schemas:
     ThemeSettings: {type: object, required: [primaryColor, navigationStyle, tabbarStyle], properties: {primaryColor: {type: string, pattern: '^#[0-9a-fA-F]{6}$'}, navigationStyle: {type: string, enum: [glass, solid]}, tabbarStyle: {type: string, enum: [gallery, minimal]}}}
     ThemeResponse: {$ref: '#/components/schemas/ThemeSettings'}
+    SiteSettings: {type: object, properties: {siteName: {type: string}, logoUrl: {type: string}, faviconUrl: {type: string}, defaultTitle: {type: string}, defaultDescription: {type: string}, allowDarkMode: {type: boolean}, animationEnabled: {type: boolean}}}

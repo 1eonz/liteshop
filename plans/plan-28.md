@@ -6,13 +6,13 @@
 
 - [x] 联系表单 DTO、反垃圾蜜罐、限流和幂等 API。
 - [x] `form_submissions` PostgreSQL 表、Repository、Service 与迁移。
-- [ ] 导航菜单与 Footer 配置持久化及后台权限校验。
-- [ ] 官网全局设置与主题令牌读取/更新接口。
-- [ ] OpenAPI、错误码和前端 API 出口同步。
+- [x] 导航菜单与 Footer 配置持久化及后台权限校验。
+- [x] 官网全局设置与主题令牌读取/更新接口。
+- [x] OpenAPI、错误码和前端 API 出口同步。
 - [x] 真实 PostgreSQL 写入与迁移升级测试。
 
 ## 验收标准
 
 - [x] 联系表单重复请求只产生一条记录，蜜罐字段非空时拒绝。
 - [x] 迁移可 `upgrade/downgrade/upgrade`，服务层不直接操作 ORM。
-- [x] 后端 Ruff、mypy、pytest 全部通过。
+- [x] 后端 Ruff、mypy、pytest 全部通过（36 passed）。

@@ -41,3 +41,17 @@ class ThemeSettingsUpdate(BaseModel):
     navigation_style: str = Field(alias="navigationStyle", pattern=r"^(glass|solid)$")
     tabbar_style: str = Field(alias="tabbarStyle", pattern=r"^(gallery|minimal)$")
     model_config = {"populate_by_name": True}
+
+
+class SiteSettingsUpdate(BaseModel):
+    """官网全局设置，脚本字段不在此接口开放。"""
+
+    site_name: str = Field(default="LiteShop", min_length=1, max_length=100, alias="siteName")
+    logo_url: str = Field(default="", max_length=500, alias="logoUrl")
+    favicon_url: str = Field(default="", max_length=500, alias="faviconUrl")
+    default_title: str = Field(default="LiteShop", max_length=200, alias="defaultTitle")
+    default_description: str = Field(default="", max_length=500, alias="defaultDescription")
+    allow_dark_mode: bool = Field(default=False, alias="allowDarkMode")
+    animation_enabled: bool = Field(default=True, alias="animationEnabled")
+
+    model_config = {"populate_by_name": True}

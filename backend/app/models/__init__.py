@@ -5,6 +5,7 @@ from .form_submission import FormSubmission
 from .freight import FreightTemplate, FreightTemplateItem
 from .idempotency import IdempotencyRecord
 from .inventory import InventoryLedger
+from .navigation import NavigationItem
 from .notification import Notification
 from .operation_log import OperationLog
 from .order import Order, OrderItem, Payment
@@ -25,6 +26,7 @@ __all__ = [
     "OperationLog",
     "StorePage",
     "Notification",
+    "NavigationItem",
     "Payment",
     "ProductSpec",
     "ProductSpecValue",
