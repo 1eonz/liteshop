@@ -12,7 +12,8 @@
 - `packages/h5-app/`：按 `pages/components/features/hooks/service/store/utils/router` 分层；`features/catalog` 承载商品查询、首页配置，`features/cart` 承载购物车领域模型；商品详情的轮播、评价、SKU 抽屉位于 `pages/product-detail/components`，购物车商品行位于 `pages/cart/components`；认证状态统一由 `store/session.ts` 管理，地址、通知、订单详情和支付页面有登录守卫，访客购物车和商品浏览保持匿名可用。
 - `packages/admin-app/`：按同样分层，并在 `features/dashboard` 承载看板指标模型；看板、商品列表/真实新建/编辑、分类、订单、库存、审计、RBAC、设置已接入；认证状态由 `store/session.ts` 管理，`AdminLayout` 对后台路由执行管理员令牌守卫，写操作统一走共享 `useDebounceAction`。
 - `packages/shared-components/`：提供 `Button`、`EmptyState`、`FeedbackState`、`ErrorState`、`ProductCard` 和唯一的 `useDebounceAction` 实现。
-- `packages/site-app/`：Next.js 官网包骨架，属于后续阶段。
+- `packages/site-app/`：Next.js App Router 官网，页面 Schema 位于 `src/site-data.ts`，组件渲染器位于 `src/components/SiteRenderer.tsx`，包含动态 slug、SEO、sitemap、robots 和联系表单 Route Handler。
+- `packages/shared-3d-components/`：三期 3D 场景配置、设备降级和速度约束工具；当前不依赖 Three.js/R3F。
 - `backend/app/`：FastAPI 分层骨架：api/core/models/schemas/services/repositories/tasks/enums/errors；订单、库存、支付、用户、设置和后台 API 已实现，领域异常集中于 `errors/domain.py`，主题设置由 `services/settings.py` 编排。
 - `backend/alembic/`：异步 Alembic 迁移及可逆迁移文件；当前 head 为 `20260906_150000`。
 - `tests/e2e/`：Playwright H5 冒烟测试。
@@ -40,12 +41,15 @@
 - ✅ API 不再直接依赖仓储异常或系统设置仓储；前端登录不再绕过 service 层。
 - ✅ 前端认证令牌统一由各端 `store/session.ts` 管理；后台不再复用 H5 用户令牌，后台布局和受保护页面均有认证守卫。
 - ✅ H5 登录验证码按钮实现 60 秒前端冷却，发送动作仍由 `useDebounceAction` 防重复点击，后端继续执行 Redis/接口限流。
+- ✅ 官网基础动态路由、SEO 元数据、sitemap/robots 与联系表单幂等入口已建立。
 
 ### 当前未处理
 
 - ✅ Docker Desktop Engine 已恢复；PostgreSQL 16 与 Redis 7 已通过本机 Compose healthcheck，Alembic 已完成 upgrade/downgrade 往返。
 - 真实生产数据库仓储、微信/支付宝 SDK 和支付沙箱尚未接入；当前支付回调为本地签名验证实现。
 - 收藏为浏览器本地存储；settings/page schema 为开发进程内存储；均属于后续持久化范围。
+- 官网导航/全局设置落库、ISR revalidate、商城搭建器增强和官网 API 数据接入仍待二期后续计划。
+- Three.js/R3F、GSAP、Lenis、Framer Motion 属于待确认的新依赖；当前使用 CSS 与原生 API 保持可构建。
 - Impeccable 完整 HTML/CSS 解析模块在当前环境缺失，但机械 detector 已对 H5/Admin 返回空结果。
 - 页面层仍保留少量直接调用 `service` 方法的交易编排代码（未出现组件内裸 Axios）；H5 购物车、地址、结算和 Admin 主要领域已有 `features/*/api` 出口，后续若交易规则继续增长继续下沉。
 - Admin `useAdminQueries.ts` 与 `service/admin.ts`、后端 `api/admin.py`/`api/orders.py` 仍为历史聚合文件，属于 plan-26 后续拆分项。
@@ -56,7 +60,7 @@
 - 当前任务已按主 Agent 直接串行执行；若重新启用子 Agent，仍应按 AGENTS.md §8.3 的领地规则逐 plan 启动，不并行修改同一领域。
 - 每个子 Agent 启动前注入本文代码索引与对应契约摘要；完成后执行 liteshop-verify 的 5+1 检查。
 - backend 重点执行 ruff、mypy、pytest；前端重点执行 tsc、lint、test、build；集成执行 Playwright。
-- 每 3 个 plan 完成后重新扫描；当前所有 13 个 plan 已完成，下一次扫描仅记录增量变更。
+- 每 3 个 plan 完成后重新扫描；一期 plan-01~26 已完成主要收口，二期/三期跟踪 plan-27~31。
 
 ## 完整 MVP 清单（验收对照用）
 

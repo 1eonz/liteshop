@@ -1,6 +1,7 @@
 """SQLAlchemy 模型导出。"""
 
 from .favorite import Favorite
+from .form_submission import FormSubmission
 from .freight import FreightTemplate, FreightTemplateItem
 from .idempotency import IdempotencyRecord
 from .inventory import InventoryLedger
@@ -33,6 +34,7 @@ __all__ = [
     "FreightTemplate",
     "Favorite",
     "FreightTemplateItem",
+    "FormSubmission",
     "Permission",
     "Role",
     "Sku",

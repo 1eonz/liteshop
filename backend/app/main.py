@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse
 from .api.admin import router as admin_router
 from .api.auth import router as auth_router
 from .api.cart import router as cart_router
+from .api.contact import router as contact_router
 from .api.favorites import router as favorites_router
 from .api.health import router as health_router
 from .api.notifications import router as notifications_router
@@ -41,6 +42,7 @@ app.add_middleware(
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")
 app.include_router(cart_router, prefix="/api/v1")
+app.include_router(contact_router, prefix="/api/v1")
 app.include_router(products_router, prefix="/api/v1")
 app.include_router(orders_router, prefix="/api/v1")
 app.include_router(notifications_router, prefix="/api/v1")

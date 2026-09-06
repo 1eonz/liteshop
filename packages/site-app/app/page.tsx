@@ -1,10 +1,8 @@
-import { siteTitle } from '../src/site-data';
+import { SiteRenderer } from '../src/components/SiteRenderer';
+import { getSitePage } from '../src/site-data';
 
 export default function HomePage(): JSX.Element {
-  return (
-    <main>
-      <h1>{siteTitle}</h1>
-      <p>商城官网</p>
-    </main>
-  );
+  const page = getSitePage('home');
+  if (!page) return <main>页面不存在</main>;
+  return <SiteRenderer page={page} />;
 }
