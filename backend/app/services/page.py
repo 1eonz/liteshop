@@ -3,10 +3,10 @@
 from datetime import UTC, datetime
 from urllib.parse import urlparse
 
-from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models.page import StorePage
+from ..repositories.page import PageRepository
 from ..schemas.page import PageSchemaInput
 
 
@@ -16,6 +16,9 @@ class PageSchemaError(ValueError):
 
 class PageService:
     """页面 CRUD、危险内容校验与版本迁移。"""
+
+    def __init__(self, repository: PageRepository | None = None) -> None:
+        self.repository = repository or PageRepository()
 
     @staticmethod
     def validate(schema: PageSchemaInput) -> None:
@@ -37,7 +40,7 @@ class PageService:
 
     async def get(self, session: AsyncSession, page_id: int) -> dict[str, object]:
         """读取页面 Schema。"""
-        page = await session.get(StorePage, page_id)
+        page = await self.repository.get(session, page_id)
         if page is None:
             raise PageSchemaError("页面不存在")
         return self.response(page)
@@ -45,7 +48,7 @@ class PageService:
     async def save(self, session: AsyncSession, page_id: int, schema: PageSchemaInput) -> dict[str, object]:
         """保存页面并自动更新版本。"""
         self.validate(schema)
-        page = await session.get(StorePage, page_id, with_for_update=True)
+        page = await self.repository.get(session, page_id, for_update=True)
         if page is None:
             now = datetime.now(UTC)
             page = StorePage(
@@ -56,23 +59,23 @@ class PageService:
                 created_at=now,
                 updated_at=now,
             )
-            session.add(page)
+            await self.repository.add(session, page)
         else:
             page.version = max(page.version + 1, schema.version)
             page.slug = schema.slug
             page.schema = schema.model_dump()
             page.updated_at = datetime.now(UTC)
-        await session.flush()
+        await self.repository.flush(session)
         return self.response(page)
 
     async def set_home(self, session: AsyncSession, page_id: int) -> dict[str, object]:
         """原子设置首页。"""
-        page = await session.get(StorePage, page_id, with_for_update=True)
+        page = await self.repository.get(session, page_id, for_update=True)
         if page is None:
             raise PageSchemaError("页面不存在")
-        await session.execute(update(StorePage).values(is_home=False))
+        await self.repository.clear_home(session)
         page.is_home = True
-        await session.flush()
+        await self.repository.flush(session)
         return self.response(page)
 
     @staticmethod

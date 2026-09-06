@@ -75,3 +75,11 @@ class ReviewRepository:
         """后台按时间读取待审核评价。"""
         result = await session.scalars(select(ProductReview).order_by(ProductReview.created_at.desc()).limit(limit))
         return list(result.all())
+
+    async def get_for_update(self, session: AsyncSession, review_id: int) -> ProductReview | None:
+        """锁定待审核评价。"""
+        return cast(ProductReview | None, await session.get(ProductReview, review_id, with_for_update=True))
+
+    async def flush(self, session: AsyncSession) -> None:
+        """刷新审核变更，不提交外层事务。"""
+        await session.flush()

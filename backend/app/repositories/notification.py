@@ -42,6 +42,10 @@ class NotificationRepository:
         )
         return int(getattr(result, "rowcount", 0) or 0)
 
+    async def flush(self, session: AsyncSession) -> None:
+        """刷新单条已读变更，不提交外层事务。"""
+        await session.flush()
+
     async def unread_count(self, session: AsyncSession, user_id: int) -> int:
         """统计未读数量。"""
         return int(

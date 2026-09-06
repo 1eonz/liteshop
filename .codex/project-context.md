@@ -47,7 +47,8 @@
 - 真实生产数据库仓储、微信/支付宝 SDK 和支付沙箱尚未接入；当前支付回调为本地签名验证实现。
 - 收藏为浏览器本地存储；settings/page schema 为开发进程内存储；均属于后续持久化范围。
 - Impeccable 完整 HTML/CSS 解析模块在当前环境缺失，但机械 detector 已对 H5/Admin 返回空结果。
-- 页面层仍保留少量直接调用 `service` 方法的交易编排代码（未出现组件内裸 Axios）；后续若交易规则继续增长，应把对应查询/mutation 下沉到 `features/*/api`，页面只组合 Hook。
+- 页面层仍保留少量直接调用 `service` 方法的交易编排代码（未出现组件内裸 Axios）；H5 购物车、地址、结算和 Admin 主要领域已有 `features/*/api` 出口，后续若交易规则继续增长继续下沉。
+- Admin `useAdminQueries.ts` 与 `service/admin.ts`、后端 `api/admin.py`/`api/orders.py` 仍为历史聚合文件，属于 plan-26 后续拆分项。
 - H5/Admin 中的兼容入口 `src/useDebounceAction.ts` 和 `hooks/useDebounceAction.ts` 仍保留用于旧调用方，不得再增加新的实现或入口。
 
 ## Agent 工作流适配建议

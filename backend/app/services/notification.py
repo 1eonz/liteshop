@@ -43,7 +43,7 @@ class NotificationService:
             raise NotificationError("通知不存在")
         if notification.read_at is None:
             notification.read_at = datetime.now(UTC)
-            await session.flush()
+            await self.repository.flush(session)
         return {"id": notification.id, "readAt": notification.read_at.isoformat()}
 
     async def mark_all_read(self, session: AsyncSession, user_id: int) -> dict[str, object]:

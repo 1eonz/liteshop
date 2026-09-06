@@ -51,7 +51,7 @@ class ReviewService:
 
     async def audit(self, session: AsyncSession, review_id: int, status: str, reason: str) -> dict[str, object]:
         """审核评价并保留原因。"""
-        review = await session.get(ProductReview, review_id, with_for_update=True)
+        review = await self.repository.get_for_update(session, review_id)
         if review is None:
             raise ReviewError("评价不存在")
         if review.status not in {"PENDING", "REJECTED"}:
@@ -59,7 +59,7 @@ class ReviewService:
         review.status = status
         review.audit_reason = reason or None
         review.updated_at = datetime.now(UTC)
-        await session.flush()
+        await self.repository.flush(session)
         return {"id": review.id, "status": review.status, "reason": review.audit_reason}
 
 

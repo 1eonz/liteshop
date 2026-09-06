@@ -1,34 +1,27 @@
 """商品收藏服务。"""
 
-from datetime import UTC, datetime
-
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..models.favorite import Favorite
+from ..repositories.favorite import FavoriteRepository
 
 
 class FavoriteService:
     """提供服务端收藏查询和幂等切换。"""
 
+    def __init__(self, repository: FavoriteRepository | None = None) -> None:
+        self.repository = repository or FavoriteRepository()
+
     async def list_ids(self, session: AsyncSession, user_id: int) -> list[int]:
         """返回用户收藏的商品 ID。"""
-        values = await session.scalars(
-            select(Favorite.product_id).where(Favorite.user_id == user_id).order_by(Favorite.created_at.desc())
-        )
-        return list(values.all())
+        return await self.repository.list_product_ids(session, user_id)
 
     async def toggle(self, session: AsyncSession, user_id: int, product_id: int) -> dict[str, object]:
         """在事务内切换收藏关系。"""
-        favorite = await session.scalar(
-            select(Favorite).where(Favorite.user_id == user_id, Favorite.product_id == product_id).with_for_update()
-        )
+        favorite = await self.repository.get_for_update(session, user_id, product_id)
         if favorite is None:
-            session.add(Favorite(user_id=user_id, product_id=product_id, created_at=datetime.now(UTC)))
-            await session.flush()
+            await self.repository.add(session, user_id, product_id)
             return {"productId": product_id, "favorited": True}
-        await session.delete(favorite)
-        await session.flush()
+        await self.repository.delete(session, favorite)
         return {"productId": product_id, "favorited": False}
 
 
