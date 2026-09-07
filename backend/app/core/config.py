@@ -32,7 +32,8 @@ class Settings:
         if mime.strip()
     )
     use_database: bool = os.getenv("LITESHOP_USE_DATABASE", "false").lower() == "true"
-    environment: str = os.getenv("ENV", "development")
+    environment: str = os.getenv("ENV", "development").strip().lower()
+    sms_provider: str = os.getenv("SMS_PROVIDER", "console").strip().lower()
     cookie_secure: bool = os.getenv("COOKIE_SECURE", "false").lower() == "true"
     cookie_samesite: str = os.getenv("COOKIE_SAMESITE", "lax")
     sms_phone_daily_limit: int = int(os.getenv("RATE_LIMIT_SMS_PHONE_PER_DAY", "5"))
@@ -59,7 +60,9 @@ class Settings:
 
     def __post_init__(self) -> None:
         """预发布和生产环境禁止使用进程生成的临时密钥。"""
-        if self.environment in {"staging", "production"}:
+        if self.sms_provider not in {"console", "aliyun", "tencent"}:
+            raise ValueError("SMS_PROVIDER 必须是 console、aliyun 或 tencent")
+        if self.environment.strip().lower() in {"staging", "production"}:
             if not self.use_database:
                 raise ValueError("预发布和生产环境必须启用 LITESHOP_USE_DATABASE")
             if not os.getenv("JWT_SECRET") or len(self.jwt_secret) < 32:
@@ -79,6 +82,8 @@ class Settings:
                 )
             ):
                 raise ValueError("支付回调密钥长度必须不少于 32")
+            if self.sms_provider == "console":
+                raise ValueError("预发布和生产环境禁止使用 console 短信 Provider")
 
 
 settings = Settings()

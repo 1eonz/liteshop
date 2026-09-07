@@ -299,6 +299,7 @@ export interface AdminLoginInput {
 /** 管理端登录响应。 */
 export interface AdminLoginResult {
   accessToken: string;
+  expiresIn?: number;
   refreshToken?: string;
 }
 

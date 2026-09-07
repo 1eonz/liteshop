@@ -37,7 +37,7 @@ export function LoginPage(): JSX.Element {
       await sendSmsCode({ phone, purpose: 'LOGIN' });
       setSent(true);
       setCountdown(60);
-      setFeedback('验证码已发送，开发环境验证码为 123456。');
+      setFeedback('验证码已发送，请查收短信。');
     } catch {
       setFeedback('验证码发送失败，请稍后重试。');
     }
@@ -50,7 +50,7 @@ export function LoginPage(): JSX.Element {
     setFeedback('');
     try {
       const result = await login({ phone, code });
-      setAccessToken(result.accessToken);
+      setAccessToken(result.accessToken, result.expiresIn);
       const target = (location.state as LoginLocationState | null)?.from ?? '/me';
       navigate(target, { replace: true });
     } catch {

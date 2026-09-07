@@ -1,4 +1,4 @@
-@import '../../shared-tokens/src/tokens.css';
+@import '@liteshop/shared-tokens/tokens.css';
 :root {
   --color-primary: var(--color-primary-500);
   --color-ink: var(--gallery-color-ink);

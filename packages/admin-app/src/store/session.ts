@@ -1,28 +1,45 @@
 import { create } from 'zustand';
 
 const ADMIN_ACCESS_TOKEN_KEY = 'liteshop.admin.accessToken';
+const ADMIN_ACCESS_TOKEN_EXPIRES_AT_KEY = 'liteshop.admin.accessTokenExpiresAt';
 
 function readAccessToken(): string | null {
   if (typeof window === 'undefined') return null;
   return window.localStorage.getItem(ADMIN_ACCESS_TOKEN_KEY);
 }
 
+function readAccessTokenExpiresAt(): number | null {
+  if (typeof window === 'undefined') return null;
+  const value = Number(window.localStorage.getItem(ADMIN_ACCESS_TOKEN_EXPIRES_AT_KEY));
+  return Number.isFinite(value) && value > 0 ? value : null;
+}
+
 interface SessionState {
   accessToken: string | null;
-  setAccessToken: (accessToken: string) => void;
+  accessTokenExpiresAt: number | null;
+  setAccessToken: (accessToken: string, expiresInSeconds?: number) => void;
   clear: () => void;
 }
 
 /** 后台会话客户端状态，不缓存服务端业务数据。 */
 export const useSessionStore = create<SessionState>((set) => ({
   accessToken: readAccessToken(),
-  setAccessToken: (accessToken) => {
+  accessTokenExpiresAt: readAccessTokenExpiresAt(),
+  setAccessToken: (accessToken, expiresInSeconds) => {
     window.localStorage.setItem(ADMIN_ACCESS_TOKEN_KEY, accessToken);
-    set({ accessToken });
+    const accessTokenExpiresAt =
+      expiresInSeconds && expiresInSeconds > 0 ? Date.now() + expiresInSeconds * 1000 : null;
+    if (accessTokenExpiresAt) {
+      window.localStorage.setItem(ADMIN_ACCESS_TOKEN_EXPIRES_AT_KEY, String(accessTokenExpiresAt));
+    } else {
+      window.localStorage.removeItem(ADMIN_ACCESS_TOKEN_EXPIRES_AT_KEY);
+    }
+    set({ accessToken, accessTokenExpiresAt });
   },
   clear: () => {
     window.localStorage.removeItem(ADMIN_ACCESS_TOKEN_KEY);
-    set({ accessToken: null });
+    window.localStorage.removeItem(ADMIN_ACCESS_TOKEN_EXPIRES_AT_KEY);
+    set({ accessToken: null, accessTokenExpiresAt: null });
   },
 }));
 

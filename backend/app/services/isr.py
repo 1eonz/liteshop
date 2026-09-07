@@ -2,7 +2,7 @@
 
 from collections.abc import Sequence
 
-import httpx2
+import httpx
 import structlog
 
 from ..core.config import settings
@@ -16,7 +16,7 @@ async def trigger_isr_revalidate(slug: str, *, tags: Sequence[str] = ()) -> bool
         return False
     url = f"{settings.nextjs_base_url.rstrip('/')}/api/revalidate"
     try:
-        async with httpx2.AsyncClient(timeout=settings.revalidate_timeout_seconds) as client:
+        async with httpx.AsyncClient(timeout=settings.revalidate_timeout_seconds) as client:
             response = await client.post(
                 url,
                 json={"slug": slug, "tags": list(tags)},
@@ -27,6 +27,6 @@ async def trigger_isr_revalidate(slug: str, *, tags: Sequence[str] = ()) -> bool
             return False
         logger.info("site_isr_revalidated", slug=slug)
         return True
-    except Exception as error:  # 网络依赖不可用时保留已保存页面，等待后续重试任务。
+    except httpx.HTTPError as error:  # 网络依赖不可用时保留已保存页面，等待后续重试任务。
         logger.warning("site_isr_revalidate_unavailable", slug=slug, error=str(error))
         return False

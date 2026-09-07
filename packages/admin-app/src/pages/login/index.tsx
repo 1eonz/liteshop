@@ -5,7 +5,7 @@ import { useDebounceAction } from '../../hooks/useDebounceAction';
 import { loginAdmin } from '../../service/auth';
 import { useSessionStore } from '../../store/session';
 
-/** 后台管理员登录页，开发环境复用短信登录接口。 */
+/** 后台管理员登录页，复用统一短信登录接口。 */
 export function AdminLoginPage(): JSX.Element {
   const navigate = useNavigate();
   const setAccessToken = useSessionStore((state) => state.setAccessToken);
@@ -15,7 +15,7 @@ export function AdminLoginPage(): JSX.Element {
   const login = async (): Promise<void> => {
     try {
       const response = await loginAdmin({ phone, code });
-      setAccessToken(response.accessToken);
+      setAccessToken(response.accessToken, response.expiresIn);
       navigate('/', { replace: true });
     } catch {
       setError('登录失败，请检查手机号和验证码。');
@@ -31,7 +31,7 @@ export function AdminLoginPage(): JSX.Element {
       <section className="form-card">
         <p className="eyebrow">LiteShop Admin</p>
         <h1>管理员登录</h1>
-        <p className="muted">开发环境验证码为 123456。</p>
+        <p className="muted">验证码将发送到管理员手机号。</p>
         <form onSubmit={onSubmit}>
           <label>
             手机号

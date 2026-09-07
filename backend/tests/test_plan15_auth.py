@@ -7,15 +7,21 @@ import pytest
 from fastapi import Request
 from fastapi.testclient import TestClient
 
+from app.core.config import Settings
 from app.core.network import get_client_ip
 from app.main import app
-from app.services.auth import AuthenticationError, AuthService
+from app.services.admin import AdminPermissionDenied, AdminService
+from app.services.auth import AuthenticationError, AuthService, auth_service
 
 
-def test_refresh_token_replay_is_rejected_after_rotation() -> None:
+def test_refresh_token_replay_is_rejected_after_rotation(monkeypatch: pytest.MonkeyPatch) -> None:
     """refresh 成功轮换后，旧令牌不能再次使用。"""
     client = TestClient(app)
-    login = client.post("/api/v1/auth/login", json={"phone": "15100000001", "code": "123456"})
+    phone = "15100000001"
+    monkeypatch.setattr(auth_service, "code_generator", lambda: "518204")
+    send = client.post("/api/v1/auth/sms-code", json={"phone": phone})
+    assert send.status_code == 200
+    login = client.post("/api/v1/auth/login", json={"phone": phone, "code": "518204"})
     old_refresh = login.cookies.get("refresh_token")
     assert old_refresh
     headers = {"Origin": "http://localhost:5173"}
@@ -33,10 +39,14 @@ def test_refresh_token_replay_is_rejected_after_rotation() -> None:
     assert replay.json()["code"] == 40101
 
 
-def test_logout_revokes_refresh_token() -> None:
+def test_logout_revokes_refresh_token(monkeypatch: pytest.MonkeyPatch) -> None:
     """退出登录后，Cookie 中的 refresh token 立即撤销。"""
     client = TestClient(app)
-    login = client.post("/api/v1/auth/login", json={"phone": "15100000002", "code": "123456"})
+    phone = "15100000002"
+    monkeypatch.setattr(auth_service, "code_generator", lambda: "935172")
+    send = client.post("/api/v1/auth/sms-code", json={"phone": phone})
+    assert send.status_code == 200
+    login = client.post("/api/v1/auth/login", json={"phone": phone, "code": "935172"})
     old_refresh = login.cookies.get("refresh_token")
     access_token = login.json()["data"]["accessToken"]
     assert old_refresh
@@ -129,3 +139,54 @@ def test_sms_code_concurrent_consume_only_succeeds_once(monkeypatch: pytest.Monk
 
     results = asyncio.run(run_concurrently())
     assert sorted(results) == [False, True]
+
+
+def test_development_sms_code_is_random_and_one_time(monkeypatch: pytest.MonkeyPatch) -> None:
+    """开发控制台验证码应随机生成，成功校验后立即失效。"""
+
+    class CapturingSmsProvider:
+        def __init__(self) -> None:
+            self.codes: list[str] = []
+
+        async def send(self, _phone: str, code: str) -> None:
+            self.codes.append(code)
+
+    settings = SimpleNamespace(use_database=False, sms_provider="console")
+    monkeypatch.setattr("app.services.auth.settings", settings)
+    generated = iter((123456, 654321))
+    provider = CapturingSmsProvider()
+    service = AuthService(
+        sms_provider=provider,
+        code_generator=lambda: f"{next(generated):06d}",
+    )
+
+    asyncio.run(service.send_sms_code("15100000004"))
+    asyncio.run(service.send_sms_code("15100000005"))
+    assert provider.codes == ["123456", "654321"]
+    asyncio.run(service.verify_sms_code("15100000004", "123456"))
+    with pytest.raises(AuthenticationError, match="INVALID_CODE"):
+        asyncio.run(service.verify_sms_code("15100000004", "123456"))
+
+
+def test_production_cannot_use_console_sms_provider(monkeypatch: pytest.MonkeyPatch) -> None:
+    """预发布和生产环境必须配置真实短信渠道。"""
+    monkeypatch.setenv("JWT_SECRET", "j" * 32)
+    monkeypatch.setenv("PAYMENT_CALLBACK_SECRET", "p" * 32)
+
+    with pytest.raises(ValueError, match="禁止使用 console"):
+        Settings(
+            environment="production",
+            use_database=True,
+            sms_provider="console",
+            jwt_secret="j" * 32,
+            payment_callback_secret="p" * 32,
+            payment_wechat_callback_secret="w" * 32,
+            payment_alipay_callback_secret="a" * 32,
+        )
+
+
+def test_admin_subject_must_be_numeric() -> None:
+    """管理员权限校验拒绝硬编码 admin 主体。"""
+    service = AdminService()
+    with pytest.raises(AdminPermissionDenied, match="无效管理员身份"):
+        asyncio.run(service.require_permission(None, "admin", "settings.write"))  # type: ignore[arg-type]

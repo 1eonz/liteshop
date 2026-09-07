@@ -56,6 +56,7 @@
 - 多租户遵循独立部署优先；共享数据库 `tenant_id` 隔离、真实物流/AI/营销供应商仍待决策。
 - Impeccable 完整 HTML/CSS 解析模块在当前环境缺失，但机械 detector 已对 H5/Admin 返回空结果。
 - 页面层仍保留少量直接调用 `service` 方法的交易编排代码（未出现组件内裸 Axios）；H5 购物车、地址、结算和 Admin 主要领域已有 `features/*/api` 出口，后续若交易规则继续增长继续下沉。
+- Admin 旧的 `src/hooks/useProductsQuery.ts` 与 `src/service/products.ts` 已确认无调用方并删除；商品查询唯一入口为 `features/catalog/api/useAdminCatalogQueries.ts`，避免同名 queryKey 的缓存污染。
 - 页面首页标记已按 `store/site` 渠道隔离清理，避免切换一端首页误取消另一端首页。
 - Admin `useAdminQueries.ts` 与 `service/admin.ts` 已收敛为兼容出口，真实实现位于各 `features/*/api` 与 `service/admin/<domain>.ts`；后端 `api/admin.py`/`api/orders.py` 仍为历史聚合文件，属于 plan-26 后续拆分项；拆分需保持契约快照和路由标签不变。
 - H5/Admin 中的兼容入口 `src/useDebounceAction.ts` 和 `hooks/useDebounceAction.ts` 仍保留用于旧调用方，不得再增加新的实现或入口。

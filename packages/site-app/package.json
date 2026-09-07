@@ -7,12 +7,13 @@
     "build": "next build",
     "dev": "next dev",
     "test": "vitest run",
-    "lint": "eslint src --ext .ts,.tsx",
+    "lint": "eslint src app",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@liteshop/shared-3d-components": "workspace:*",
     "@liteshop/shared-components": "workspace:*",
+    "@liteshop/shared-tokens": "workspace:*",
     "next": "^14.2.25",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

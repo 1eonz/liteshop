@@ -9,6 +9,7 @@ export interface CartLine {
 interface CartState {
   lines: CartLine[];
   addLine: (line: CartLine) => void;
+  upsertLine: (line: CartLine) => void;
   setLines: (lines: CartLine[]) => void;
   updateLine: (skuId: number, quantity: number) => void;
   removeLine: (skuId: number) => void;
@@ -29,6 +30,12 @@ export const useCartStore = create<CartState>((set) => ({
         };
       return { lines: [...state.lines, line] };
     }),
+  upsertLine: (line) =>
+    set((state) => ({
+      lines: state.lines.some((item) => item.skuId === line.skuId)
+        ? state.lines.map((item) => (item.skuId === line.skuId ? line : item))
+        : [...state.lines, line],
+    })),
   setLines: (lines) => set({ lines }),
   updateLine: (skuId, quantity) =>
     set((state) => ({

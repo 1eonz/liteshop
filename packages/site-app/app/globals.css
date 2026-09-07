@@ -1,4 +1,4 @@
-@import '../../shared-tokens/src/tokens.css';
+@import '@liteshop/shared-tokens/tokens.css';
 
 :root {
   --site-bg: var(--gallery-color-page);

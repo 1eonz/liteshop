@@ -1,5 +1,5 @@
 import type { JSX } from 'react';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { PaymentProvider } from '@liteshop/shared-types';
@@ -18,6 +18,7 @@ export function PaymentPage(): JSX.Element {
   const [provider, setProvider] = useState<PaymentProvider>(PaymentProvider.WECHAT);
   const [paymentId, setPaymentId] = useState<number | string | null>(null);
   const [error, setError] = useState('');
+  const requestIdRef = useRef(crypto.randomUUID());
   const query = useQuery({
     queryKey: ['order', orderId],
     enabled: authenticated && Number.isInteger(orderId) && orderId > 0,
@@ -27,8 +28,14 @@ export function PaymentPage(): JSX.Element {
     if (!query.data) return;
     setError('');
     try {
-      const payment = await createPayment(orderId, provider, query.data.totalAmount);
+      const payment = await createPayment(
+        orderId,
+        provider,
+        query.data.totalAmount,
+        requestIdRef.current,
+      );
       setPaymentId(payment.id);
+      requestIdRef.current = crypto.randomUUID();
     } catch {
       setError('支付单创建失败，请返回订单详情重试。');
     }

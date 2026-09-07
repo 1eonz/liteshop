@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 import { SiteRenderer } from '../../src/components/SiteRenderer';
-import { sitePages } from '../../src/site-data';
 import { loadSitePage, loadSitePageSlugs } from '../../src/site-data.server';
 
 interface SitePageProps {

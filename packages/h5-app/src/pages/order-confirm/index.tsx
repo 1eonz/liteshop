@@ -1,5 +1,5 @@
 import type { JSX } from 'react';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDebounceAction } from '../../hooks/useDebounceAction';
 import { createOrder } from '../../service/orders';
@@ -19,7 +19,7 @@ export function OrderConfirmPage(): JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
   const allLines = useCartStore((state) => state.lines);
-  const clearCart = useCartStore((state) => state.clear);
+  const removeLocal = useCartStore((state) => state.removeLine);
   const authenticated = useSessionStore((state) => Boolean(state.accessToken));
   const selectedIds = (location.state as OrderConfirmLocationState | null)?.selectedIds;
   const lines = useMemo(
@@ -30,6 +30,8 @@ export function OrderConfirmPage(): JSX.Element {
   const [remark, setRemark] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [actionFeedback, setActionFeedback] = useState('');
+  const requestIdRef = useRef(crypto.randomUUID());
   const addressesQuery = useCheckoutAddressesQuery(authenticated);
   const address = addressesQuery.data?.find((item) => item.isDefault) ?? addressesQuery.data?.[0];
   const productAmount = useMemo(
@@ -54,28 +56,37 @@ export function OrderConfirmPage(): JSX.Element {
     }
     setSubmitError('');
     try {
-      await createOrder({
-        items: lines.map((line) => ({
-          skuId: line.skuId,
-          quantity: line.quantity,
-          priceCents: line.priceCents,
-        })),
-        addressSnapshot: {
-          receiverName: address.receiverName,
-          phone: address.phone,
-          provinceCode: address.provinceCode,
-          cityCode: address.cityCode,
-          districtCode: address.districtCode,
-          detail: address.detail,
+      await createOrder(
+        {
+          items: lines.map((line) => ({
+            skuId: line.skuId,
+            quantity: line.quantity,
+            priceCents: line.priceCents,
+          })),
+          addressSnapshot: {
+            receiverName: address.receiverName,
+            phone: address.phone,
+            provinceCode: address.provinceCode,
+            cityCode: address.cityCode,
+            districtCode: address.districtCode,
+            detail: address.detail,
+          },
+          totalAmount: total,
+          productAmount,
+          freightAmount,
+          remark: remark || undefined,
         },
-        totalAmount: total,
-        productAmount,
-        freightAmount,
-        remark: remark || undefined,
-      });
-      await Promise.all(lines.map((line) => removeCartItem(line.skuId)));
-      clearCart();
+        requestIdRef.current,
+      );
+      const cleanupResults = await Promise.allSettled(
+        lines.map((line) => removeCartItem(line.skuId)),
+      );
+      lines.forEach((line) => removeLocal(line.skuId));
       setSubmitted(true);
+      requestIdRef.current = crypto.randomUUID();
+      if (cleanupResults.some((result) => result.status === 'rejected')) {
+        setActionFeedback('订单已提交，部分购物车同步失败，请稍后刷新购物车确认。');
+      }
     } catch {
       setSubmitError('订单提交失败，请检查库存和金额后重试。');
     }
@@ -88,6 +99,7 @@ export function OrderConfirmPage(): JSX.Element {
         </div>
         <h1>订单已提交</h1>
         <p className="muted">感谢你的选择，我们会尽快为你准备商品。</p>
+        {actionFeedback && <p className="feedback">{actionFeedback}</p>}
         <Link className="primary-action inline-action" to="/">
           继续逛逛
         </Link>

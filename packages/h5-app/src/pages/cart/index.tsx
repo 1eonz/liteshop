@@ -20,6 +20,7 @@ export function CartPage(): JSX.Element {
   const queryClient = useQueryClient();
   const localLines = useCartStore((state) => state.lines);
   const updateLocal = useCartStore((state) => state.updateLine);
+  const upsertLocal = useCartStore((state) => state.upsertLine);
   const removeLocal = useCartStore((state) => state.removeLine);
   const setLines = useCartStore((state) => state.setLines);
   const isAuthenticated = useSessionStore((state) => Boolean(state.accessToken));
@@ -88,7 +89,7 @@ export function CartPage(): JSX.Element {
           priceCents: line.priceCents,
         });
       } catch {
-        updateLocal(skuId, line.quantity);
+        upsertLocal(line);
         setActionFeedback(`${line.name} 数量同步失败，已恢复原数量`);
         void queryClient.invalidateQueries({ queryKey: ['cart', true] });
       }
@@ -104,7 +105,11 @@ export function CartPage(): JSX.Element {
       try {
         await removeCartItem(skuId);
       } catch {
-        updateLocal(skuId, line.quantity);
+        upsertLocal({
+          skuId: line.skuId,
+          quantity: line.quantity,
+          priceCents: line.priceCents,
+        });
         setSelectedIds((ids) => (ids.includes(skuId) ? ids : [...ids, skuId]));
         setActionFeedback(`${line.name} 移除失败，商品已恢复`);
         void queryClient.invalidateQueries({ queryKey: ['cart', true] });

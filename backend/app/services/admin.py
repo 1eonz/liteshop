@@ -37,9 +37,7 @@ class AdminService:
         self.freight = FreightService()
 
     async def require_permission(self, session: AsyncSession, subject: str, permission: str) -> None:
-        """数据库模式检查 RBAC；初始化管理员可通过 admin subject 进入。"""
-        if subject == "admin":
-            return
+        """按数据库 RBAC 校验权限；不存在开发或生产硬编码后门。"""
         try:
             user_id = int(subject)
         except ValueError as exc:

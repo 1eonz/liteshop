@@ -4,8 +4,17 @@ from fastapi.testclient import TestClient
 from pytest import MonkeyPatch
 
 from app.main import app
+from app.services.auth import auth_service
 
 client = TestClient(app)
+
+
+def _issue_development_code(phone: str, code: str, monkeypatch: MonkeyPatch) -> str:
+    """通过注入生成器签发可预测的测试验证码。"""
+    monkeypatch.setattr(auth_service, "code_generator", lambda: code)
+    response = client.post("/api/v1/auth/sms-code", json={"phone": phone})
+    assert response.status_code == 200
+    return code
 
 
 def test_health() -> None:
@@ -36,19 +45,22 @@ def test_sms_rate_limit() -> None:
     assert client.post("/api/v1/auth/sms/send", json={"phone": "13800000000"}).status_code == 429
 
 
-def test_login_token() -> None:
+def test_login_token(monkeypatch: MonkeyPatch) -> None:
     """登录签发 access token 和 HttpOnly refresh Cookie。"""
-    response = client.post("/api/v1/auth/login", json={"phone": "13800000000", "code": "123456"})
+    phone = "13800000001"
+    code = _issue_development_code(phone, "241395", monkeypatch)
+    response = client.post("/api/v1/auth/login", json={"phone": phone, "code": code})
     assert response.status_code == 200
     assert response.json()["data"]["accessToken"].count(".") == 2
     assert response.cookies.get("refresh_token") is not None
 
 
-def test_refresh_and_logout() -> None:
+def test_refresh_and_logout(monkeypatch: MonkeyPatch) -> None:
     """刷新令牌能够轮换，退出登录会删除 Cookie。"""
+    phone = "13900000000"
     login_response = client.post(
         "/api/v1/auth/login",
-        json={"phone": "13900000000", "code": "123456"},
+        json={"phone": phone, "code": _issue_development_code(phone, "806427", monkeypatch)},
     )
     access_token = login_response.json()["data"]["accessToken"]
     origin_headers = {"Origin": "http://localhost:5173"}

@@ -34,8 +34,13 @@ export async function listOrders(page = 1): Promise<PageResponse<OrderDetail>> {
   return response.data.data;
 }
 
-export async function createOrder(input: OrderCreateRequest): Promise<OrderDetail> {
-  const response = await httpClient.post<ApiEnvelope<OrderDetail>>('/orders', input);
+export async function createOrder(
+  input: OrderCreateRequest,
+  requestId?: string,
+): Promise<OrderDetail> {
+  const response = await httpClient.post<ApiEnvelope<OrderDetail>>('/orders', input, {
+    headers: requestId ? { 'X-Request-Id': requestId } : undefined,
+  });
   return response.data.data;
 }
 
@@ -43,12 +48,17 @@ export async function createPayment(
   orderId: number,
   provider: PaymentProvider,
   amountCents: number,
+  requestId?: string,
 ): Promise<PaymentResponse> {
-  const response = await httpClient.post<ApiEnvelope<PaymentResponse>>('/payments', {
-    orderId,
-    provider,
-    amountCents,
-  });
+  const response = await httpClient.post<ApiEnvelope<PaymentResponse>>(
+    '/payments',
+    {
+      orderId,
+      provider,
+      amountCents,
+    },
+    requestId ? { headers: { 'X-Request-Id': requestId } } : undefined,
+  );
   return response.data.data;
 }
 

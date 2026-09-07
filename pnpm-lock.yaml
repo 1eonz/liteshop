@@ -47,6 +47,9 @@ importers:
       '@liteshop/shared-components':
         specifier: workspace:*
         version: link:../shared-components
+      '@liteshop/shared-tokens':
+        specifier: workspace:*
+        version: link:../shared-tokens
       '@liteshop/shared-types':
         specifier: workspace:*
         version: link:../shared-types
@@ -75,9 +78,18 @@ importers:
       '@types/react-dom':
         specifier: ^18.0.0
         version: 18.0.0
+      '@vitejs/plugin-react':
+        specifier: ^6.1.1
+        version: 6.1.1(vite@8.2.2(@types/node@26.4.1)(yaml@2.9.0))
       eslint:
         specifier: ^10.9.1
         version: 10.9.1
+      typescript:
+        specifier: ^5.7.2
+        version: 5.7.2
+      vite:
+        specifier: ^8.2.2
+        version: 8.2.2(@types/node@26.4.1)(yaml@2.9.0)
       vitest:
         specifier: ^5.0.0
         version: 5.0.0(@types/node@26.4.1)(vite@8.2.2(@types/node@26.4.1)(yaml@2.9.0))
@@ -87,6 +99,9 @@ importers:
       '@liteshop/shared-components':
         specifier: workspace:*
         version: link:../shared-components
+      '@liteshop/shared-tokens':
+        specifier: workspace:*
+        version: link:../shared-tokens
       '@liteshop/shared-types':
         specifier: workspace:*
         version: link:../shared-types
@@ -115,9 +130,18 @@ importers:
       '@types/react-dom':
         specifier: ^18.0.0
         version: 18.0.0
+      '@vitejs/plugin-react':
+        specifier: ^6.1.1
+        version: 6.1.1(vite@8.2.2(@types/node@26.4.1)(yaml@2.9.0))
       eslint:
         specifier: ^10.9.1
         version: 10.9.1
+      typescript:
+        specifier: ^5.7.2
+        version: 5.7.2
+      vite:
+        specifier: ^8.2.2
+        version: 8.2.2(@types/node@26.4.1)(yaml@2.9.0)
       vitest:
         specifier: ^5.0.0
         version: 5.0.0(@types/node@26.4.1)(vite@8.2.2(@types/node@26.4.1)(yaml@2.9.0))
@@ -149,6 +173,9 @@ importers:
       '@liteshop/shared-components':
         specifier: workspace:*
         version: link:../shared-components
+      '@liteshop/shared-tokens':
+        specifier: workspace:*
+        version: link:../shared-tokens
       next:
         specifier: ^14.2.25
         version: 14.2.35(@playwright/test@1.62.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
