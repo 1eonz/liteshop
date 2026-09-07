@@ -17,6 +17,20 @@ const statusLabels: Record<string, string> = {
   CANCELLED: '已取消',
 };
 
+const editableAddressStatuses = new Set(['PENDING_PAYMENT', 'PAID']);
+type AddressDraft = Record<string, string>;
+
+function readAddressDraft(snapshot: Record<string, string>): AddressDraft {
+  return {
+    receiverName: snapshot.receiverName ?? '',
+    phone: snapshot.phone ?? '',
+    provinceCode: snapshot.provinceCode ?? '',
+    cityCode: snapshot.cityCode ?? '',
+    districtCode: snapshot.districtCode ?? '',
+    detail: snapshot.detail ?? '',
+  };
+}
+
 /** 订单列表页面，读取服务端订单并复用状态机执行发货。 */
 export function OrdersPage(): JSX.Element {
   const ordersQuery = useAdminOrdersQuery();
@@ -28,6 +42,15 @@ export function OrdersPage(): JSX.Element {
   const [editingOrderId, setEditingOrderId] = useState<number | null>(null);
   const [newPrice, setNewPrice] = useState('');
   const [remark, setRemark] = useState('');
+  const [editingAddress, setEditingAddress] = useState(false);
+  const [addressDraft, setAddressDraft] = useState<AddressDraft>({
+    receiverName: '',
+    phone: '',
+    provinceCode: '',
+    cityCode: '',
+    districtCode: '',
+    detail: '',
+  });
   const ship = useCallback(
     async (orderId: number) => {
       setShipError('');
@@ -64,12 +87,23 @@ export function OrdersPage(): JSX.Element {
     [orderMutations.cancel],
   );
   const saveOrder = useCallback(
-    async (orderId: number, allowPrice: boolean) => {
+    async (orderId: number, allowPrice: boolean, allowAddress: boolean) => {
       setShipError('');
       const parsedPrice = allowPrice && newPrice.trim() ? Number(newPrice) : undefined;
       if (parsedPrice !== undefined && (!Number.isInteger(parsedPrice) || parsedPrice < 0)) {
         setShipError('改价必须填写非负整数分。');
         return;
+      }
+      if (allowAddress) {
+        const requiredAddressFields = [
+          addressDraft.receiverName,
+          addressDraft.phone,
+          addressDraft.detail,
+        ];
+        if (requiredAddressFields.some((value) => !value.trim())) {
+          setShipError('请填写收货人、手机号和详细地址。');
+          return;
+        }
       }
       try {
         if (parsedPrice !== undefined)
@@ -77,15 +111,22 @@ export function OrdersPage(): JSX.Element {
             orderId,
             totalAmount: parsedPrice,
           });
-        await orderMutations.update.mutateAsync({ orderId, input: { remark } });
+        await orderMutations.update.mutateAsync({
+          orderId,
+          input: {
+            remark,
+            ...(allowAddress ? { addressSnapshot: addressDraft } : {}),
+          },
+        });
         setEditingOrderId(null);
+        setEditingAddress(false);
         setNewPrice('');
         setRemark('');
       } catch {
         setShipError('订单信息保存失败，请稍后重试。');
       }
     },
-    [newPrice, orderMutations.changePrice, orderMutations.update, remark],
+    [addressDraft, newPrice, orderMutations.changePrice, orderMutations.update, remark],
   );
   const [runCancel, cancelling] = useDebounceAction(cancel, 500);
   const [runSaveOrder, savingOrder] = useDebounceAction(saveOrder, 500);
@@ -182,17 +223,33 @@ export function OrdersPage(): JSX.Element {
                     {cancelling ? '取消中…' : '取消'}
                   </button>
                 )}
-                <button
-                  className="ghost-button"
-                  type="button"
-                  onClick={() => {
-                    setEditingOrderId(order.id);
-                    setRemark(order.remark ?? '');
-                    setNewPrice(String(order.totalAmount));
-                  }}
-                >
-                  备注/改价
-                </button>
+                  <button
+                    className="ghost-button"
+                    type="button"
+                    onClick={() => {
+                      setEditingOrderId(order.id);
+                      setRemark(order.remark ?? '');
+                      setNewPrice(String(order.totalAmount));
+                      setEditingAddress(false);
+                    }}
+                  >
+                    备注/改价
+                  </button>
+                {editableAddressStatuses.has(order.status) && (
+                  <button
+                    className="ghost-button"
+                    type="button"
+                    onClick={() => {
+                      setEditingOrderId(order.id);
+                      setRemark(order.remark ?? '');
+                      setNewPrice(String(order.totalAmount));
+                      setAddressDraft(readAddressDraft(order.addressSnapshot));
+                      setEditingAddress(true);
+                    }}
+                  >
+                    修改地址
+                  </button>
+                )}
               </div>
               {editingOrderId === order.id && (
                 <div className="ship-form">
@@ -215,10 +272,45 @@ export function OrdersPage(): JSX.Element {
                       />
                     </label>
                   )}
+                  {editingAddress && editingOrderId === order.id && (
+                    <fieldset className="address-editor">
+                      <legend>收货地址（仅待付款/待发货可修改）</legend>
+                      <div className="form-grid">
+                        {[
+                          ['receiverName', '收货人'],
+                          ['phone', '手机号'],
+                          ['provinceCode', '省份编码'],
+                          ['cityCode', '城市编码'],
+                          ['districtCode', '区县编码'],
+                          ['detail', '详细地址'],
+                        ].map(([field, label]) => (
+                          <label key={field}>
+                            {label}
+                            <input
+                              value={addressDraft[field]}
+                              aria-label={label}
+                              onChange={(event) =>
+                                setAddressDraft((current) => ({
+                                  ...current,
+                                  [field]: event.target.value,
+                                }))
+                              }
+                            />
+                          </label>
+                        ))}
+                      </div>
+                    </fieldset>
+                  )}
                   <button
                     type="button"
                     disabled={savingOrder}
-                    onClick={() => void runSaveOrder(order.id, order.status === 'PENDING_PAYMENT')}
+                    onClick={() =>
+                      void runSaveOrder(
+                        order.id,
+                        order.status === 'PENDING_PAYMENT',
+                        editingAddress && editableAddressStatuses.has(order.status),
+                      )
+                    }
                   >
                     {savingOrder ? '保存中…' : '保存'}
                   </button>
@@ -226,7 +318,10 @@ export function OrdersPage(): JSX.Element {
                     className="ghost-button"
                     type="button"
                     disabled={savingOrder}
-                    onClick={() => setEditingOrderId(null)}
+                    onClick={() => {
+                      setEditingOrderId(null);
+                      setEditingAddress(false);
+                    }}
                   >
                     取消
                   </button>

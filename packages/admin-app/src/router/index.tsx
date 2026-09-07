@@ -20,6 +20,9 @@ const OrdersPage = lazy(async () => ({ default: (await import('../pages/orders')
 const InventoryPage = lazy(async () => ({
   default: (await import('../pages/inventory')).InventoryPage,
 }));
+const FreightTemplatesPage = lazy(async () => ({
+  default: (await import('../pages/freight-templates')).FreightTemplatesPage,
+}));
 const SettingsPage = lazy(async () => ({
   default: (await import('../pages/settings')).SettingsPage,
 }));
@@ -52,6 +55,7 @@ export const routes: RouteObject[] = [
       { path: 'categories', element: withSuspense(<CategoriesPage />) },
       { path: 'orders', element: withSuspense(<OrdersPage />) },
       { path: 'inventory', element: withSuspense(<InventoryPage />) },
+      { path: 'freight-templates', element: withSuspense(<FreightTemplatesPage />) },
       { path: 'settings', element: withSuspense(<SettingsPage />) },
       { path: 'audit', element: withSuspense(<AuditPage />) },
       { path: 'members', element: withSuspense(<MembersPage />) },
