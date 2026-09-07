@@ -9,6 +9,7 @@ import { useDebounceAction } from '../../hooks/useDebounceAction';
 import {
   copyManagedPage,
   listManagedPages,
+  publishManagedPage,
   saveManagedPage,
   setManagedHome,
 } from '../../service/pages';
@@ -288,6 +289,16 @@ export function PageBuilderPage(): JSX.Element {
     }
   };
   const [runSave, saving] = useDebounceAction(save, 1000);
+  const publish = async (): Promise<void> => {
+    try {
+      const published = await publishManagedPage(pageRef.current.id);
+      setPage(published);
+      setNotice('官网页面已发布');
+    } catch {
+      setNotice('仅官网页面可发布，或当前接口暂不可用');
+    }
+  };
+  const [runPublish, publishing] = useDebounceAction(publish, 800);
 
   const applyTemplate = (components: StoreComponentSchema[]): void => {
     updatePage((current) => ({
@@ -367,6 +378,14 @@ export function PageBuilderPage(): JSX.Element {
             onClick={() => void runSave()}
           >
             {saving ? '保存中…' : '保存'}
+          </button>
+          <button
+            className="primary-action"
+            type="button"
+            disabled={publishing}
+            onClick={() => void runPublish()}
+          >
+            {publishing ? '发布中…' : '发布官网页'}
           </button>
         </div>
       </header>

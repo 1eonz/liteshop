@@ -1,1 +1,5 @@
-export { useAdminOrdersQuery, useAdminOrderMutations, useShipAdminOrderMutation } from './api/useAdminOrderQueries';
+export {
+  useAdminOrdersQuery,
+  useAdminOrderMutations,
+  useShipAdminOrderMutation,
+} from './api/useAdminOrderQueries';

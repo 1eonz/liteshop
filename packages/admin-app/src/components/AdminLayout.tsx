@@ -26,6 +26,7 @@ export function AdminLayout(): JSX.Element {
           <NavLink to="/members">会员管理</NavLink>
           <NavLink to="/audit">审计与权限</NavLink>
           <NavLink to="/page-builder">页面搭建</NavLink>
+          <NavLink to="/contact">联系表单</NavLink>
         </nav>
         <Link className="admin-login-link" to="/login">
           管理员登录

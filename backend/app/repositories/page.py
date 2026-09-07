@@ -29,9 +29,21 @@ class PageRepository:
         result = await session.scalars(select(StorePage).order_by(StorePage.updated_at.desc(), StorePage.id))
         return list(result.all())
 
-    async def get_by_slug(self, session: AsyncSession, slug: str) -> StorePage | None:
-        """按路由 slug 查询页面。"""
-        return cast(StorePage | None, await session.scalar(select(StorePage).where(StorePage.slug == slug)))
+    async def list_published_pages(self, session: AsyncSession) -> list[StorePage]:
+        """读取官网已发布页面。"""
+        result = await session.scalars(
+            select(StorePage)
+            .where(StorePage.channel == "site", StorePage.status == "PUBLISHED")
+            .order_by(StorePage.updated_at.desc(), StorePage.id)
+        )
+        return list(result.all())
+
+    async def get_by_slug(self, session: AsyncSession, slug: str, *, channel: str | None = None) -> StorePage | None:
+        """按路由 slug 查询页面，可按商城/官网渠道过滤。"""
+        statement = select(StorePage).where(StorePage.slug == slug)
+        if channel is not None:
+            statement = statement.where(StorePage.channel == channel)
+        return cast(StorePage | None, await session.scalar(statement))
 
     async def delete(self, session: AsyncSession, page_id: int) -> bool:
         """删除页面及级联的变体和事件。"""
@@ -69,9 +81,9 @@ class PageRepository:
         await session.flush()
         return event
 
-    async def clear_home(self, session: AsyncSession) -> None:
-        """清除全部首页标记。"""
-        await session.execute(update(StorePage).values(is_home=False))
+    async def clear_home(self, session: AsyncSession, *, channel: str) -> None:
+        """仅清除指定渠道的首页标记，避免商城和官网互相覆盖。"""
+        await session.execute(update(StorePage).where(StorePage.channel == channel).values(is_home=False))
 
     async def flush(self, session: AsyncSession) -> None:
         """刷新页面变更，不提交外层事务。"""

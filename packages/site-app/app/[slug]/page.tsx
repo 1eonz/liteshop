@@ -3,16 +3,15 @@ import { notFound } from 'next/navigation';
 
 import { SiteRenderer } from '../../src/components/SiteRenderer';
 import { sitePages } from '../../src/site-data';
-import { loadSitePage } from '../../src/site-data.server';
+import { loadSitePage, loadSitePageSlugs } from '../../src/site-data.server';
 
 interface SitePageProps {
   params: { slug: string };
 }
 
-export function generateStaticParams(): Array<{ slug: string }> {
-  return Object.keys(sitePages)
-    .filter((slug) => slug !== 'home')
-    .map((slug) => ({ slug }));
+export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
+  const slugs = await loadSitePageSlugs();
+  return slugs.filter((slug) => slug !== 'home').map((slug) => ({ slug }));
 }
 
 export const revalidate = 60;

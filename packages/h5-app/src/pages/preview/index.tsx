@@ -1,7 +1,11 @@
 import type { JSX } from 'react';
 import { useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import type { StoreComponentSchema, StorePageSchema, StoreComponentType } from '@liteshop/shared-types';
+import type {
+  StoreComponentSchema,
+  StorePageSchema,
+  StoreComponentType,
+} from '@liteshop/shared-types';
 import { SchemaRenderer } from '../../components/SchemaRenderer';
 
 const COMPONENT_TYPES = new Set<StoreComponentType>([
@@ -30,12 +34,15 @@ function parseSchema(raw: string | null): StorePageSchema | null {
     const parsed: unknown = JSON.parse(raw);
     if (!isRecord(parsed) || !Array.isArray(parsed.components)) return null;
     const components = parsed.components.flatMap((value): StoreComponentSchema[] => {
-      if (!isRecord(value) || typeof value.id !== 'string' || typeof value.type !== 'string') return [];
+      if (!isRecord(value) || typeof value.id !== 'string' || typeof value.type !== 'string')
+        return [];
       if (!COMPONENT_TYPES.has(value.type as StoreComponentType)) return [];
       const props = isRecord(value.props) ? value.props : {};
       const style = isRecord(value.style)
         ? Object.fromEntries(
-            Object.entries(value.style).filter((entry): entry is [string, string] => typeof entry[1] === 'string'),
+            Object.entries(value.style).filter(
+              (entry): entry is [string, string] => typeof entry[1] === 'string',
+            ),
           )
         : {};
       return [{ id: value.id, type: value.type as StoreComponentType, props, style }];

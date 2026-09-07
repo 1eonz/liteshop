@@ -4,7 +4,14 @@ import { H5_ROUTE_PATHS } from './route-paths';
 describe('H5 路由路径', () => {
   it('保留商品、交易和账户公开路径', () => {
     expect(Object.values(H5_ROUTE_PATHS)).toEqual(
-      expect.arrayContaining(['/','/product/:productId','/cart','/order/confirm','/login','/me']),
+      expect.arrayContaining([
+        '/',
+        '/product/:productId',
+        '/cart',
+        '/order/confirm',
+        '/login',
+        '/me',
+      ]),
     );
   });
 

@@ -1,5 +1,7 @@
 """低代码页面 Schema DTO。"""
 
+from typing import Literal
+
 from pydantic import BaseModel, Field, field_validator
 
 ALLOWED_COMPONENTS = {
@@ -16,6 +18,24 @@ ALLOWED_COMPONENTS = {
     "ProductCarousel",
     "CouponBlock",
     "AnnouncementBar",
+    "Navbar",
+    "Footer",
+    "Section",
+    "Divider",
+    "Hero",
+    "HeroSplit",
+    "Hero3D",
+    "Features",
+    "Stats",
+    "LogoWall",
+    "Testimonials",
+    "Pricing",
+    "FAQ",
+    "ImageWithText",
+    "ContactForm",
+    "CTA",
+    "Hero3DBackground",
+    "Product3DViewer",
 }
 
 
@@ -38,11 +58,18 @@ class PageComponent(BaseModel):
 class PageSchemaInput(BaseModel):
     """页面 Schema 保存请求。"""
 
+    channel: str = Field(default="store", pattern=r"^(store|site)$")
     slug: str = Field(min_length=1, max_length=100, pattern=r"^[a-z0-9-]+$")
     title: str = Field(default="", max_length=120)
+    description: str = Field(default="", max_length=500)
+    status: Literal["DRAFT", "PUBLISHED"] | None = None
     seo: dict[str, object] = Field(default_factory=dict)
+    page_style: dict[str, str] = Field(default_factory=dict, alias="pageStyle")
+    animation: dict[str, object] = Field(default_factory=dict)
     version: int = Field(ge=1)
     components: list[PageComponent] = Field(max_length=50)
+
+    model_config = {"populate_by_name": True}
 
 
 class PageCreateInput(PageSchemaInput):

@@ -7,7 +7,10 @@ export interface ManagedPageSummary {
   name: string;
   version: number;
   isHome: boolean;
+  status?: 'DRAFT' | 'PUBLISHED';
+  publishedAt?: string | null;
   updatedAt?: string;
+  channel?: 'store' | 'site';
 }
 
 /** 读取页面管理列表。 */
@@ -40,5 +43,11 @@ export async function copyManagedPage(
 /** 设置首页。 */
 export async function setManagedHome(pageId: number): Promise<StorePageSchema> {
   const response = await httpClient.put<ApiEnvelope<StorePageSchema>>(`/pages/${pageId}/home`);
+  return response.data.data;
+}
+
+/** 发布官网页面；商城页面由后端拒绝。 */
+export async function publishManagedPage(pageId: number): Promise<StorePageSchema> {
+  const response = await httpClient.put<ApiEnvelope<StorePageSchema>>(`/pages/${pageId}/publish`);
   return response.data.data;
 }

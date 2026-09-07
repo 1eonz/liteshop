@@ -33,16 +33,16 @@
 | plan-22 | 商城低代码 Schema、渲染器与搭建器 | 4.3、D3.1、D3.2、E2.3、E8.2 | 已完成基础 Schema/渲染/编辑器，增强项待补 |
 | plan-23 | H5/Admin 一期缺失页面与服务化收藏 | 7.1、4.1、4.2、E15.1 | 已完成核心页面与收藏服务化 |
 | plan-24 | PostgreSQL/Redis 集成、并发测试与商业验收 | E3.1.2、E12、E15、E16.7 | 基础设施与迁移往返已完成，真实并发覆盖待补 |
-| plan-25 | 前端架构与组件体系收口 | E1.3、E2、E5.4、E15 | 主要架构项已完成，i18n/a11y 深度覆盖待补 |
-| plan-26 | 后端分层与关键路径测试收口 | E1.2、E3、E11.5、E15、E16 | Repository 第一批已完成，大文件拆分与真实并发待补 |
+| plan-25 | 前端架构与组件体系收口 | E1.3、E2、E5.4、E15 | 已完成主要收口：features 领域 Hook、service 领域 API、路由懒加载与防抖兼容层已落地；完整 i18n/axe-core 深度覆盖仍待补 |
+| plan-26 | 后端分层与关键路径测试收口 | E1.2、E3、E11.5、E15、E16 | 进行中：已补真实 PostgreSQL 库存竞争与 Redis 幂等集成测试、迁移往返；领域深拆和全关键路径并发覆盖仍待补 |
 
 ## 二期计划
 
 | Plan | 范围 | PRD 章节 | 当前状态 |
 |---|---|---|---|
-| plan-27 | 官网 Next.js 低代码渲染、动态路由与 SEO | 4.4.1、4.4.4、4.4.5、4.4.6 | 进行中：官网页面与 18 类组件基础渲染已落地 |
+| plan-27 | 官网 Next.js 低代码渲染、动态路由与 SEO | 4.4.1、4.4.4、4.4.5、4.4.6 | 已完成：官网页面、动态 Schema、SEO、sitemap、ISR 基础已落地 |
 | plan-28 | 官网联系表单、导航与全局设置后端 | 4.4.2、4.4.3、D1.6、D2.4 | 已完成：联系表单、导航持久化、全局设置、幂等与 PostgreSQL 验证已落地 |
-| plan-29 | 商城低代码扩展与后台页面管理 | 4.3、D3.3、D3.4、D6.7 | 已完成：页面 CRUD、编辑器增强、10+ 组件、模板、标签/相关推荐和 A/B 事件已落地；E2E 发布流程待补 |
+| plan-29 | 商城低代码扩展与后台页面管理 | 4.3、D3.3、D3.4、D6.7 | 已完成本地闭环：页面 CRUD、草稿/发布状态、编辑器增强、官网渠道、动态读取、ISR 通知、联系表单后台和 18 类官网组件；真实数据库种子发布 E2E 待补 |
 
 ## 三期计划
 
@@ -53,11 +53,11 @@
 
 ## 自动验收记录
 
-- 后端：`ruff check`、`ruff format --check`、`mypy app`、`pytest -q` 均通过，33 passed（含 plan-14/15 安全测试）。
+- 后端：`ruff check`、`ruff format --check`、`mypy app`、`pytest -q --cov=app` 均通过（当前 44 条测试，覆盖率用于观察，不将覆盖率数字冒充商业验收）。
 - Workspace：`pnpm -r typecheck`、`pnpm -r lint`、`pnpm -r test`、`pnpm -r build` 均通过；官网类型检查由 Turbo 先执行本包 build，保证 `.next/types` 可用。
 - H5/Admin：各自 `tsc`、ESLint、Vitest、Vite build 均通过；H5 首屏 JS gzip 约 105KB，低于 200KB 门禁。
-- E2E：Playwright 冒烟 2/2 通过。
-- OpenAPI：14 个 YAML 可由结构化解析器读取；实际 FastAPI 1a 路由与契约逐项对照无遗漏。after-sale/review/notification 契约属于 1b 预留接口。
+- E2E：Playwright 4/4 通过，覆盖 H5 首页/详情、搭建器 Schema 预览和 Admin 联系表单流程。
+- OpenAPI：18 个 YAML 可由结构化解析器读取；实际 FastAPI 1a 路由与契约逐项对照无遗漏，扩展契约已同步页面渠道与联系表单状态。
 - 设计质量：Impeccable detector 对 H5/Admin 返回 `[]`；本轮新增交互使用 token、语义按钮、焦点恢复和 Escape 关闭。
 - 架构复核：空 `features` 目录已补为商品/购物车/看板领域模块；Admin 登录 API 收敛至 service；API 层不再直接依赖设置仓储和领域异常。
 - 安全：JWT 与支付回调签名不再使用代码内固定默认密钥；开发环境缺省生成进程随机值，staging/production 缺少环境密钥时拒绝启动。
@@ -77,4 +77,4 @@
 - settings/page schema 当前为进程内开发存储，落库属于后续迁移范围。
 - 前端 plan-25 主要收口已完成；全面 i18n、Admin E2E/axe-core、官网动态数据接入仍待补齐。
 - H5/Admin 尚未安装 AGENTS.md 固定的 Ant Design、Tailwind、lucide、react-hook-form、zod 等依赖；这是既定技术栈与当前实现的偏差，安装和迁移需先取得用户确认。
-- 后端 plan-26 已完成 Repository 第一批收口；`api/admin.py`、`services/admin.py`、`api/orders.py` 仍需按领域拆分，当前 35 条测试总覆盖率约 60%。
+- 后端 plan-26 已完成 Repository 第一批收口；`api/admin.py`、`services/admin.py`、`api/orders.py` 仍需按领域拆分，真实数据库并发 fixture 与更深 a11y/i18n 覆盖仍是上线前工作。

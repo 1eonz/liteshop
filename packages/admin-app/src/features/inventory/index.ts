@@ -1,1 +1,5 @@
-export { useInventoryQuery, useInventoryLedgerQuery, useAdjustInventoryMutation } from './api/useInventoryQueries';
+export {
+  useInventoryQuery,
+  useInventoryLedgerQuery,
+  useAdjustInventoryMutation,
+} from './api/useInventoryQueries';

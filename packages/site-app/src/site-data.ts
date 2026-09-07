@@ -42,6 +42,7 @@ export interface SitePageSchema {
   slug: string;
   title: string;
   description: string;
+  pageStyle?: Record<string, string>;
   seo: SiteSeo;
   components: SiteComponentSchema[];
 }

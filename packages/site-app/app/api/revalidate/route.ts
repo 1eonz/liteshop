@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 interface RevalidatePayload {
   slug?: unknown;
+  tags?: unknown;
 }
 
 function isRecord(value: unknown): value is RevalidatePayload {
@@ -12,6 +13,13 @@ function isRecord(value: unknown): value is RevalidatePayload {
 function isSafeSlug(value: unknown): value is string {
   return typeof value === 'string' && /^[a-z0-9-]+$/.test(value);
 }
+
+const ALLOWED_TAGS = new Set([
+  'site-pages',
+  'site-settings',
+  'site-navigation:header',
+  'site-navigation:footer',
+]);
 
 /** 后台页面发布后的精确 ISR 失效入口。 */
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -32,6 +40,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Invalid slug' }, { status: 422 });
   }
 
+  const tags =
+    isRecord(payload) && Array.isArray(payload.tags)
+      ? payload.tags.filter(
+          (tag): tag is string => typeof tag === 'string' && ALLOWED_TAGS.has(tag),
+        )
+      : [];
+  for (const tag of tags) revalidateTag(tag);
   revalidateTag(`site-page:${slug}`);
   revalidatePath(slug === 'home' ? '/' : `/${slug}`);
   return NextResponse.json({ revalidated: true, slug, now: Date.now() });

@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import JSON, Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String
+from sqlalchemy import JSON, Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ..core.database import Base
@@ -12,10 +12,14 @@ class StorePage(Base):
     """版本化商城页面 Schema。"""
 
     __tablename__ = "store_pages"
+    __table_args__ = (UniqueConstraint("channel", "slug", name="uq_store_pages_channel_slug"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    slug: Mapped[str] = mapped_column(String(100), unique=True)
+    slug: Mapped[str] = mapped_column(String(100))
+    channel: Mapped[str] = mapped_column(String(20), default="store", index=True)
     name: Mapped[str] = mapped_column(String(120), default="")
+    status: Mapped[str] = mapped_column(String(20), default="DRAFT", index=True)
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     version: Mapped[int] = mapped_column(Integer, default=1)
     schema: Mapped[dict[str, object]] = mapped_column(JSON, default=dict)
     is_home: Mapped[bool] = mapped_column(Boolean, default=False, index=True)

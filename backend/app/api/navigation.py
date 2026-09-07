@@ -9,6 +9,7 @@ from ..errors import ApiError
 from ..schemas.navigation import NavigationItemCreate, NavigationItemUpdate
 from ..services.admin import AdminPermissionDenied, AdminService
 from ..services.idempotency import IdempotencyInProgress, IdempotentResult, idempotency_service
+from ..services.isr import trigger_isr_revalidate
 from ..services.navigation import NavigationError, navigation_service
 from .dependencies import CurrentSubject
 from .responses import success
@@ -102,11 +103,11 @@ async def create_navigation(
         return IdempotentResult(response, "navigation", str(response["id"]))
 
     try:
-        return success(
-            await idempotency_service.execute(
-                user_id=subject, request_id=x_request_id, action_type="navigation_create", operation=operation
-            )
+        result = await idempotency_service.execute(
+            user_id=subject, request_id=x_request_id, action_type="navigation_create", operation=operation
         )
+        await trigger_isr_revalidate("home", tags=("site-pages", "site-navigation:header", "site-navigation:footer"))
+        return success(result)
     except IdempotencyInProgress as error:
         raise ApiError(
             status_code=429, code=42901, i18n_key="common.request_in_progress", message="请求正在处理中，请稍后再试"
@@ -132,14 +133,14 @@ async def update_navigation(
         return IdempotentResult(response, "navigation", str(item_id))
 
     try:
-        return success(
-            await idempotency_service.execute(
-                user_id=subject,
-                request_id=x_request_id,
-                action_type=f"navigation_update:{item_id}",
-                operation=operation,
-            )
+        result = await idempotency_service.execute(
+            user_id=subject,
+            request_id=x_request_id,
+            action_type=f"navigation_update:{item_id}",
+            operation=operation,
         )
+        await trigger_isr_revalidate("home", tags=("site-navigation:header", "site-navigation:footer"))
+        return success(result)
     except NavigationError as error:
         raise ApiError(status_code=404, code=40401, i18n_key="common.not_found", message=str(error)) from error
     except IdempotencyInProgress as error:
@@ -164,14 +165,14 @@ async def delete_navigation(
         return IdempotentResult(response, "navigation", str(item_id))
 
     try:
-        return success(
-            await idempotency_service.execute(
-                user_id=subject,
-                request_id=x_request_id,
-                action_type=f"navigation_delete:{item_id}",
-                operation=operation,
-            )
+        result = await idempotency_service.execute(
+            user_id=subject,
+            request_id=x_request_id,
+            action_type=f"navigation_delete:{item_id}",
+            operation=operation,
         )
+        await trigger_isr_revalidate("home", tags=("site-navigation:header", "site-navigation:footer"))
+        return success(result)
     except NavigationError as error:
         raise ApiError(status_code=404, code=40401, i18n_key="common.not_found", message=str(error)) from error
     except IdempotencyInProgress as error:

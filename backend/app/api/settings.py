@@ -9,6 +9,7 @@ from ..errors import ApiError
 from ..schemas.admin import SiteSettingsUpdate, ThemeSettingsUpdate
 from ..services.admin import AdminPermissionDenied, AdminService
 from ..services.idempotency import IdempotencyInProgress, IdempotentResult, idempotency_service
+from ..services.isr import trigger_isr_revalidate
 from ..services.settings import settings_service
 from .dependencies import CurrentSubject
 from .responses import success
@@ -67,6 +68,7 @@ async def update_theme(
             action_type="settings_theme_update",
             operation=operation,
         )
+        await trigger_isr_revalidate("home", tags=("site-settings",))
         return success(result)
     except IdempotencyInProgress as error:
         raise ApiError(
@@ -110,6 +112,7 @@ async def update_site_settings(
             action_type="settings_site_update",
             operation=operation,
         )
+        await trigger_isr_revalidate("home", tags=("site-settings",))
         return success(result)
     except IdempotencyInProgress as error:
         raise ApiError(

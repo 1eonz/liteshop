@@ -435,6 +435,22 @@ export interface MemberDetail extends MemberSummary {
   }>;
 }
 
+export type ContactFormStatus = 'NEW' | 'IN_PROGRESS' | 'RESOLVED' | 'SPAM';
+
+/** 官网联系表单后台摘要。金额和敏感凭证不在此模型中。 */
+export interface ContactSubmission {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  company: string;
+  message: string;
+  status: ContactFormStatus;
+  source: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface FreightTemplateItem {
   id: number;
   regionCodes: string[];
@@ -470,9 +486,15 @@ export interface StoreComponentSchema {
 export interface StorePageSchema {
   id: number;
   slug: string;
+  channel?: 'store' | 'site';
   name?: string;
   title?: string;
+  description?: string;
+  status?: 'DRAFT' | 'PUBLISHED';
+  publishedAt?: string | null;
   seo?: Record<string, unknown>;
+  pageStyle?: Record<string, string>;
+  animation?: Record<string, unknown>;
   version: number;
   isHome: boolean;
   components: StoreComponentSchema[];

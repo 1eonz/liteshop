@@ -1,11 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { AddressInput } from '@liteshop/shared-types';
-import {
-  createAddress,
-  deleteAddress,
-  listAddresses,
-  updateAddress,
-} from '../../../service/user';
+import { createAddress, deleteAddress, listAddresses, updateAddress } from '../../../service/user';
 
 interface SaveAddressInput {
   addressId?: number;

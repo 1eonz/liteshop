@@ -1,6 +1,6 @@
 # LiteShop Project Context
 
-> 由 project-radar 增量更新：2026-09-06。本文件是主 Agent 的最小上下文入口，子 Agent 若重新启用必须先读取相关章节。
+> 由 project-radar 增量更新：2026-09-07。本文件是主 Agent 的最小上下文入口，子 Agent 若重新启用必须先读取相关章节。
 
 ## 代码索引
 
@@ -10,14 +10,15 @@
 - `packages/shared-tokens/`：提供颜色、图表、字体、间距、圆角、阴影和画廊风格 CSS 变量。
 - `packages/shared-components/`：提供 Button、EmptyState、ProductCard 等基础组件。
 - `packages/h5-app/`：按 `pages/components/features/hooks/service/store/utils/router` 分层；`features/catalog` 承载商品查询、首页配置，`features/cart` 承载购物车领域模型；商品详情的轮播、评价、SKU 抽屉位于 `pages/product-detail/components`，购物车商品行位于 `pages/cart/components`；认证状态统一由 `store/session.ts` 管理，地址、通知、订单详情和支付页面有登录守卫，访客购物车和商品浏览保持匿名可用。
-- `packages/admin-app/`：按同样分层，并在 `features/dashboard` 承载看板指标模型；看板、商品列表/真实新建/编辑、分类、订单、库存、审计、RBAC、设置已接入；认证状态由 `store/session.ts` 管理，`AdminLayout` 对后台路由执行管理员令牌守卫，写操作统一走共享 `useDebounceAction`。
+- `packages/admin-app/`：按同样分层，并在 `features/dashboard`、`features/contact` 承载看板和官网联系表单模型；看板、商品列表/真实新建/编辑、分类、订单、库存、审计、RBAC、设置、页面搭建、联系表单已接入；认证状态由 `store/session.ts` 管理，`AdminLayout` 对后台路由执行管理员令牌守卫，写操作统一走共享 `useDebounceAction`。
 - `packages/shared-components/`：提供 `Button`、`EmptyState`、`FeedbackState`、`ErrorState`、`ProductCard` 和唯一的 `useDebounceAction` 实现。
 - `packages/site-app/`：Next.js App Router 官网，页面 Schema 位于 `src/site-data.ts`，组件渲染器位于 `src/components/SiteRenderer.tsx`，包含动态 slug、SEO、sitemap、robots 和联系表单 Route Handler。
 - `packages/shared-3d-components/`：三期 3D 场景配置、设备降级和速度约束工具；官网通过动态组件接入轻量回退，当前不依赖 Three.js/R3F。
 - `backend/app/`：FastAPI 分层骨架：api/core/models/schemas/services/repositories/tasks/enums/errors；订单、库存、支付、用户、设置和后台 API 已实现，领域异常集中于 `errors/domain.py`，主题设置由 `services/settings.py` 编排。
-- `backend/alembic/`：异步 Alembic 迁移及可逆迁移文件；当前 head 为 `20260906_190000`。
+- `backend/alembic/`：异步 Alembic 迁移及可逆迁移文件；当前 head 为 `20260907_094000`，页面渠道路由使用复合唯一约束并增加草稿/发布状态。
+- `backend/integration_tests/`：显式启用的真实 PostgreSQL/Redis 验收，`scripts/test.ps1 -Integration` 运行库存竞争和 Redis NX 幂等测试；默认单元测试不会自动依赖基础设施。
 - `tests/e2e/`：Playwright H5 冒烟测试。
-- `docs/api-contracts/v1/`：14 个 OpenAPI 文件，后台契约已补齐分类、订单、库存、RBAC、审计和运费模板接口。
+- `docs/api-contracts/v1/`：18 个 OpenAPI 文件，包含官网页面、联系表单、导航、营销、物流、评价和后台接口契约。
 - `plans/`：plan-01 到 plan-13 及索引，覆盖 1a 需求。
 - `docs/架构说明.md`：CRM 风格目录对齐方案、前端数据流和后端分层边界。
 
@@ -47,15 +48,16 @@
 
 ### 当前未处理
 
-- ✅ Docker Desktop Engine 已恢复；PostgreSQL 16 与 Redis 7 已通过本机 Compose healthcheck，Alembic 已完成 upgrade/downgrade 往返。
+- ✅ Docker Desktop Engine 已恢复；PostgreSQL 16 与 Redis 7 已通过本机 Compose healthcheck，Alembic 已完成 upgrade/downgrade 往返；真实库存竞争与 Redis NX 幂等集成测试 `2 passed`。
 - 真实生产数据库仓储、微信/支付宝 SDK 和支付沙箱尚未接入；当前支付回调为本地签名验证实现。
 - 收藏为浏览器本地存储；settings/page schema 为开发进程内存储；均属于后续持久化范围。
-- 官网 API/ISR revalidate、联系表单后台处理、页面发布 E2E 和动态数据接入仍待补齐。
+- 官网动态页面 API、ISR revalidate、联系表单后台处理和 `DRAFT/PUBLISHED` 发布状态已接入；真实数据库种子发布 E2E、通知渠道仍待补齐。
 - Three.js/R3F、GSAP、Lenis、Framer Motion 属于待确认的新依赖；当前使用 CSS 与原生 API 保持可构建。
 - 多租户遵循独立部署优先；共享数据库 `tenant_id` 隔离、真实物流/AI/营销供应商仍待决策。
 - Impeccable 完整 HTML/CSS 解析模块在当前环境缺失，但机械 detector 已对 H5/Admin 返回空结果。
 - 页面层仍保留少量直接调用 `service` 方法的交易编排代码（未出现组件内裸 Axios）；H5 购物车、地址、结算和 Admin 主要领域已有 `features/*/api` 出口，后续若交易规则继续增长继续下沉。
-- Admin `useAdminQueries.ts` 与 `service/admin.ts`、后端 `api/admin.py`/`api/orders.py` 仍为历史聚合文件，属于 plan-26 后续拆分项。
+- 页面首页标记已按 `store/site` 渠道隔离清理，避免切换一端首页误取消另一端首页。
+- Admin `useAdminQueries.ts` 与 `service/admin.ts` 已收敛为兼容出口，真实实现位于各 `features/*/api` 与 `service/admin/<domain>.ts`；后端 `api/admin.py`/`api/orders.py` 仍为历史聚合文件，属于 plan-26 后续拆分项；拆分需保持契约快照和路由标签不变。
 - H5/Admin 中的兼容入口 `src/useDebounceAction.ts` 和 `hooks/useDebounceAction.ts` 仍保留用于旧调用方，不得再增加新的实现或入口。
 
 ## Agent 工作流适配建议

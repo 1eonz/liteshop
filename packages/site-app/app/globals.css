@@ -755,8 +755,12 @@ img {
   gap: var(--site-space-3);
 }
 @keyframes scene-orbit {
-  from { transform: rotate(-12deg) scale(0.96); }
-  to { transform: rotate(12deg) scale(1.04); }
+  from {
+    transform: rotate(-12deg) scale(0.96);
+  }
+  to {
+    transform: rotate(12deg) scale(1.04);
+  }
 }
 @media (max-width: 720px) {
   .site-product-3d {

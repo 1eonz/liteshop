@@ -1,8 +1,9 @@
 'use client';
 
 import type { CSSProperties, FormEvent, JSX } from 'react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
+import { useDebounceAction } from '@liteshop/shared-components';
 
 import type { SiteAnimationConfig, SiteComponentSchema, SitePageSchema } from '../site-data';
 
@@ -23,7 +24,10 @@ const Hero3DBackground = dynamic(
 );
 const Product3DViewer = dynamic(
   () => import('./ThreeSceneFallback').then((module) => module.Product3DViewer),
-  { ssr: false, loading: () => <div className="site-3d-placeholder" aria-label="产品预览加载中" /> },
+  {
+    ssr: false,
+    loading: () => <div className="site-3d-placeholder" aria-label="产品预览加载中" />,
+  },
 );
 
 const asRecord = (value: unknown): Record<string, unknown> =>
@@ -34,11 +38,31 @@ const stringProp = (props: Record<string, unknown>, key: string, fallback = ''):
   return typeof value === 'string' ? value : fallback;
 };
 
+function safeHref(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const href = value.trim();
+  if (!href || /^(javascript|data|vbscript):/i.test(href)) return null;
+  if (
+    href.startsWith('/') ||
+    href.startsWith('#') ||
+    href.startsWith('mailto:') ||
+    href.startsWith('tel:')
+  ) {
+    return href;
+  }
+  try {
+    const parsed = new URL(href);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? href : null;
+  } catch {
+    return null;
+  }
+}
+
 const actionProp = (value: unknown): ActionLink | null => {
   const action = asRecord(value);
   const label = typeof action.label === 'string' ? action.label : '';
-  const href = typeof action.href === 'string' ? action.href : '#';
-  return label ? { label, href } : null;
+  const href = safeHref(action.href);
+  return label && href ? { label, href } : null;
 };
 
 const linksProp = (value: unknown): LinkItem[] => {
@@ -46,8 +70,8 @@ const linksProp = (value: unknown): LinkItem[] => {
   return value.flatMap((item): LinkItem[] => {
     const link = asRecord(item);
     const label = typeof link.label === 'string' ? link.label : '';
-    const href = typeof link.href === 'string' ? link.href : '#';
-    return label ? [{ label, href, external: link.external === true }] : [];
+    const href = safeHref(link.href);
+    return label && href ? [{ label, href, external: link.external === true }] : [];
   });
 };
 
@@ -79,14 +103,20 @@ function Navbar({ props }: { props: Record<string, unknown> }): JSX.Element {
   const [open, setOpen] = useState(false);
   const links = linksProp(props.links);
   const cta = actionProp(props.cta);
+  const brandName = stringProp(props, 'brandName', 'LiteShop');
+  const logoUrl = stringProp(props, 'logoUrl');
   return (
     <header className="site-navbar">
       <div className="site-container site-navbar__inner">
-        <a className="site-brand" href="/" aria-label="LiteShop 首页">
-          <span className="site-brand__mark" aria-hidden="true">
-            L
-          </span>
-          <span>LiteShop</span>
+        <a className="site-brand" href="/" aria-label={`${brandName} 首页`}>
+          {logoUrl ? (
+            <img className="site-brand__logo" src={logoUrl} alt="" />
+          ) : (
+            <span className="site-brand__mark" aria-hidden="true">
+              L
+            </span>
+          )}
+          <span>{brandName}</span>
         </a>
         <button
           className="site-menu-toggle"
@@ -359,10 +389,35 @@ function ImageWithText({ props }: { props: Record<string, unknown> }): JSX.Eleme
 function ContactForm({ props }: { props: Record<string, unknown> }): JSX.Element {
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
-  const submit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
-    event.preventDefault();
+  const formRef = useRef<HTMLFormElement>(null);
+  const submitPayload = async (payload: {
+    name: string;
+    email: string;
+    phone: string;
+    company: string;
+    message: string;
+    website: string;
+  }): Promise<void> => {
     setStatus('submitting');
     setMessage('');
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-request-id': crypto.randomUUID() },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) throw new Error('contact_failed');
+      formRef.current?.reset();
+      setStatus('success');
+      setMessage('已收到，我们会在一个工作日内回复。');
+    } catch {
+      setStatus('error');
+      setMessage('提交未完成，请稍后重试或直接发送邮件。');
+    }
+  };
+  const [runSubmit, submitting] = useDebounceAction(submitPayload, 1000);
+  const submit = (event: FormEvent<HTMLFormElement>): void => {
+    event.preventDefault();
     const form = new FormData(event.currentTarget);
     const payload = {
       name: String(form.get('name') ?? ''),
@@ -372,20 +427,7 @@ function ContactForm({ props }: { props: Record<string, unknown> }): JSX.Element
       message: String(form.get('message') ?? ''),
       website: String(form.get('website') ?? ''),
     };
-    try {
-      const response = await fetch('/api/contact', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', 'x-request-id': crypto.randomUUID() },
-        body: JSON.stringify(payload),
-      });
-      if (!response.ok) throw new Error('contact_failed');
-      event.currentTarget.reset();
-      setStatus('success');
-      setMessage('已收到，我们会在一个工作日内回复。');
-    } catch {
-      setStatus('error');
-      setMessage('提交未完成，请稍后重试或直接发送邮件。');
-    }
+    void runSubmit(payload);
   };
   return (
     <section className="site-section site-section--tint">
@@ -395,7 +437,7 @@ function ContactForm({ props }: { props: Record<string, unknown> }): JSX.Element
           <h2>{stringProp(props, 'title', '预约一次对话')}</h2>
           <p>{stringProp(props, 'description')}</p>
         </div>
-        <form className="site-contact-form" onSubmit={submit}>
+        <form ref={formRef} className="site-contact-form" onSubmit={submit}>
           <div className="site-form-grid">
             <label>
               姓名
@@ -422,8 +464,12 @@ function ContactForm({ props }: { props: Record<string, unknown> }): JSX.Element
             网站
             <input name="website" tabIndex={-1} autoComplete="off" />
           </label>
-          <button className="site-button" type="submit" disabled={status === 'submitting'}>
-            {status === 'submitting' ? '提交中…' : '提交信息'}
+          <button
+            className="site-button"
+            type="submit"
+            disabled={submitting || status === 'submitting'}
+          >
+            {submitting || status === 'submitting' ? '提交中…' : '提交信息'}
             <span aria-hidden="true">↗</span>
           </button>
           <p className="site-form-status" aria-live="polite" data-status={status}>
@@ -519,7 +565,14 @@ function renderComponent(component: SiteComponentSchema): JSX.Element {
       );
     case 'Hero3D':
     case 'Hero3DBackground':
-      return <Hero3DBackground key={key} title={stringProp(props, 'title')} description={stringProp(props, 'description')} fallbackUrl={stringProp(props, 'fallbackUrl')} />;
+      return (
+        <Hero3DBackground
+          key={key}
+          title={stringProp(props, 'title')}
+          description={stringProp(props, 'description')}
+          fallbackUrl={stringProp(props, 'fallbackUrl')}
+        />
+      );
     case 'Features':
       return (
         <div key={key} className={animationClass(component.animation)}>
@@ -562,12 +615,24 @@ function renderComponent(component: SiteComponentSchema): JSX.Element {
         </Section>
       );
     case 'Product3DViewer':
-      return <Product3DViewer key={key} title={stringProp(props, 'title', '产品空间预览')} description={stringProp(props, 'description', '当前设备使用轻量化预览。')} fallbackUrl={stringProp(props, 'fallbackUrl')} />;
+      return (
+        <Product3DViewer
+          key={key}
+          title={stringProp(props, 'title', '产品空间预览')}
+          description={stringProp(props, 'description', '当前设备使用轻量化预览。')}
+          fallbackUrl={stringProp(props, 'fallbackUrl')}
+        />
+      );
     default:
       return <div key={key} />;
   }
 }
 
 export function SiteRenderer({ page }: { page: SitePageSchema }): JSX.Element {
-  return <div className="site-shell">{page.components.map(renderComponent)}</div>;
+  const pageStyle = page.pageStyle ?? {};
+  return (
+    <div className="site-shell" style={pageStyle}>
+      {page.components.map(renderComponent)}
+    </div>
+  );
 }

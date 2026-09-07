@@ -4,20 +4,35 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AdminLayout } from '../components/AdminLayout';
 import { RouteFallback } from './RouteFallback';
 
-const DashboardPage = lazy(async () => ({ default: (await import('../pages/dashboard')).DashboardPage }));
+const DashboardPage = lazy(async () => ({
+  default: (await import('../pages/dashboard')).DashboardPage,
+}));
 const ProductEditorPage = lazy(async () => ({
   default: (await import('../pages/products/editor')).ProductEditorPage,
 }));
-const ProductsPage = lazy(async () => ({ default: (await import('../pages/products')).ProductsPage }));
-const CategoriesPage = lazy(async () => ({ default: (await import('../pages/categories')).CategoriesPage }));
+const ProductsPage = lazy(async () => ({
+  default: (await import('../pages/products')).ProductsPage,
+}));
+const CategoriesPage = lazy(async () => ({
+  default: (await import('../pages/categories')).CategoriesPage,
+}));
 const OrdersPage = lazy(async () => ({ default: (await import('../pages/orders')).OrdersPage }));
-const InventoryPage = lazy(async () => ({ default: (await import('../pages/inventory')).InventoryPage }));
-const SettingsPage = lazy(async () => ({ default: (await import('../pages/settings')).SettingsPage }));
+const InventoryPage = lazy(async () => ({
+  default: (await import('../pages/inventory')).InventoryPage,
+}));
+const SettingsPage = lazy(async () => ({
+  default: (await import('../pages/settings')).SettingsPage,
+}));
 const AuditPage = lazy(async () => ({ default: (await import('../pages/audit')).AuditPage }));
-const AdminLoginPage = lazy(async () => ({ default: (await import('../pages/login')).AdminLoginPage }));
+const AdminLoginPage = lazy(async () => ({
+  default: (await import('../pages/login')).AdminLoginPage,
+}));
 const MembersPage = lazy(async () => ({ default: (await import('../pages/members')).MembersPage }));
 const PageBuilderPage = lazy(async () => ({
   default: (await import('../pages/page-builder')).PageBuilderPage,
+}));
+const ContactPage = lazy(async () => ({
+  default: (await import('../pages/contact')).ContactPage,
 }));
 
 function withSuspense(element: JSX.Element): JSX.Element {
@@ -41,6 +56,7 @@ export const routes: RouteObject[] = [
       { path: 'audit', element: withSuspense(<AuditPage />) },
       { path: 'members', element: withSuspense(<MembersPage />) },
       { path: 'page-builder', element: withSuspense(<PageBuilderPage />) },
+      { path: 'contact', element: withSuspense(<ContactPage />) },
     ],
   },
   { path: '/login', element: withSuspense(<AdminLoginPage />) },

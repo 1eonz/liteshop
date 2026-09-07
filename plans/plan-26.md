@@ -26,3 +26,11 @@
 - [ ] 订单、库存、支付、认证关键路径的并发、幂等、金额和非法状态流转均有数据库级测试。
 - [ ] `ruff format --check . && ruff check . && mypy . && pytest -v --cov=app --cov-report=term-missing` 全部通过。
 
+## 2026-09-07 主 Agent 收口记录
+
+- [x] 增加可选真实集成测试 `backend/integration_tests/test_postgres_redis.py`：覆盖 PostgreSQL 库存条件更新竞争和 Redis NX 幂等缓存。
+- [x] `scripts/test.ps1 -Integration` 提供显式集成测试入口；默认测试仍不依赖本机基础设施。
+- [x] 在本机 PostgreSQL 16 与 Redis 7 上运行集成测试，结果为 `2 passed`。
+- [x] 发现并记录库存流水表不级联删除的约束；测试清理先删除流水，避免以级联删除掩盖业务审计数据保留规则。
+
+以下事项仍未完成，不能将本计划标记为商业级完成：后台/订单 API 与 Service 的领域拆分、订单/支付/认证等全关键路径数据库并发 fixture、覆盖率门槛和真实供应商沙箱。

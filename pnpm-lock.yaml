@@ -146,6 +146,9 @@ importers:
       '@liteshop/shared-3d-components':
         specifier: workspace:*
         version: link:../shared-3d-components
+      '@liteshop/shared-components':
+        specifier: workspace:*
+        version: link:../shared-components
       next:
         specifier: ^14.2.25
         version: 14.2.35(@playwright/test@1.62.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)

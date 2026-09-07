@@ -19,10 +19,19 @@ public_router = APIRouter(prefix="/site/pages", tags=["site-pages"])
 _session_dependency = Depends(get_session)
 _admin_service = AdminService()
 
+
+async def _notify_site_page(channel: str, slug: str) -> None:
+    """仅官网页面触发官网 ISR，商城页面不污染官网缓存。"""
+    if channel == "site":
+        await trigger_isr_revalidate(slug)
+
+
 _HOME_SCHEMA: dict[str, object] = {
     "id": 1,
     "version": 1,
     "slug": "home",
+    "channel": "store",
+    "status": "PUBLISHED",
     "components": [
         {"type": "SearchBar", "props": {"placeholder": "搜索商品"}},
         {"type": "Carousel", "props": {"items": []}},
@@ -32,6 +41,7 @@ _HOME_SCHEMA: dict[str, object] = {
         {"type": "Tabbar", "props": {"items": ["home", "category", "cart", "me"]}},
     ],
 }
+_SITE_HOME_SCHEMA: dict[str, object] = {**_HOME_SCHEMA, "channel": "site"}
 
 
 @public_router.get("/{slug}")
@@ -41,12 +51,34 @@ async def get_public_page(slug: str, session: AsyncSession = _session_dependency
         raise ApiError(status_code=404, code=40401, i18n_key="common.not_found", message="页面不存在")
     if settings.use_database:
         try:
-            return success(await page_service.get_by_slug(session, slug))
+            return success(await page_service.get_by_slug(session, slug, channel="site"))
         except PageSchemaError as error:
             raise ApiError(status_code=404, code=40401, i18n_key="common.not_found", message=str(error)) from error
     if slug != "home":
         raise ApiError(status_code=404, code=40401, i18n_key="common.not_found", message="页面不存在")
-    return success(dict(_HOME_SCHEMA))
+    return success(dict(_SITE_HOME_SCHEMA))
+
+
+@public_router.get("")
+async def list_public_pages(session: AsyncSession = _session_dependency) -> dict[str, object]:
+    """读取官网页面摘要，供 Next.js 构建 sitemap 和静态参数。"""
+    if not settings.use_database:
+        return success(
+            {
+                "items": [
+                    {
+                        "id": 1,
+                        "slug": "home",
+                        "channel": "site",
+                        "name": "首页",
+                        "version": 1,
+                        "status": "PUBLISHED",
+                        "isHome": True,
+                    }
+                ]
+            }
+        )
+    return success({"items": await page_service.list_public_pages(session)})
 
 
 async def _require_page_permission(session: AsyncSession, subject: str) -> None:
@@ -63,7 +95,21 @@ async def list_pages(subject: CurrentSubject, session: AsyncSession = _session_d
     """读取后台页面管理列表。"""
     await _require_page_permission(session, subject)
     if not settings.use_database:
-        return success({"items": [{"id": 1, "slug": "home", "name": "首页", "version": 1, "isHome": True}]})
+        return success(
+            {
+                "items": [
+                    {
+                        "id": 1,
+                        "slug": "home",
+                        "channel": "store",
+                        "name": "首页",
+                        "version": 1,
+                        "status": "PUBLISHED",
+                        "isHome": True,
+                    }
+                ]
+            }
+        )
     return success({"items": await page_service.list_pages(session)})
 
 
@@ -88,7 +134,7 @@ async def create_page(
         result = await idempotency_service.execute(
             user_id=subject, request_id=x_request_id, action_type="page_create", operation=operation
         )
-        await trigger_isr_revalidate(payload.slug)
+        await _notify_site_page(payload.channel, payload.slug)
         return success(result)
     except PageSchemaError as error:
         raise ApiError(status_code=409, code=40901, i18n_key="page.slug_conflict", message=str(error)) from error
@@ -139,7 +185,7 @@ async def save_page_schema(
             action_type=f"page_save:{page_id}",
             operation=operation,
         )
-        await trigger_isr_revalidate(payload.slug)
+        await _notify_site_page(payload.channel, payload.slug)
         return success(result)
     except PageSchemaError as error:
         raise ApiError(status_code=422, code=42201, i18n_key="page.invalid_schema", message=str(error)) from error
@@ -176,7 +222,7 @@ async def set_home_page(
             action_type=f"page_home:{page_id}",
             operation=operation,
         )
-        await trigger_isr_revalidate(str(result.get("slug", "home")))
+        await _notify_site_page(str(result.get("channel", "store")), str(result.get("slug", "home")))
         return success(result)
     except PageSchemaError as error:
         raise ApiError(status_code=404, code=40401, i18n_key="common.not_found", message=str(error)) from error
@@ -186,6 +232,37 @@ async def set_home_page(
             code=42901,
             i18n_key="common.request_in_progress",
             message="请求正在处理中，请稍后再试",
+        ) from error
+
+
+@router.put("/{page_id}/publish")
+async def publish_page(
+    page_id: int,
+    subject: CurrentSubject,
+    x_request_id: str = Header(...),
+) -> dict[str, object]:
+    """幂等发布官网页面并触发 ISR。"""
+    if not settings.use_database:
+        raise ApiError(status_code=503, code=50001, i18n_key="common.internal_error", message="页面编辑需要本地数据库")
+
+    async def operation(session: AsyncSession | None) -> IdempotentResult:
+        if session is None:
+            raise RuntimeError("数据库事务会话未初始化")
+        await _require_page_permission(session, subject)
+        response = await page_service.publish(session, page_id)
+        return IdempotentResult(response, "page", str(page_id))
+
+    try:
+        result = await idempotency_service.execute(
+            user_id=subject, request_id=x_request_id, action_type=f"page_publish:{page_id}", operation=operation
+        )
+        await _notify_site_page(str(result.get("channel", "store")), str(result.get("slug", "home")))
+        return success(result)
+    except PageSchemaError as error:
+        raise ApiError(status_code=422, code=42201, i18n_key="page.invalid_schema", message=str(error)) from error
+    except IdempotencyInProgress as error:
+        raise ApiError(
+            status_code=429, code=42901, i18n_key="common.request_in_progress", message="请求正在处理中，请稍后再试"
         ) from error
 
 
@@ -213,7 +290,7 @@ async def copy_page(
         result = await idempotency_service.execute(
             user_id=subject, request_id=x_request_id, action_type=f"page_copy:{page_id}", operation=operation
         )
-        await trigger_isr_revalidate(slug)
+        await _notify_site_page(str(result.get("channel", "store")), slug)
         return success(result)
     except PageSchemaError as error:
         raise ApiError(status_code=409, code=40901, i18n_key="page.slug_conflict", message=str(error)) from error

@@ -2,6 +2,9 @@ openapi: 3.0.3
 info: {title: LiteShop Page API, version: 1.0.0}
 servers: [{url: /api/v1}]
 paths:
+  /site/pages:
+    get:
+      responses: {'200': {description: Published website page summaries}}
   /site/pages/{slug}:
     get:
       parameters: [{in: path, name: slug, required: true, schema: {type: string, pattern: '^[a-z0-9-]+$'}}]
@@ -14,6 +17,11 @@ paths:
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/PageSchema'}}}}
       responses: {'201': {description: Created}}
   /pages/{id}/schema: {get: {parameters: [{in: path, name: id, required: true, schema: {type: integer}}], responses: {'200': {description: Versioned page schema, content: {application/json: {schema: {$ref: '#/components/schemas/PageSchema'}}}}}}}
+  /pages/{id}/publish:
+    put:
+      security: [{bearerAuth: []}]
+      parameters: [{in: path, name: id, required: true, schema: {type: integer}}, {in: header, name: X-Request-Id, required: true, schema: {type: string, format: uuid}}]
+      responses: {'200': {description: Published website page}}
   /pages/{id}/copy:
     post:
       security: [{bearerAuth: []}]
@@ -41,5 +49,5 @@ paths:
 components:
   securitySchemes: {bearerAuth: {type: http, scheme: bearer}}
   schemas:
-    PageSummary: {type: object, required: [id, slug, name, version, isHome], properties: {id: {type: integer}, slug: {type: string}, name: {type: string}, version: {type: integer}, isHome: {type: boolean}, updatedAt: {type: string, format: date-time}}}
-    PageSchema: {type: object, required: [id, version, components], properties: {id: {type: integer}, version: {type: integer}, slug: {type: string}, components: {type: array, items: {type: object}}}}
+    PageSummary: {type: object, required: [id, slug, name, version, isHome, status], properties: {id: {type: integer}, slug: {type: string}, channel: {type: string, enum: [store, site]}, name: {type: string}, status: {type: string, enum: [DRAFT, PUBLISHED]}, publishedAt: {type: string, format: date-time, nullable: true}, version: {type: integer}, isHome: {type: boolean}, updatedAt: {type: string, format: date-time}}}
+    PageSchema: {type: object, required: [id, version, components, status], properties: {id: {type: integer}, version: {type: integer}, channel: {type: string, enum: [store, site]}, slug: {type: string}, title: {type: string}, status: {type: string, enum: [DRAFT, PUBLISHED]}, publishedAt: {type: string, format: date-time, nullable: true}, seo: {type: object}, pageStyle: {type: object}, animation: {type: object}, components: {type: array, items: {type: object}}}}

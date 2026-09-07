@@ -20,8 +20,11 @@ const blankAddress: AddressInput = {
 /** 收货地址管理页面，新增、编辑、删除均通过幂等 API。 */
 export function AddressesPage(): JSX.Element {
   const authenticated = useSessionStore((state) => Boolean(state.accessToken));
-  const { addressesQuery: query, saveAddressMutation, deleteAddressMutation } =
-    useAddressBook(authenticated);
+  const {
+    addressesQuery: query,
+    saveAddressMutation,
+    deleteAddressMutation,
+  } = useAddressBook(authenticated);
   const [editing, setEditing] = useState<Address | null>(null);
   const [form, setForm] = useState<AddressInput>(blankAddress);
   const [error, setError] = useState('');
