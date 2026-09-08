@@ -1,12 +1,13 @@
 import type { JSX } from 'react';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDebounceAction } from '../../hooks/useDebounceAction';
 import { cancelOrder, confirmOrder, getOrder } from '../../service/orders';
 import { formatPrice } from '@liteshop/shared-types';
 import { useSessionStore } from '../../store/session';
 import { ErrorState, FeedbackState } from '@liteshop/shared-components';
+import { createReview } from '../../service/reviews';
 
 const statusLabels: Record<string, string> = {
   PENDING_PAYMENT: '待付款',
@@ -15,6 +16,8 @@ const statusLabels: Record<string, string> = {
   COMPLETED: '已完成',
   CANCELLED: '已取消',
 };
+
+const statusSteps = ['PENDING_PAYMENT', 'PAID', 'SHIPPED', 'COMPLETED'] as const;
 
 /** 用户订单详情，取消和确认收货均通过状态机接口完成。 */
 export function OrderDetailPage(): JSX.Element {
@@ -38,6 +41,20 @@ export function OrderDetailPage(): JSX.Element {
   );
   const [runCancel, cancelling] = useDebounceAction(() => mutateOrder('cancel'), 500);
   const [runConfirm, confirming] = useDebounceAction(() => mutateOrder('confirm'), 500);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewContent, setReviewContent] = useState('');
+  const reviewMutation = useMutation({ mutationFn: createReview, retry: 0 });
+  const submitReview = useCallback(async () => {
+    const item = query.data?.items[0];
+    if (!item) return;
+    await reviewMutation.mutateAsync({
+      orderItemId: item.id,
+      rating: reviewRating,
+      content: reviewContent.trim(),
+    });
+    setReviewContent('');
+  }, [query.data?.items, reviewContent, reviewMutation, reviewRating]);
+  const [runReview, reviewing] = useDebounceAction(submitReview, 1000);
   if (!authenticated) return <Navigate to="/login" state={{ from: '/orders' }} replace />;
   if (query.isLoading)
     return (
@@ -65,6 +82,20 @@ export function OrderDetailPage(): JSX.Element {
         <span className="eyebrow">订单状态</span>
         <strong>{statusLabels[order.status] ?? order.status}</strong>
         <p className="muted">订单号 {order.orderNo}</p>
+        <ol className="order-status-steps" aria-label="订单状态进度">
+          {statusSteps.map((status) => {
+            const currentIndex = statusSteps.indexOf(order.status as (typeof statusSteps)[number]);
+            const stepIndex = statusSteps.indexOf(status);
+            const active = order.status === status;
+            const done = currentIndex >= 0 && stepIndex < currentIndex;
+            return (
+              <li className={active ? 'active' : done ? 'done' : ''} key={status}>
+                <span aria-hidden="true">{done ? '✓' : stepIndex + 1}</span>
+                {statusLabels[status]}
+              </li>
+            );
+          })}
+        </ol>
       </section>
       <section className="address-card">
         <h2>收货地址</h2>
@@ -128,6 +159,58 @@ export function OrderDetailPage(): JSX.Element {
             {confirming ? '确认中…' : '确认收货'}
           </button>
         )}
+        {order.status === 'COMPLETED' && order.items[0] && (
+          <section className="detail-section" aria-labelledby="review-submit-title">
+            <h2 id="review-submit-title">评价商品</h2>
+            <div className="review-rating" role="radiogroup" aria-label="选择评分">
+              {[1, 2, 3, 4, 5].map((value) => (
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={reviewRating === value}
+                  className={reviewRating >= value ? 'selected' : ''}
+                  key={value}
+                  onClick={() => setReviewRating(value)}
+                >
+                  {reviewRating >= value ? '★' : '☆'}
+                </button>
+              ))}
+            </div>
+            <textarea
+              value={reviewContent}
+              maxLength={2000}
+              placeholder="分享你的使用感受（选填）"
+              onChange={(event) => setReviewContent(event.target.value)}
+            />
+            <button
+              className="primary-action"
+              type="button"
+              disabled={reviewing || reviewMutation.isPending}
+              onClick={() => void runReview()}
+            >
+              {reviewing ? '提交中…' : '提交评价'}
+            </button>
+            {reviewMutation.isSuccess && (
+              <p className="action-feedback" role="status">
+                评价已提交，等待审核。
+              </p>
+            )}
+            {reviewMutation.isError && (
+              <p className="feedback error-state" role="alert">
+                评价提交失败，请确认该订单项尚未评价。
+              </p>
+            )}
+          </section>
+        )}
+        {(order.status === 'PAID' || order.status === 'SHIPPED' || order.status === 'COMPLETED') &&
+          order.items[0] && (
+            <Link
+              className="secondary-action"
+              to={`/after-sales?orderItemId=${order.items[0].id}&amountCents=${order.items[0].totalAmount}`}
+            >
+              申请售后
+            </Link>
+          )}
       </div>
     </main>
   );

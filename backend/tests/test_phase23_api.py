@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import Table
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.pages import _notify_site_page
@@ -83,9 +84,10 @@ def test_page_channel_is_part_of_route_identity() -> None:
     """商城与官网允许复用 slug，但同一渠道内仍必须唯一。"""
     from app.models.page import StorePage
 
-    constraint_names = {constraint.name for constraint in StorePage.__table__.constraints}
+    table = cast(Table, StorePage.__table__)
+    constraint_names = {constraint.name for constraint in table.constraints}
     assert "uq_store_pages_channel_slug" in constraint_names
-    assert StorePage.__table__.c.slug.unique is not True
+    assert table.c.slug.unique is not True
 
 
 def test_store_page_does_not_notify_site_isr(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -139,4 +141,4 @@ def test_coupon_and_tracking_dtos_validate_aliases_and_window() -> None:
     )
     assert tracking.occurred_at == starts_at
     with pytest.raises(ValueError):
-        ContactFormStatusUpdate(status="INVALID")
+        ContactFormStatusUpdate.model_validate({"status": "INVALID"})

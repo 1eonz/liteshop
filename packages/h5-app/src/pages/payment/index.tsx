@@ -1,5 +1,5 @@
 import type { JSX } from 'react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { PaymentProvider } from '@liteshop/shared-types';
@@ -18,6 +18,7 @@ export function PaymentPage(): JSX.Element {
   const [provider, setProvider] = useState<PaymentProvider>(PaymentProvider.WECHAT);
   const [paymentId, setPaymentId] = useState<number | string | null>(null);
   const [error, setError] = useState('');
+  const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
   const requestIdRef = useRef(crypto.randomUUID());
   const query = useQuery({
     queryKey: ['order', orderId],
@@ -41,6 +42,20 @@ export function PaymentPage(): JSX.Element {
     }
   }, [orderId, provider, query.data]);
   const [pay, paying] = useDebounceAction(startPayment, 800);
+  useEffect(() => {
+    const expiredAt = query.data?.expiredAt;
+    if (!expiredAt) {
+      setRemainingSeconds(null);
+      return undefined;
+    }
+    const update = (): void => {
+      setRemainingSeconds(Math.max(0, Math.ceil((Date.parse(expiredAt) - Date.now()) / 1000)));
+    };
+    update();
+    const timer = window.setInterval(update, 1000);
+    return () => window.clearInterval(timer);
+  }, [query.data?.expiredAt]);
+  const paymentExpired = remainingSeconds !== null && remainingSeconds <= 0;
   if (!authenticated) return <Navigate to="/login" state={{ from: '/payment' }} replace />;
   if (query.isLoading)
     return (
@@ -66,6 +81,13 @@ export function PaymentPage(): JSX.Element {
       <section className="payment-card">
         <p className="eyebrow">订单 {query.data.orderNo}</p>
         <strong className="detail-price">{formatPrice(query.data.totalAmount)}</strong>
+        {remainingSeconds !== null && (
+          <p className={paymentExpired ? 'feedback error-state' : 'feedback'} role="status">
+            {paymentExpired
+              ? '订单已超时，请返回订单详情刷新状态。'
+              : `支付剩余 ${Math.floor(remainingSeconds / 60)}:${String(remainingSeconds % 60).padStart(2, '0')}`}
+          </p>
+        )}
         <div className="payment-options">
           <button
             className={provider === PaymentProvider.WECHAT ? 'selected' : ''}
@@ -99,7 +121,7 @@ export function PaymentPage(): JSX.Element {
           <button
             className="primary-action wide-action"
             type="button"
-            disabled={paying}
+            disabled={paying || paymentExpired || query.data.status !== 'PENDING_PAYMENT'}
             onClick={() => void pay()}
           >
             {paying

@@ -100,6 +100,7 @@
   --motion-fast: 150ms;
   --motion-normal: 240ms;
   --gallery-frame-width: 375px;
+  --site-canvas-width: 1200px;
   --gallery-tabbar-height: 56px;
   --gallery-card-radius: var(--radius-lg);
   --gallery-sheet-radius: var(--radius-xl);

@@ -1,1 +1,1 @@
-export { useRbacQuery } from './api/useRbacQuery';
+export { useRbacMutations, useRbacQuery } from './api/useRbacQuery';

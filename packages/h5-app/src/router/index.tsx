@@ -30,8 +30,17 @@ const FavoritesPage = lazy(async () => ({
 const CategoriesPage = lazy(async () => ({
   default: (await import('../pages/categories')).CategoriesPage,
 }));
+const SearchPage = lazy(async () => ({
+  default: (await import('../pages/search')).SearchPage,
+}));
 const NotificationsPage = lazy(async () => ({
   default: (await import('../pages/notifications')).NotificationsPage,
+}));
+const SettingsPage = lazy(async () => ({
+  default: (await import('../pages/settings')).SettingsPage,
+}));
+const AfterSalesPage = lazy(async () => ({
+  default: (await import('../pages/after-sales')).AfterSalesPage,
 }));
 const PreviewPage = lazy(async () => ({
   default: (await import('../pages/preview')).PreviewPage,
@@ -55,7 +64,11 @@ export const routes: RouteObject[] = [
   { path: H5_ROUTE_PATHS.addresses, element: withSuspense(<AddressesPage />) },
   { path: H5_ROUTE_PATHS.favorites, element: withSuspense(<FavoritesPage />) },
   { path: H5_ROUTE_PATHS.categories, element: withSuspense(<CategoriesPage />) },
+  { path: H5_ROUTE_PATHS.search, element: withSuspense(<SearchPage />) },
   { path: H5_ROUTE_PATHS.notifications, element: withSuspense(<NotificationsPage />) },
+  { path: H5_ROUTE_PATHS.settings, element: withSuspense(<SettingsPage />) },
+  { path: H5_ROUTE_PATHS.afterSales, element: withSuspense(<AfterSalesPage />) },
+  { path: H5_ROUTE_PATHS.afterSaleDetail, element: withSuspense(<AfterSalesPage />) },
   { path: H5_ROUTE_PATHS.preview, element: withSuspense(<PreviewPage />) },
   { path: '*', element: <Navigate to="/" replace /> },
 ];

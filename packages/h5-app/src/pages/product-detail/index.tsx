@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useDebounceAction } from '../../hooks/useDebounceAction';
-import { useProductQuery } from '../../hooks/useProductsQuery';
+import { useProductQuery, useProductsQuery } from '../../features/catalog/api/useProductsQuery';
 import { addCartItem } from '../../service/cart';
 import {
   listFavoriteProductIds,
@@ -28,6 +28,7 @@ export function ProductDetailPage(): JSX.Element {
   const navigate = useNavigate();
   const productId = Number(params.productId ?? 1);
   const query = useProductQuery(productId);
+  const relatedQuery = useProductsQuery({ pageSize: 4 });
   const queryClient = useQueryClient();
   const reviewsQuery = useQuery({
     queryKey: ['product-reviews', productId],
@@ -50,6 +51,18 @@ export function ProductDetailPage(): JSX.Element {
   const [favoriteNotice, setFavoriteNotice] = useState('');
   const [actionNotice, setActionNotice] = useState('');
   useEffect(() => {
+    try {
+      const raw = JSON.parse(window.localStorage.getItem('liteshop.product.history') ?? '[]');
+      const history = Array.isArray(raw)
+        ? raw.filter((item): item is number => typeof item === 'number')
+        : [];
+      window.localStorage.setItem(
+        'liteshop.product.history',
+        JSON.stringify([productId, ...history.filter((item) => item !== productId)].slice(0, 12)),
+      );
+    } catch {
+      window.localStorage.setItem('liteshop.product.history', JSON.stringify([productId]));
+    }
     if (authenticated) {
       if (favoritesQuery.data) setFavorite(favoritesQuery.data.includes(productId));
       return;
@@ -132,6 +145,25 @@ export function ProductDetailPage(): JSX.Element {
           规格：{skuName} <span aria-hidden="true">›</span>
         </button>
       </section>
+      {relatedQuery.data?.items.filter((item) => item.id !== productId).length ? (
+        <section className="detail-section" aria-labelledby="related-products-title">
+          <h2 id="related-products-title">相关推荐</h2>
+          <div className="product-grid">
+            {relatedQuery.data.items
+              .filter((item) => item.id !== productId)
+              .slice(0, 2)
+              .map((item, index) => (
+                <Link className="product" to={`/product/${item.id}`} key={item.id}>
+                  <span className={`product-image product-image-${index + 1}`} aria-hidden="true" />
+                  <strong>{item.name}</strong>
+                  <span className="product-meta">
+                    <b>{formatPrice(item.minPrice)}</b>
+                  </span>
+                </Link>
+              ))}
+          </div>
+        </section>
+      ) : null}
       <ProductReviews
         data={reviewsQuery.data}
         isLoading={reviewsQuery.isLoading}

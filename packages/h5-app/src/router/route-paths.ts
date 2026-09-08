@@ -12,6 +12,10 @@ export const H5_ROUTE_PATHS = {
   addresses: '/addresses',
   favorites: '/favorites',
   categories: '/categories',
+  search: '/search',
   notifications: '/notifications',
+  settings: '/settings',
+  afterSales: '/after-sales',
+  afterSaleDetail: '/after-sales/:afterSaleId',
   preview: '/preview',
 } as const;

@@ -124,10 +124,35 @@ paths:
     get:
       summary: RBAC 角色
       responses: {'200': {$ref: '#/components/responses/Envelope'}}
+    post:
+      summary: 创建后台角色
+      parameters: [{$ref: '#/components/parameters/RequestId'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/RoleCreate'}}}}
+      responses: {'200': {$ref: '#/components/responses/Envelope'}, '409': {description: 角色校验失败}}
   /permissions:
     get:
       summary: RBAC 权限点
       responses: {'200': {$ref: '#/components/responses/Envelope'}}
+  /users:
+    get:
+      summary: 管理员角色绑定列表
+      responses: {'200': {$ref: '#/components/responses/Envelope'}}
+  /roles/{roleId}:
+    put:
+      summary: 更新后台角色
+      parameters: [{$ref: '#/components/parameters/RoleId'}, {$ref: '#/components/parameters/RequestId'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/RoleUpdate'}}}}
+      responses: {'200': {$ref: '#/components/responses/Envelope'}, '409': {description: 角色校验失败}}
+    delete:
+      summary: 删除未绑定管理员的角色
+      parameters: [{$ref: '#/components/parameters/RoleId'}, {$ref: '#/components/parameters/RequestId'}]
+      responses: {'200': {$ref: '#/components/responses/Envelope'}, '409': {description: 角色仍被使用}}
+  /users/{userId}/roles:
+    put:
+      summary: 覆盖管理员角色绑定
+      parameters: [{$ref: '#/components/parameters/UserId'}, {$ref: '#/components/parameters/RequestId'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/UserRolesUpdate'}}}}
+      responses: {'200': {$ref: '#/components/responses/Envelope'}, '409': {description: 角色校验失败}}
   /freight-templates:
     get:
       summary: 运费模板列表
@@ -174,6 +199,7 @@ components:
     TemplateId: {in: path, name: templateId, required: true, schema: {type: integer, minimum: 1}}
     ItemId: {in: path, name: itemId, required: true, schema: {type: integer, minimum: 1}}
     UserId: {in: path, name: userId, required: true, schema: {type: integer, minimum: 1}}
+    RoleId: {in: path, name: roleId, required: true, schema: {type: integer, minimum: 1}}
     RequestId: {in: header, name: X-Request-Id, required: true, schema: {type: string, format: uuid}}
     Page: {in: query, name: page, schema: {type: integer, minimum: 1, default: 1}}
     PageSize: {in: query, name: pageSize, schema: {type: integer, minimum: 1, maximum: 100, default: 20}}
@@ -189,7 +215,10 @@ components:
     OrderManagement: {type: object, properties: {remark: {type: string}, addressSnapshot: {type: object, additionalProperties: {type: string}}}}
     InventoryAdjust: {type: object, required: [quantity, reason], properties: {quantity: {type: integer, minimum: -1000000, maximum: 1000000}, reason: {type: string, minLength: 1}}}
     FreightTemplateCreate: {type: object, required: [name, type], properties: {name: {type: string}, type: {type: string, enum: [WEIGHT, PIECE, REGION]}, isDefault: {type: boolean}, enabled: {type: boolean}, items: {type: array, items: {$ref: '#/components/schemas/FreightTemplateItem'}}}}
-    FreightTemplateUpdate: {type: object, properties: {name: {type: string}, type: {type: string, enum: [WEIGHT, PIECE, REGION]}, isDefault: {type: boolean}, enabled: {type: boolean}}}
+    FreightTemplateUpdate: {type: object, properties: {name: {type: string}, type: {type: string, enum: [WEIGHT, PIECE, REGION]}, isDefault: {type: boolean}, enabled: {type: boolean}, items: {type: array, minItems: 1, items: {$ref: '#/components/schemas/FreightTemplateItem'}}}}
     FreightTemplateItem: {type: object, required: [firstUnit, firstFee, additionalUnit, additionalFee], properties: {regionCodes: {type: array, items: {type: string}}, firstUnit: {type: number, exclusiveMinimum: 0}, firstFee: {type: integer, minimum: 0, description: Amount in cents}, additionalUnit: {type: number, exclusiveMinimum: 0}, additionalFee: {type: integer, minimum: 0, description: Amount in cents}, freeCondition: {type: object}}}
+    RoleCreate: {type: object, required: [name], properties: {name: {type: string, minLength: 1, maxLength: 64}, permissionCodes: {type: array, items: {type: string}}}}
+    RoleUpdate: {type: object, properties: {name: {type: string, minLength: 1, maxLength: 64}, permissionCodes: {type: array, items: {type: string}}}}
+    UserRolesUpdate: {type: object, required: [roleIds], properties: {roleIds: {type: array, items: {type: integer, minimum: 1}}}}
   responses:
     Envelope: {description: Unified response envelope, content: {application/json: {schema: {$ref: '#/components/schemas/Envelope'}}}}

@@ -37,6 +37,12 @@ const PageBuilderPage = lazy(async () => ({
 const ContactPage = lazy(async () => ({
   default: (await import('../pages/contact')).ContactPage,
 }));
+const AfterSalesPage = lazy(async () => ({
+  default: (await import('../pages/after-sales')).AfterSalesPage,
+}));
+const ReviewsPage = lazy(async () => ({
+  default: (await import('../pages/reviews')).ReviewsPage,
+}));
 
 function withSuspense(element: JSX.Element): JSX.Element {
   return <Suspense fallback={<RouteFallback />}>{element}</Suspense>;
@@ -61,6 +67,8 @@ export const routes: RouteObject[] = [
       { path: 'members', element: withSuspense(<MembersPage />) },
       { path: 'page-builder', element: withSuspense(<PageBuilderPage />) },
       { path: 'contact', element: withSuspense(<ContactPage />) },
+      { path: 'after-sales', element: withSuspense(<AfterSalesPage />) },
+      { path: 'reviews', element: withSuspense(<ReviewsPage />) },
     ],
   },
   { path: '/login', element: withSuspense(<AdminLoginPage />) },

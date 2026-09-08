@@ -1,6 +1,283 @@
 openapi: 3.0.3
-info: {title: LiteShop After-sale API, version: 1.0.0}
-servers: [{url: /api/v1}]
+info:
+  title: LiteShop After-sale API
+  version: 1.0.0
+  description: 售后申请、审核、退货物流与退款/换货完成接口。金额字段统一为整数分。
+servers:
+  - url: /api/v1
+tags:
+  - name: after-sales
+    description: 用户售后
+  - name: admin-after-sales
+    description: 后台售后审核
 paths:
-  /after-sales: {post: {security: [{bearerAuth: []}], parameters: [{in: header, name: X-Request-Id, required: true, schema: {type: string, format: uuid}}], responses: {'200': {description: Created}}}, get: {security: [{bearerAuth: []}], responses: {'200': {description: List}}}}
-components: {securitySchemes: {bearerAuth: {type: http, scheme: bearer}}}
+  /after-sales:
+    post:
+      tags: [after-sales]
+      summary: 创建售后申请
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AfterSaleCreate'
+      responses:
+        '200':
+          description: 售后申请已创建或幂等返回已存在申请
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvelopeAfterSale'
+        '409':
+          $ref: '#/components/responses/BusinessConflict'
+    get:
+      tags: [after-sales]
+      summary: 查询当前用户售后单
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: 售后单列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvelopeAfterSaleList'
+  /after-sales/{afterSaleId}:
+    get:
+      tags: [after-sales]
+      summary: 查询售后详情
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/AfterSaleId'
+      responses:
+        '200':
+          description: 售后详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvelopeAfterSale'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /after-sales/{afterSaleId}/return:
+    put:
+      tags: [after-sales]
+      summary: 提交退货物流单号
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/AfterSaleId'
+        - $ref: '#/components/parameters/RequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AfterSaleReturn'
+      responses:
+        '200':
+          description: 退货物流已提交
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvelopeAfterSale'
+        '409':
+          $ref: '#/components/responses/BusinessConflict'
+  /admin/after-sales:
+    get:
+      tags: [admin-after-sales]
+      summary: 后台售后列表
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/AfterSaleStatus'
+      responses:
+        '200':
+          description: 后台售后列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvelopeAfterSaleList'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /admin/after-sales/{afterSaleId}/audit:
+    put:
+      tags: [admin-after-sales]
+      summary: 审核售后申请
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/AfterSaleId'
+        - $ref: '#/components/parameters/RequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AfterSaleAudit'
+      responses:
+        '200':
+          description: 审核完成
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvelopeAfterSale'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/BusinessConflict'
+  /admin/after-sales/{afterSaleId}/complete:
+    put:
+      tags: [admin-after-sales]
+      summary: 确认退款或换货完成
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '#/components/parameters/AfterSaleId'
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '200':
+          description: 售后已完成
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnvelopeAfterSale'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/BusinessConflict'
+components:
+  parameters:
+    RequestId:
+      name: X-Request-Id
+      in: header
+      required: true
+      description: 客户端幂等请求 ID
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 64
+    AfterSaleId:
+      name: afterSaleId
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    AfterSaleType:
+      type: string
+      enum: [REFUND_ONLY, RETURN_REFUND, EXCHANGE]
+    AfterSaleStatus:
+      type: string
+      enum: [PENDING_REVIEW, APPROVED, REJECTED, WAITING_RETURN, RETURNED, REFUNDING, COMPLETED, CANCELLED]
+    AfterSaleCreate:
+      type: object
+      required: [orderItemId, type, amountCents, reason]
+      properties:
+        orderItemId:
+          type: integer
+          minimum: 1
+        type:
+          $ref: '#/components/schemas/AfterSaleType'
+        amountCents:
+          type: integer
+          minimum: 1
+          description: 申请退款金额，单位为整数分且不得超过订单项金额
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+        evidenceUrls:
+          type: array
+          maxItems: 9
+          items:
+            type: string
+            format: uri
+    AfterSaleReturn:
+      type: object
+      required: [trackingNo]
+      properties:
+        trackingNo:
+          type: string
+          minLength: 1
+          maxLength: 100
+    AfterSaleAudit:
+      type: object
+      required: [approved]
+      properties:
+        approved:
+          type: boolean
+        reason:
+          type: string
+          maxLength: 500
+    AfterSale:
+      type: object
+      required: [id, afterSaleNo, orderId, orderItemId, type, status, amountCents, reason, evidenceUrls, createdAt, updatedAt]
+      properties:
+        id: { type: integer }
+        afterSaleNo: { type: string }
+        orderId: { type: integer }
+        orderItemId: { type: integer }
+        type: { $ref: '#/components/schemas/AfterSaleType' }
+        status: { $ref: '#/components/schemas/AfterSaleStatus' }
+        amountCents: { type: integer, minimum: 1, description: 金额，单位为整数分 }
+        reason: { type: string }
+        evidenceUrls:
+          type: array
+          items: { type: string, format: uri }
+        returnTrackingNo: { type: string }
+        auditReason: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    EnvelopeAfterSale:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: integer }
+        message: { type: string }
+        data: { $ref: '#/components/schemas/AfterSale' }
+        requestId: { type: string }
+    EnvelopeAfterSaleList:
+      type: object
+      required: [code, message, data, requestId]
+      properties:
+        code: { type: integer }
+        message: { type: string }
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: '#/components/schemas/AfterSale' }
+        requestId: { type: string }
+    Error:
+      type: object
+      required: [code, message, requestId]
+      properties:
+        code: { type: integer }
+        message: { type: string }
+        requestId: { type: string }
+  responses:
+    BusinessConflict:
+      description: 业务状态、金额或幂等冲突
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: 无权限
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: 资源不存在或不属于当前用户
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }

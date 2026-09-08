@@ -21,6 +21,8 @@ export function AdminLayout(): JSX.Element {
           <NavLink to="/products">商品列表</NavLink>
           <NavLink to="/categories">分类管理</NavLink>
           <NavLink to="/orders">订单管理</NavLink>
+          <NavLink to="/after-sales">售后审核</NavLink>
+          <NavLink to="/reviews">评价审核</NavLink>
           <NavLink to="/inventory">库存管理</NavLink>
           <NavLink to="/freight-templates">运费模板</NavLink>
           <NavLink to="/settings">系统设置</NavLink>

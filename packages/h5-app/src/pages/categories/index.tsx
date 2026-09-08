@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { BottomTabBar } from '../../components/BottomTabBar';
 import { ProductCard } from '../../components/ProductCard';
-import { useProductsQuery } from '../../hooks/useProductsQuery';
+import { useProductsQuery } from '../../features/catalog/api/useProductsQuery';
 import { isRecoverableApiError } from '../../service/http';
 import { listCategories } from '../../service/products';
 

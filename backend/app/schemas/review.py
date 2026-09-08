@@ -19,3 +19,9 @@ class ReviewAudit(BaseModel):
 
     status: str = Field(pattern="^(APPROVED|REJECTED)$")
     reason: str = Field(default="", max_length=500)
+
+
+class ReviewReply(BaseModel):
+    """商家回复已通过评价。"""
+
+    reply: str = Field(min_length=1, max_length=2000)

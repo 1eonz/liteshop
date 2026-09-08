@@ -43,6 +43,10 @@ class ReviewService:
                     "rating": review.rating,
                     "content": review.content,
                     "images": list(review.images),
+                    "merchantReply": review.merchant_reply,
+                    "merchantRepliedAt": review.merchant_replied_at.isoformat()
+                    if review.merchant_replied_at is not None
+                    else None,
                     "createdAt": review.created_at.isoformat(),
                 }
                 for review in reviews
@@ -61,6 +65,23 @@ class ReviewService:
         review.updated_at = datetime.now(UTC)
         await self.repository.flush(session)
         return {"id": review.id, "status": review.status, "reason": review.audit_reason}
+
+    async def reply(self, session: AsyncSession, review_id: int, reply: str) -> dict[str, object]:
+        """写入商家回复；只有已通过评价可展示给消费者。"""
+        review = await self.repository.get_for_update(session, review_id)
+        if review is None:
+            raise ReviewError("评价不存在")
+        if review.status != "APPROVED":
+            raise ReviewError("只有已通过评价可以回复")
+        review.merchant_reply = reply.strip()
+        review.merchant_replied_at = datetime.now(UTC)
+        review.updated_at = datetime.now(UTC)
+        await self.repository.flush(session)
+        return {
+            "id": review.id,
+            "merchantReply": review.merchant_reply,
+            "merchantRepliedAt": review.merchant_replied_at.isoformat(),
+        }
 
 
 review_service = ReviewService()

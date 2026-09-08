@@ -17,6 +17,31 @@ const blankAddress: AddressInput = {
   isDefault: false,
 };
 
+const REGION_OPTIONS = {
+  provinces: [
+    { code: '110000', name: '北京市' },
+    { code: '310000', name: '上海市' },
+    { code: '440000', name: '广东省' },
+    { code: '330000', name: '浙江省' },
+  ],
+  cities: {
+    '110000': [{ code: '110100', name: '北京市' }],
+    '310000': [{ code: '310100', name: '上海市' }],
+    '440000': [
+      { code: '440100', name: '广州市' },
+      { code: '440300', name: '深圳市' },
+    ],
+    '330000': [{ code: '330100', name: '杭州市' }],
+  },
+  districts: {
+    '110100': [{ code: '110101', name: '东城区' }],
+    '310100': [{ code: '310101', name: '黄浦区' }],
+    '440100': [{ code: '440103', name: '荔湾区' }],
+    '440300': [{ code: '440303', name: '罗湖区' }],
+    '330100': [{ code: '330102', name: '上城区' }],
+  },
+} as const;
+
 /** 收货地址管理页面，新增、编辑、删除均通过幂等 API。 */
 export function AddressesPage(): JSX.Element {
   const authenticated = useSessionStore((state) => Boolean(state.accessToken));
@@ -67,6 +92,10 @@ export function AddressesPage(): JSX.Element {
     event.preventDefault();
     void runSave();
   };
+  const cities =
+    REGION_OPTIONS.cities[form.provinceCode as keyof typeof REGION_OPTIONS.cities] ?? [];
+  const districts =
+    REGION_OPTIONS.districts[form.cityCode as keyof typeof REGION_OPTIONS.districts] ?? [];
   if (!authenticated) return <Navigate to="/login" state={{ from: '/addresses' }} replace />;
   return (
     <main className="trade-page">
@@ -107,9 +136,7 @@ export function AddressesPage(): JSX.Element {
       </section>
       <form className="form-card address-form" onSubmit={submit}>
         <h2>{editing ? '编辑地址' : '新增地址'}</h2>
-        {(
-          ['receiverName', 'phone', 'provinceCode', 'cityCode', 'districtCode', 'detail'] as const
-        ).map((field) => (
+        {(['receiverName', 'phone', 'detail'] as const).map((field) => (
           <label key={field}>
             {
               {
@@ -133,6 +160,64 @@ export function AddressesPage(): JSX.Element {
             />
           </label>
         ))}
+        <label>
+          省份
+          <select
+            required
+            value={form.provinceCode}
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                provinceCode: event.target.value,
+                cityCode: '',
+                districtCode: '',
+              }))
+            }
+          >
+            <option value="">请选择省份</option>
+            {REGION_OPTIONS.provinces.map((item) => (
+              <option value={item.code} key={item.code}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          城市
+          <select
+            required
+            disabled={!form.provinceCode}
+            value={form.cityCode}
+            onChange={(event) =>
+              setForm((current) => ({ ...current, cityCode: event.target.value, districtCode: '' }))
+            }
+          >
+            <option value="">请选择城市</option>
+            {cities.map((item) => (
+              <option value={item.code} key={item.code}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          区县
+          <select
+            required
+            disabled={!form.cityCode}
+            value={form.districtCode}
+            onChange={(event) =>
+              setForm((current) => ({ ...current, districtCode: event.target.value }))
+            }
+          >
+            <option value="">请选择区县</option>
+            {districts.map((item) => (
+              <option value={item.code} key={item.code}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </label>
         <label className="check-row">
           <input
             type="checkbox"

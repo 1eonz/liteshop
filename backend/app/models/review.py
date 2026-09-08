@@ -27,5 +27,7 @@ class ProductReview(Base):
     images: Mapped[list[str]] = mapped_column(JSON, default=list)
     status: Mapped[str] = mapped_column(String(20), default="PENDING", index=True)
     audit_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    merchant_reply: Mapped[str | None] = mapped_column(Text, nullable=True)
+    merchant_replied_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

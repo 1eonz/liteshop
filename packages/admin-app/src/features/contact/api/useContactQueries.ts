@@ -1,6 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ContactFormStatus } from '@liteshop/shared-types';
-import { listContactSubmissions, updateContactSubmissionStatus } from '../../../service/admin';
+import {
+  listContactSubmissions,
+  updateContactSubmissionStatus,
+} from '../../../service/admin/contact';
 
 /** 官网联系表单查询与状态更新。 */
 export function useContactSubmissionsQuery(status?: ContactFormStatus) {

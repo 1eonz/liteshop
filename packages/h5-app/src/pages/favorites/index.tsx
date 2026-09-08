@@ -2,7 +2,7 @@ import type { JSX } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { BottomTabBar } from '../../components/BottomTabBar';
 import { ProductCard } from '../../components/ProductCard';
-import { useProductsQuery } from '../../hooks/useProductsQuery';
+import { useProductsQuery } from '../../features/catalog/api/useProductsQuery';
 import { listServerFavoriteProductIds } from '../../service/favorites';
 import { useQuery } from '@tanstack/react-query';
 import { useSessionStore } from '../../store/session';

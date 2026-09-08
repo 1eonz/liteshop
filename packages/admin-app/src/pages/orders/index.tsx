@@ -223,18 +223,18 @@ export function OrdersPage(): JSX.Element {
                     {cancelling ? '取消中…' : '取消'}
                   </button>
                 )}
-                  <button
-                    className="ghost-button"
-                    type="button"
-                    onClick={() => {
-                      setEditingOrderId(order.id);
-                      setRemark(order.remark ?? '');
-                      setNewPrice(String(order.totalAmount));
-                      setEditingAddress(false);
-                    }}
-                  >
-                    备注/改价
-                  </button>
+                <button
+                  className="ghost-button"
+                  type="button"
+                  onClick={() => {
+                    setEditingOrderId(order.id);
+                    setRemark(order.remark ?? '');
+                    setNewPrice(String(order.totalAmount));
+                    setEditingAddress(false);
+                  }}
+                >
+                  备注/改价
+                </button>
                 {editableAddressStatuses.has(order.status) && (
                   <button
                     className="ghost-button"

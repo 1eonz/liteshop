@@ -1,6 +1,7 @@
 """管理后台查询仓储。"""
 
 from datetime import UTC, datetime, timedelta
+from typing import cast
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,7 +10,7 @@ from sqlalchemy.orm import selectinload
 from ..models.operation_log import OperationLog
 from ..models.order import Order, OrderItem
 from ..models.product import Sku, Spu
-from ..models.user import Permission, Role, role_permissions, user_roles
+from ..models.user import Permission, Role, User, role_permissions, user_roles
 
 
 class AdminRepository:
@@ -101,3 +102,59 @@ class AdminRepository:
         """读取系统权限点。"""
         result = await session.scalars(select(Permission).order_by(Permission.code))
         return list(result.all())
+
+    async def get_role(self, session: AsyncSession, role_id: int, *, for_update: bool = False) -> Role | None:
+        """读取角色及权限；写入时锁定角色行。"""
+        statement = select(Role).where(Role.id == role_id).options(selectinload(Role.permissions))
+        if for_update:
+            statement = statement.with_for_update()
+        result = await session.scalars(statement)
+        return result.unique().first()
+
+    async def get_role_by_name(self, session: AsyncSession, name: str) -> Role | None:
+        """按唯一名称查找角色。"""
+        return cast(Role | None, await session.scalar(select(Role).where(Role.name == name)))
+
+    async def get_permissions_by_codes(self, session: AsyncSession, codes: list[str]) -> list[Permission]:
+        """按权限编码批量读取权限点。"""
+        if not codes:
+            return []
+        result = await session.scalars(select(Permission).where(Permission.code.in_(codes)))
+        return list(result.all())
+
+    async def count_role_users(self, session: AsyncSession, role_id: int) -> int:
+        """统计角色绑定的管理员数量。"""
+        return int(
+            await session.scalar(select(func.count()).select_from(user_roles).where(user_roles.c.role_id == role_id))
+            or 0
+        )
+
+    async def get_user_with_roles(
+        self, session: AsyncSession, user_id: int, *, for_update: bool = False
+    ) -> User | None:
+        """读取管理员及角色集合；写入时锁定用户行。"""
+        statement = (
+            select(User).where(User.id == user_id).options(selectinload(User.roles).selectinload(Role.permissions))
+        )
+        if for_update:
+            statement = statement.with_for_update()
+        result = await session.scalars(statement)
+        return result.unique().first()
+
+    async def list_roles_by_ids(self, session: AsyncSession, role_ids: list[int]) -> list[Role]:
+        """按 ID 批量读取角色。"""
+        if not role_ids:
+            return []
+        result = await session.scalars(
+            select(Role).where(Role.id.in_(role_ids)).options(selectinload(Role.permissions)).order_by(Role.id)
+        )
+        return list(result.all())
+
+    async def list_users_with_roles(self, session: AsyncSession) -> list[User]:
+        """读取可分配角色的后台用户快照。"""
+        result = await session.scalars(
+            select(User)
+            .options(selectinload(User.roles).selectinload(Role.permissions))
+            .order_by(User.created_at.desc(), User.id)
+        )
+        return list(result.unique().all())

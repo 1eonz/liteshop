@@ -65,9 +65,7 @@ export async function listFreightTemplates(): Promise<FreightTemplate[]> {
 }
 
 /** 创建运费模板。 */
-export async function createFreightTemplate(
-  input: FreightTemplateInput,
-): Promise<FreightTemplate> {
+export async function createFreightTemplate(input: FreightTemplateInput): Promise<FreightTemplate> {
   const response = await httpClient.post<ApiEnvelope<FreightTemplate>>(
     '/admin/freight-templates',
     input,
@@ -117,4 +115,11 @@ export async function updateFreightTemplateItem(
     input,
   );
   return response.data.data;
+}
+
+/** 删除模板地区计费项。 */
+export async function deleteFreightTemplateItem(templateId: number, itemId: number): Promise<void> {
+  await httpClient.delete<ApiEnvelope<{ deleted: boolean }>>(
+    `/admin/freight-templates/${templateId}/items/${itemId}`,
+  );
 }

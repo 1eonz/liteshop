@@ -8,7 +8,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..core.config import settings
 from ..core.database import get_session
 from ..errors import ApiError
-from ..schemas.admin import OrderManagementUpdate, OrderPriceUpdate, ShipOrderRequest
+from ..schemas.admin import (
+    OrderManagementUpdate,
+    OrderPriceUpdate,
+    RoleCreate,
+    RoleUpdate,
+    ShipOrderRequest,
+    UserRolesUpdate,
+)
 from ..schemas.freight import (
     FreightTemplateCreate,
     FreightTemplateItemCreate,
@@ -17,7 +24,7 @@ from ..schemas.freight import (
 )
 from ..schemas.membership import MemberLevelUpdate, MemberTagsUpdate
 from ..schemas.products import CategoryCreate, CategoryUpdate, InventoryAdjust, ProductCreate, ProductUpdate
-from ..schemas.review import ReviewAudit
+from ..schemas.review import ReviewAudit, ReviewReply
 from ..services.admin import AdminPermissionDenied, AdminService
 from ..services.idempotency import IdempotencyInProgress, IdempotentResult, idempotency_service
 from ..services.membership import MembershipError, membership_service
@@ -382,12 +389,61 @@ async def list_reviews(subject: CurrentSubject, session: AsyncSession = _session
                     "images": list(review.images),
                     "status": review.status,
                     "reason": review.audit_reason,
+                    "merchantReply": review.merchant_reply,
+                    "merchantRepliedAt": review.merchant_replied_at.isoformat()
+                    if review.merchant_replied_at is not None
+                    else None,
                     "createdAt": review.created_at.isoformat(),
                 }
                 for review in reviews
             ]
         }
     )
+
+
+@router.put("/reviews/{review_id}/reply")
+async def reply_review(
+    review_id: int,
+    payload: ReviewReply,
+    subject: CurrentSubject,
+    x_request_id: str = Header(...),
+) -> dict[str, object]:
+    """保存已通过评价的商家回复。"""
+    return await _execute_write(
+        subject=subject,
+        request_id=x_request_id,
+        action_type=f"admin_review_reply:{review_id}",
+        permission="review.write",
+        resource_type="review",
+        operation=lambda session, user_id, request_id: _reply_review_operation(
+            session, review_id, payload.reply, user_id, request_id
+        ),
+    )
+
+
+async def _reply_review_operation(
+    session: AsyncSession | None,
+    review_id: int,
+    reply: str,
+    user_id: str,
+    request_id: str,
+) -> dict[str, object]:
+    """在统一后台写事务中保存评价回复并写审计。"""
+    if session is None:
+        raise RuntimeError("数据库事务会话未初始化")
+    await admin_service.require_permission(session, user_id, "review.write")
+    response = await review_service.reply(session, review_id, reply)
+    await admin_service.audit(
+        session,
+        user_id=user_id,
+        resource_type="REVIEW",
+        resource_id=review_id,
+        action="REPLY",
+        request_id=request_id,
+        before_data=None,
+        after_data=response,
+    )
+    return response
 
 
 @router.put("/reviews/{review_id}")
@@ -519,6 +575,78 @@ async def list_permissions(subject: CurrentSubject, session: AsyncSession = _ses
     _require_database()
     await _authorize_read(session, subject, "rbac.read")
     return success({"items": await admin_service.list_permissions(session)})
+
+
+@router.get("/users")
+async def list_users_with_roles(
+    subject: CurrentSubject, session: AsyncSession = _session_dependency
+) -> dict[str, object]:
+    """读取管理员角色分配列表。"""
+    _require_database()
+    await _authorize_read(session, subject, "rbac.read")
+    return success({"items": await admin_service.list_users_with_roles(session)})
+
+
+@router.post("/roles")
+async def create_role(
+    payload: RoleCreate, subject: CurrentSubject, x_request_id: str = Header(...)
+) -> dict[str, object]:
+    """创建后台角色。"""
+    return await _execute_write(
+        subject=subject,
+        request_id=x_request_id,
+        action_type="admin_role_create",
+        permission="rbac.write",
+        resource_type="role",
+        operation=lambda session, user_id, request_id: admin_service.create_role(session, payload, user_id, request_id),
+    )
+
+
+@router.put("/roles/{role_id}")
+async def update_role(
+    role_id: int, payload: RoleUpdate, subject: CurrentSubject, x_request_id: str = Header(...)
+) -> dict[str, object]:
+    """更新后台角色。"""
+    return await _execute_write(
+        subject=subject,
+        request_id=x_request_id,
+        action_type=f"admin_role_update:{role_id}",
+        permission="rbac.write",
+        resource_type="role",
+        operation=lambda session, user_id, request_id: admin_service.update_role(
+            session, role_id, payload, user_id, request_id
+        ),
+    )
+
+
+@router.delete("/roles/{role_id}")
+async def delete_role(role_id: int, subject: CurrentSubject, x_request_id: str = Header(...)) -> dict[str, object]:
+    """删除未绑定管理员的后台角色。"""
+    return await _execute_write(
+        subject=subject,
+        request_id=x_request_id,
+        action_type=f"admin_role_delete:{role_id}",
+        permission="rbac.write",
+        resource_type="role",
+        operation=lambda session, user_id, request_id: admin_service.delete_role(session, role_id, user_id, request_id),
+    )
+
+
+@router.put("/users/{user_id}/roles")
+async def update_user_roles(
+    user_id: int, payload: UserRolesUpdate, subject: CurrentSubject, x_request_id: str = Header(...)
+) -> dict[str, object]:
+    """覆盖管理员的角色绑定。"""
+    return await _execute_write(
+        subject=subject,
+        request_id=x_request_id,
+        action_type=f"admin_user_roles:{user_id}",
+        permission="rbac.write",
+        resource_type="user_role",
+        operation=lambda session, operator_id, request_id: admin_service.update_user_roles(
+            session, user_id, payload, operator_id, request_id
+        ),
+    )
 
 
 @router.get("/inventory/{sku_id}/ledger")

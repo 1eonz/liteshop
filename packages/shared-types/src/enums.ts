@@ -43,6 +43,25 @@ export enum PaymentStatus {
   REFUNDED = 'REFUNDED',
 }
 
+/** 售后申请类型。 */
+export enum AfterSaleType {
+  REFUND_ONLY = 'REFUND_ONLY',
+  RETURN_REFUND = 'RETURN_REFUND',
+  EXCHANGE = 'EXCHANGE',
+}
+
+/** 售后单生命周期状态。 */
+export enum AfterSaleStatus {
+  PENDING_REVIEW = 'PENDING_REVIEW',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  WAITING_RETURN = 'WAITING_RETURN',
+  RETURNED = 'RETURNED',
+  REFUNDING = 'REFUNDING',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+}
+
 /** 一期预置物流公司代码。 */
 export enum LogisticsCompanyCode {
   SF = 'SF',

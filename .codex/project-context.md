@@ -1,6 +1,6 @@
 # LiteShop Project Context
 
-> 由 project-radar 增量更新：2026-09-07。本文件是主 Agent 的最小上下文入口，子 Agent 若重新启用必须先读取相关章节。
+> 由 project-radar 增量更新：2026-09-08。本文件是主 Agent 的最小上下文入口，子 Agent 若重新启用必须先读取相关章节。
 
 ## 代码索引
 
@@ -18,7 +18,7 @@
 - `backend/alembic/`：异步 Alembic 迁移及可逆迁移文件；当前 head 为 `20260907_094000`，页面渠道路由使用复合唯一约束并增加草稿/发布状态。
 - `backend/integration_tests/`：显式启用的真实 PostgreSQL/Redis 验收，`scripts/test.ps1 -Integration` 运行库存竞争和 Redis NX 幂等测试；默认单元测试不会自动依赖基础设施。
 - `tests/e2e/`：Playwright H5 冒烟测试。
-- `docs/api-contracts/v1/`：18 个 OpenAPI 文件，包含官网页面、联系表单、导航、营销、物流、评价和后台接口契约。
+- `docs/api-contracts/v1/`：19 个 OpenAPI 文件，包含官网页面、联系表单、导航、营销、物流、售后、评价和后台接口契约。
 - `plans/`：plan-01 到 plan-13 及索引，覆盖 1a 需求。
 - `docs/架构说明.md`：CRM 风格目录对齐方案、前端数据流和后端分层边界。
 
@@ -56,10 +56,23 @@
 - 多租户遵循独立部署优先；共享数据库 `tenant_id` 隔离、真实物流/AI/营销供应商仍待决策。
 - Impeccable 完整 HTML/CSS 解析模块在当前环境缺失，但机械 detector 已对 H5/Admin 返回空结果。
 - 页面层仍保留少量直接调用 `service` 方法的交易编排代码（未出现组件内裸 Axios）；H5 购物车、地址、结算和 Admin 主要领域已有 `features/*/api` 出口，后续若交易规则继续增长继续下沉。
-- Admin 旧的 `src/hooks/useProductsQuery.ts` 与 `src/service/products.ts` 已确认无调用方并删除；商品查询唯一入口为 `features/catalog/api/useAdminCatalogQueries.ts`，避免同名 queryKey 的缓存污染。
+- 本轮已修复 Admin 运费模板编辑把 `items` 误传给基础模板 PUT 的问题：编辑保存现在先更新模板基础字段，再更新/新增首个计费项；完整多地区计费项编辑器仍待后续拆分。
+- 本轮已修复后台订单地址编辑权限：只有 `PENDING_PAYMENT`/`PAID` 可改地址，后端 DTO 校验收货人、手机号和详细地址，并新增 10 项回归测试。
+- 本轮 H5 商品查询调用方已迁移到 `features/catalog/api/useProductsQuery`；Admin settings/contact 已迁移到具体领域 service。
+- 本轮已删除确认零引用的框架迁移残留：H5/Admin 根级路由/页面聚合、旧 service/utils 桶、根级防抖转发，以及 Site 旧 `src/page.tsx`。仍保留活跃的 `hooks/useDebounceAction.ts`、Admin `utils/format-price.ts` 和兼容出口 `h5 hooks/useProductsQuery.ts`、`admin hooks/useAdminQueries.ts`、`admin service/admin.ts`，待兼容策略确认后再收敛。
 - 页面首页标记已按 `store/site` 渠道隔离清理，避免切换一端首页误取消另一端首页。
-- Admin `useAdminQueries.ts` 与 `service/admin.ts` 已收敛为兼容出口，真实实现位于各 `features/*/api` 与 `service/admin/<domain>.ts`；后端 `api/admin.py`/`api/orders.py` 仍为历史聚合文件，属于 plan-26 后续拆分项；拆分需保持契约快照和路由标签不变。
-- H5/Admin 中的兼容入口 `src/useDebounceAction.ts` 和 `hooks/useDebounceAction.ts` 仍保留用于旧调用方，不得再增加新的实现或入口。
+- Admin `useAdminQueries.ts` 与 `service/admin.ts` 仍是兼容出口，真实实现位于各 `features/*/api` 与 `service/admin/<domain>.ts`；后端 `api/admin.py`/`api/orders.py` 仍为历史聚合文件，属于后续拆分项；拆分需保持契约快照和路由标签不变。
+- H5/Admin 的 `hooks/useDebounceAction.ts` 是应用层门面，底层唯一实现位于 `@liteshop/shared-components`；不得再增加新的实现或入口。
+- CRM 借鉴结论已纳入待办：权限快照、错误码到缺省页、URL 字典、TTL storage、组件文档和受控/非受控协议；这些不应在没有真实调用方和契约确认时一次性泛化。
+- `ui-kit` 仅保留并行迁移方案，当前不新增包、不引入重型依赖、不修改 AGENTS 技术栈条款；后续需用户确认 headless 底座、依赖和 `--ui-*` token 桥接方案后再实施。
+- sync/await 与 `.then` 约定按场景选择：轮询、事务、补偿和多分支保留 async/await；简单一次性解包可使用 `.then`；同一函数不混用且必须完整传播 rejection。
+- 售后基础闭环已落地：`backend/app/api/after_sales.py`、`services/after_sale.py`、H5/Admin 售后页面和 `docs/api-contracts/v1/after-sale.yaml` 已同步；关键边界单测覆盖金额上限、重复申请、越权、非法状态和退货状态。
+- 官网搭建器已支持商城/官网模式切换、375px/1200px 画布、官网组件面板、SEO 标题/描述和组件动画字段；SiteRenderer 运行时监听 `prefers-reduced-motion` 并清理监听器。
+- H5 已补支付过期倒计时、订单状态步骤条、独立搜索页及本地历史、通知未读角标、账户设置和客服入口；地址省市区级联、评价提交、足迹和相关推荐仍未完成。
+- H5 地址省市区级联、评价提交、浏览足迹、相关推荐和商家回复展示已完成；专项 i18n/axe-core 键盘与触摸测试仍待补。
+- Admin RBAC 已从只读快照扩展为角色创建/编辑/删除保护和管理员角色分配；写链路复用权限校验、Redis/DB 幂等与操作日志。
+- Admin 运费模板支持多个地区计费项增删改，评价支持审核通过后的商家回复；共享类型和 OpenAPI 契约已同步。
+- Alembic 当前 head 为 `20260908_110000`，新增评价商家回复字段；后端全量测试为 69 passed。
 
 ## Agent 工作流适配建议
 

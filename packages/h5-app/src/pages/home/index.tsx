@@ -1,22 +1,39 @@
 import type { JSX } from 'react';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ProductCard } from '../../components/ProductCard';
 import { BottomTabBar } from '../../components/BottomTabBar';
-import { useProductsQuery } from '../../hooks/useProductsQuery';
-import { heroSlides, homeCategoryLabels } from '../../features/catalog';
-import { ErrorState } from '@liteshop/shared-components';
+import { useProductsQuery } from '../../features/catalog/api/useProductsQuery';
+import { heroSlides, homeCategoryLabels, useStoreHomePageQuery } from '../../features/catalog';
+import { ErrorState, FeedbackState } from '@liteshop/shared-components';
+import { SchemaRenderer } from '../../components/SchemaRenderer';
 
 /** H5 首页视图，页面只编排组件，不直接发起 API 请求。 */
 export function HomePage(): JSX.Element {
   const [query, setQuery] = useState('');
+  const navigate = useNavigate();
   const [activeSlide, setActiveSlide] = useState(0);
+  const storePageQuery = useStoreHomePageQuery();
   const productsQuery = useProductsQuery({ q: query || undefined });
   const visibleProducts = productsQuery.data?.items ?? [];
   const hero = heroSlides[activeSlide];
   const moveSlide = (offset: number): void => {
     setActiveSlide((current) => (current + offset + heroSlides.length) % heroSlides.length);
   };
+  if (storePageQuery.isLoading) {
+    return (
+      <main className="h5-shell">
+        <FeedbackState>首页加载中…</FeedbackState>
+      </main>
+    );
+  }
+  if (storePageQuery.data?.components.length) {
+    return (
+      <main className="h5-shell">
+        <SchemaRenderer schema={storePageQuery.data} />
+      </main>
+    );
+  }
   return (
     <main className="h5-shell">
       <header className="h5-header">
@@ -26,7 +43,8 @@ export function HomePage(): JSX.Element {
           role="search"
           onSubmit={(event) => {
             event.preventDefault();
-            setQuery((value) => value.trim());
+            const next = query.trim();
+            if (next) navigate(`/search?q=${encodeURIComponent(next)}`);
           }}
         >
           <label>

@@ -7,6 +7,7 @@ import { useDebounceAction } from '../../hooks/useDebounceAction';
 import { logout } from '../../service/auth';
 import { getProfile } from '../../service/user';
 import { useSessionStore } from '../../store/session';
+import { listNotifications } from '../../service/notifications';
 
 /** 用户中心页面，集中展示账号、订单、地址和收藏入口。 */
 export function MePage(): JSX.Element {
@@ -17,6 +18,11 @@ export function MePage(): JSX.Element {
     queryKey: ['profile'],
     enabled: authenticated,
     queryFn: getProfile,
+  });
+  const notificationsQuery = useQuery({
+    queryKey: ['notifications'],
+    enabled: authenticated,
+    queryFn: listNotifications,
   });
   const signOut = useCallback(async () => {
     try {
@@ -70,6 +76,27 @@ export function MePage(): JSX.Element {
           <span>我的收藏</span>
           <span aria-hidden="true">›</span>
         </Link>
+        <Link to="/after-sales">
+          <span>售后服务</span>
+          <span aria-hidden="true">›</span>
+        </Link>
+        <Link to="/notifications">
+          <span>
+            通知中心
+            {notificationsQuery.data?.unreadCount
+              ? `（${notificationsQuery.data.unreadCount}）`
+              : ''}
+          </span>
+          <span aria-hidden="true">›</span>
+        </Link>
+        <Link to="/settings">
+          <span>账户设置</span>
+          <span aria-hidden="true">›</span>
+        </Link>
+        <a href="mailto:support@liteshop.local">
+          <span>联系客服</span>
+          <span aria-hidden="true">›</span>
+        </a>
       </section>
       {profileQuery.isError && (
         <p className="feedback error-state" role="alert">

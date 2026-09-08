@@ -1,5 +1,6 @@
 """SQLAlchemy 模型导出。"""
 
+from .after_sale import AfterSale
 from .favorite import Favorite
 from .form_submission import FormSubmission
 from .freight import FreightTemplate, FreightTemplateItem
@@ -42,6 +43,7 @@ __all__ = [
     "SystemSetting",
     "FreightTemplate",
     "Favorite",
+    "AfterSale",
     "FreightTemplateItem",
     "FormSubmission",
     "Permission",

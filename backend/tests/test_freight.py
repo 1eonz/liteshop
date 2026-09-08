@@ -1,8 +1,16 @@
 """运费模板按地区、重量和件数计费测试。"""
 
+import asyncio
+from datetime import UTC, datetime
 from decimal import Decimal
+from typing import cast
+from unittest.mock import AsyncMock
+
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.freight import FreightTemplate, FreightTemplateItem
+from app.repositories.freight import FreightRepository
+from app.schemas.freight import FreightTemplateItemCreate, FreightTemplateUpdate
 from app.services.freight import FreightLine, FreightService
 
 
@@ -45,3 +53,60 @@ def test_piece_freight_supports_free_condition() -> None:
     )
     amount = FreightService.calculate_amount(template, item, [FreightLine(2, 0, 6000)], 12000)
     assert amount == 0
+
+
+def test_update_template_replaces_all_items_atomically() -> None:
+    """模板基础字段和多个计费项由同一服务事务整体替换。"""
+    template, _ = _template(
+        "PIECE",
+        FreightTemplateItem(
+            region_codes=[],
+            first_unit=Decimal("1"),
+            first_fee=100,
+            additional_unit=Decimal("1"),
+            additional_fee=50,
+            free_condition=None,
+        ),
+    )
+    template.id = 1
+    now = datetime.now(UTC)
+    template.created_at = now
+    template.updated_at = now
+    repository = cast(
+        FreightRepository,
+        type("Repository", (), {"get_template": AsyncMock(return_value=template)})(),
+    )
+    service = FreightService(repository=repository)
+    session = cast(AsyncSession, type("Session", (), {"flush": AsyncMock()})())
+    result = asyncio.run(
+        service.update_template(
+            session,
+            1,
+            FreightTemplateUpdate(
+                name="华东模板",
+                items=[
+                    FreightTemplateItemCreate.model_validate(
+                        {
+                            "regionCodes": ["310000"],
+                            "firstUnit": 1,
+                            "firstFee": 800,
+                            "additionalUnit": 1,
+                            "additionalFee": 200,
+                        }
+                    ),
+                    FreightTemplateItemCreate.model_validate(
+                        {
+                            "regionCodes": ["330000"],
+                            "firstUnit": 2,
+                            "firstFee": 900,
+                            "additionalUnit": 1,
+                            "additionalFee": 250,
+                        }
+                    ),
+                ],
+            ),
+        )
+    )
+    assert result["name"] == "华东模板"
+    assert len(template.items) == 2
+    assert template.items[1].first_fee == 900

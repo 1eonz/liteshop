@@ -4,4 +4,7 @@ export {
   useAdjustInventoryMutation,
 } from './api/useInventoryQueries';
 
-export { useFreightTemplatesQuery, useFreightTemplateMutations } from './api/useFreightTemplateQueries';
+export {
+  useFreightTemplatesQuery,
+  useFreightTemplateMutations,
+} from './api/useFreightTemplateQueries';

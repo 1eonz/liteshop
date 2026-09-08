@@ -63,6 +63,7 @@ export function SkuDrawer({
       <button
         className="drawer-backdrop"
         type="button"
+        tabIndex={-1}
         aria-label="关闭规格选择"
         onClick={onClose}
       />

@@ -74,7 +74,13 @@ class RefundService:
             request_id=request_id,
         )
 
-    async def process(self, session: AsyncSession, refund_id: int) -> Refund:
+    async def process(
+        self,
+        session: AsyncSession,
+        refund_id: int,
+        *,
+        restock_lines: list[tuple[int, int]] | None = None,
+    ) -> Refund:
         """处理一笔待退款记录，成功后回补订单商品库存。"""
         refund = await session.get(Refund, refund_id, with_for_update=True)
         if refund is None:
@@ -108,11 +114,14 @@ class RefundService:
         order = payment.order
         active_amount = await self.refunds.sum_active_amount(session, payment.id)
         order.refund_status = "FULL" if active_amount >= payment.amount_cents else "PARTIAL"
-        for item in order.items:
+        inventory_lines = (
+            [(item.sku_id, item.quantity) for item in order.items] if restock_lines is None else restock_lines
+        )
+        for sku_id, quantity in inventory_lines:
             await self.inventory.purchase_in(
                 session,
-                item.sku_id,
-                item.quantity,
+                sku_id,
+                quantity,
                 refund.refund_no,
                 f"refund:{refund.id}",
             )

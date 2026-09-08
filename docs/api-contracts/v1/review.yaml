@@ -1,7 +1,216 @@
 openapi: 3.0.3
-info: {title: LiteShop Review API, version: 1.0.0}
-servers: [{url: /api/v1}]
+info:
+  title: LiteShop Review API
+  version: 1.0.0
+  description: 商品评价提交、公开查询和后台审核接口。
+servers:
+  - url: /api/v1
 paths:
-  /reviews: {post: {security: [{bearerAuth: []}], parameters: [{in: header, name: X-Request-Id, required: true, schema: {type: string, format: uuid}}], requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ReviewCreate'}}}}, responses: {'200': {description: Created}}}}
-  /reviews/products/{productId}: {get: {parameters: [{in: path, name: productId, required: true, schema: {type: integer}}], responses: {'200': {description: Product reviews}}}}
-components: {securitySchemes: {bearerAuth: {type: http, scheme: bearer}}, schemas: {ReviewCreate: {type: object, required: [orderItemId, rating], properties: {orderItemId: {type: integer}, rating: {type: integer, minimum: 1, maximum: 5}, content: {type: string}, images: {type: array, items: {type: string}}}}}}
+  /reviews:
+    post:
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/RequestId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReviewCreate' }
+      responses:
+        '200':
+          description: 评价已创建或幂等返回
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EnvelopeReviewCreated' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /reviews/products/{productId}:
+    get:
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        '200':
+          description: 已审核评价
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EnvelopeProductReviews' }
+  /admin/reviews:
+    get:
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: 后台评价审核列表
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EnvelopeAdminReviews' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /admin/reviews/{reviewId}:
+    put:
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: reviewId
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+        - $ref: '#/components/parameters/RequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReviewAudit' }
+      responses:
+        '200':
+          description: 审核完成
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EnvelopeReviewAudit' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /admin/reviews/{reviewId}/reply:
+    put:
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: reviewId
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+        - $ref: '#/components/parameters/RequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReviewReply' }
+      responses:
+        '200':
+          description: 回复已保存
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EnvelopeReviewReply' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+components:
+  parameters:
+    RequestId:
+      name: X-Request-Id
+      in: header
+      required: true
+      schema: { type: string, minLength: 1, maxLength: 64 }
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  schemas:
+    ReviewCreate:
+      type: object
+      required: [orderItemId, rating]
+      properties:
+        orderItemId: { type: integer, minimum: 1 }
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        content: { type: string, maxLength: 2000 }
+        images: { type: array, maxItems: 9, items: { type: string, format: uri } }
+    ReviewAudit:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [APPROVED, REJECTED] }
+        reason: { type: string, maxLength: 500 }
+    ReviewReply:
+      type: object
+      required: [reply]
+      properties:
+        reply: { type: string, minLength: 1, maxLength: 2000 }
+    ProductReview:
+      type: object
+      required: [id, rating, content, images, createdAt]
+      properties:
+        id: { type: integer }
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        content: { type: string }
+        images: { type: array, items: { type: string, format: uri } }
+        merchantReply: { type: string, nullable: true }
+        merchantRepliedAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+    AdminReview:
+      allOf:
+        - $ref: '#/components/schemas/ProductReview'
+        - type: object
+          required: [productId, skuId, userId, status]
+          properties:
+            productId: { type: integer }
+            skuId: { type: integer }
+            userId: { type: integer }
+            status: { type: string, enum: [PENDING, APPROVED, REJECTED] }
+            reason: { type: string, nullable: true }
+            merchantReply: { type: string, nullable: true }
+            merchantRepliedAt: { type: string, format: date-time, nullable: true }
+    EnvelopeProductReviews:
+      type: object
+      properties:
+        code: { type: integer }
+        message: { type: string }
+        requestId: { type: string }
+        data:
+          type: object
+          required: [averageRating, items]
+          properties:
+            averageRating: { type: number }
+            items: { type: array, items: { $ref: '#/components/schemas/ProductReview' } }
+    EnvelopeAdminReviews:
+      type: object
+      properties:
+        code: { type: integer }
+        message: { type: string }
+        requestId: { type: string }
+        data:
+          type: object
+          required: [items]
+          properties:
+            items: { type: array, items: { $ref: '#/components/schemas/AdminReview' } }
+    EnvelopeReviewCreated:
+      type: object
+      properties:
+        code: { type: integer }
+        message: { type: string }
+        requestId: { type: string }
+        data:
+          type: object
+          properties:
+            id: { type: integer }
+            status: { type: string }
+            rating: { type: integer }
+    EnvelopeReviewAudit:
+      type: object
+      properties:
+        code: { type: integer }
+        message: { type: string }
+        requestId: { type: string }
+        data:
+          type: object
+          properties:
+            id: { type: integer }
+            status: { type: string }
+            reason: { type: string, nullable: true }
+    EnvelopeReviewReply:
+      type: object
+      properties:
+        code: { type: integer }
+        message: { type: string }
+        requestId: { type: string }
+        data:
+          type: object
+          properties:
+            id: { type: integer }
+            merchantReply: { type: string }
+            merchantRepliedAt: { type: string, format: date-time }
+    Error:
+      type: object
+      properties:
+        code: { type: integer }
+        message: { type: string }
+        requestId: { type: string }
+  responses:
+    Conflict:
+      description: 评价业务冲突
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Forbidden:
+      description: 无权限
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }

@@ -153,6 +153,7 @@ async def list_orders(
                     "trackingNo": "",
                     "items": [],
                     "createdAt": order.created_at.isoformat(),
+                    "expiredAt": None,
                 }
                 for order in memory_orders
             ],
@@ -243,6 +244,7 @@ async def get_order(
             "trackingNo": "",
             "items": [],
             "createdAt": memory_order.created_at.isoformat(),
+            "expiredAt": None,
         }
     )
 

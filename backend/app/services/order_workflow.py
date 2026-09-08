@@ -355,6 +355,7 @@ def payment_response(payment: Payment) -> dict[str, object]:
 
 def order_response(order: Order) -> dict[str, object]:
     """转换订单实体为跨端共享响应。"""
+    expired_at = getattr(order, "expired_at", None)
     return {
         "id": order.id,
         "orderNo": order.order_no,
@@ -373,6 +374,7 @@ def order_response(order: Order) -> dict[str, object]:
         "cancelledAt": order.cancelled_at.isoformat() if order.cancelled_at else None,
         "cancelReason": order.cancel_reason,
         "createdAt": order.created_at.isoformat(),
+        "expiredAt": expired_at.isoformat() if isinstance(expired_at, datetime) else None,
         "shippingCompanyCode": order.shipping_company_code,
         "trackingNo": order.tracking_no,
         "items": [

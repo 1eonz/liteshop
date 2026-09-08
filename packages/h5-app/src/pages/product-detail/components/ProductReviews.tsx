@@ -32,6 +32,12 @@ export function ProductReviews({
             {'☆'.repeat(5 - review.rating)}
           </div>
           <p>{review.content || '用户未填写文字评价'}</p>
+          {review.merchantReply && (
+            <p className="review-item__reply">
+              <strong>商家回复：</strong>
+              {review.merchantReply}
+            </p>
+          )}
           <time dateTime={review.createdAt}>
             {new Date(review.createdAt).toLocaleDateString('zh-CN')}
           </time>

@@ -207,10 +207,28 @@ class FreightService:
         if template is None:
             raise FreightError("运费模板不存在")
         changes = payload.model_dump(exclude_unset=True, by_alias=False)
+        changes.pop("items", None)
+        items = payload.items if "items" in payload.model_fields_set else None
         if changes.get("is_default") is True:
             await self.repository.clear_default(session, except_id=template_id)
         for field, value in changes.items():
             setattr(template, field, value)
+        if items is not None:
+            template.items.clear()
+            now = datetime.now(UTC)
+            template.items.extend(
+                FreightTemplateItem(
+                    region_codes=item.region_codes,
+                    first_unit=item.first_unit,
+                    first_fee=item.first_fee,
+                    additional_unit=item.additional_unit,
+                    additional_fee=item.additional_fee,
+                    free_condition=item.free_condition,
+                    created_at=now,
+                    updated_at=now,
+                )
+                for item in items
+            )
         template.updated_at = datetime.now(UTC)
         await session.flush()
         return self.template_response(template)

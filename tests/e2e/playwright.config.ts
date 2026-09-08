@@ -19,5 +19,13 @@ export default defineConfig({
       reuseExistingServer: true,
       timeout: 30_000,
     },
+    {
+      command: 'pnpm exec next dev --hostname 127.0.0.1 --port 5175',
+      cwd: '../../packages/site-app',
+      env: { REVALIDATE_TOKEN: 'e2e-revalidate-token' },
+      url: 'http://127.0.0.1:5175',
+      reuseExistingServer: true,
+      timeout: 60_000,
+    },
   ],
 });

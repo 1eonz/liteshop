@@ -5,6 +5,7 @@ import {
   deleteFreightTemplate,
   listFreightTemplates,
   addFreightTemplateItem,
+  deleteFreightTemplateItem,
   updateFreightTemplateItem,
   updateFreightTemplate,
   type FreightTemplateInput,
@@ -63,8 +64,13 @@ export function useFreightTemplateMutations() {
       onSuccess: refresh,
     }),
     update: useMutation({
-      mutationFn: ({ templateId, input }: { templateId: number; input: Partial<FreightTemplateInput> }) =>
-        updateFreightTemplate(templateId, input),
+      mutationFn: ({
+        templateId,
+        input,
+      }: {
+        templateId: number;
+        input: Partial<FreightTemplateInput>;
+      }) => updateFreightTemplate(templateId, input),
       retry: 0,
       onSuccess: refresh,
     }),
@@ -74,8 +80,13 @@ export function useFreightTemplateMutations() {
       onSuccess: refresh,
     }),
     addItem: useMutation({
-      mutationFn: ({ templateId, input }: { templateId: number; input: FreightTemplateItemInput }) =>
-        addFreightTemplateItem(templateId, input),
+      mutationFn: ({
+        templateId,
+        input,
+      }: {
+        templateId: number;
+        input: FreightTemplateItemInput;
+      }) => addFreightTemplateItem(templateId, input),
       retry: 0,
       onSuccess: refresh,
     }),
@@ -89,6 +100,12 @@ export function useFreightTemplateMutations() {
         itemId: number;
         input: Partial<FreightTemplateItemInput>;
       }) => updateFreightTemplateItem(templateId, itemId, input),
+      retry: 0,
+      onSuccess: refresh,
+    }),
+    removeItem: useMutation({
+      mutationFn: ({ templateId, itemId }: { templateId: number; itemId: number }) =>
+        deleteFreightTemplateItem(templateId, itemId),
       retry: 0,
       onSuccess: refresh,
     }),

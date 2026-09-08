@@ -50,6 +50,7 @@ class FreightTemplateUpdate(BaseModel):
     type: FreightType | None = None
     is_default: bool | None = Field(default=None, alias="isDefault")
     enabled: bool | None = None
+    items: list[FreightTemplateItemCreate] | None = Field(default=None, min_length=1, max_length=100)
     model_config = {"populate_by_name": True}
 
 

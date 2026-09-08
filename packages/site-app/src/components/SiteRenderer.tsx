@@ -1,7 +1,7 @@
 'use client';
 
 import type { CSSProperties, FormEvent, JSX } from 'react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useDebounceAction } from '@liteshop/shared-components';
 
@@ -75,8 +75,11 @@ const linksProp = (value: unknown): LinkItem[] => {
   });
 };
 
-const animationClass = (animation?: SiteAnimationConfig): string => {
-  if (!animation?.enabled || animation.type === 'none') return '';
+const animationClass = (
+  animation: SiteAnimationConfig | undefined,
+  reducedMotion: boolean,
+): string => {
+  if (reducedMotion || !animation?.enabled || animation.type === 'none') return '';
   return `site-reveal site-reveal--${animation.type}`;
 };
 
@@ -543,7 +546,7 @@ function Section({
   );
 }
 
-function renderComponent(component: SiteComponentSchema): JSX.Element {
+function renderComponent(component: SiteComponentSchema, reducedMotion: boolean): JSX.Element {
   const key = component.id;
   const props = component.props;
   switch (component.type) {
@@ -553,13 +556,13 @@ function renderComponent(component: SiteComponentSchema): JSX.Element {
       return <Footer key={key} props={props} />;
     case 'Hero':
       return (
-        <div key={key} className={animationClass(component.animation)}>
+        <div key={key} className={animationClass(component.animation, reducedMotion)}>
           <Hero props={props} />
         </div>
       );
     case 'HeroSplit':
       return (
-        <div key={key} className={animationClass(component.animation)}>
+        <div key={key} className={animationClass(component.animation, reducedMotion)}>
           <Hero props={props} split />
         </div>
       );
@@ -575,7 +578,7 @@ function renderComponent(component: SiteComponentSchema): JSX.Element {
       );
     case 'Features':
       return (
-        <div key={key} className={animationClass(component.animation)}>
+        <div key={key} className={animationClass(component.animation, reducedMotion)}>
           <Features props={props} />
         </div>
       );
@@ -629,10 +632,18 @@ function renderComponent(component: SiteComponentSchema): JSX.Element {
 }
 
 export function SiteRenderer({ page }: { page: SitePageSchema }): JSX.Element {
+  const [reducedMotion, setReducedMotion] = useState(false);
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const update = (): void => setReducedMotion(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
   const pageStyle = page.pageStyle ?? {};
   return (
     <div className="site-shell" style={pageStyle}>
-      {page.components.map(renderComponent)}
+      {page.components.map((component) => renderComponent(component, reducedMotion))}
     </div>
   );
 }

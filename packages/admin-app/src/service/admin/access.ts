@@ -1,6 +1,7 @@
 import type {
   AdminPermission,
   AdminRole,
+  AdminUserRecord,
   ApiEnvelope,
   AuditLogEntry,
   MemberDetail,
@@ -27,6 +28,47 @@ export async function listAdminPermissions(): Promise<AdminPermission[]> {
   const response =
     await httpClient.get<ApiEnvelope<{ items: AdminPermission[] }>>('/admin/permissions');
   return response.data.data.items;
+}
+
+/** 读取管理员角色绑定快照。 */
+export async function listAdminUsers(): Promise<AdminUserRecord[]> {
+  const response = await httpClient.get<ApiEnvelope<{ items: AdminUserRecord[] }>>('/admin/users');
+  return response.data.data.items;
+}
+
+/** 创建后台角色。 */
+export async function createAdminRole(name: string, permissionCodes: string[]): Promise<AdminRole> {
+  const response = await httpClient.post<ApiEnvelope<AdminRole>>('/admin/roles', {
+    name,
+    permissionCodes,
+  });
+  return response.data.data;
+}
+
+/** 更新后台角色。 */
+export async function updateAdminRole(
+  roleId: number,
+  input: { name?: string; permissionCodes?: string[] },
+): Promise<AdminRole> {
+  const response = await httpClient.put<ApiEnvelope<AdminRole>>(`/admin/roles/${roleId}`, input);
+  return response.data.data;
+}
+
+/** 删除后台角色。 */
+export async function deleteAdminRole(roleId: number): Promise<void> {
+  await httpClient.delete<ApiEnvelope<{ deleted: boolean }>>(`/admin/roles/${roleId}`);
+}
+
+/** 覆盖管理员角色绑定。 */
+export async function updateAdminUserRoles(
+  userId: number,
+  roleIds: number[],
+): Promise<AdminUserRecord> {
+  const response = await httpClient.put<ApiEnvelope<AdminUserRecord>>(
+    `/admin/users/${userId}/roles`,
+    { roleIds },
+  );
+  return response.data.data;
 }
 
 /** 读取会员分页列表。 */

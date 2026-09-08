@@ -10,6 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .api.admin import router as admin_router
+from .api.after_sales import admin_router as admin_after_sales_router
+from .api.after_sales import router as after_sales_router
 from .api.ai_copy import router as ai_copy_router
 from .api.auth import router as auth_router
 from .api.cart import router as cart_router
@@ -49,6 +51,8 @@ app.add_middleware(
 )
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")
+app.include_router(after_sales_router, prefix="/api/v1")
+app.include_router(admin_after_sales_router, prefix="/api/v1")
 app.include_router(cart_router, prefix="/api/v1")
 app.include_router(contact_router, prefix="/api/v1")
 app.include_router(admin_contact_router, prefix="/api/v1")

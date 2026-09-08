@@ -26,11 +26,21 @@ const COMPONENT_GROUPS: Array<{ label: string; types: StoreComponentType[] }> = 
   { label: '转化组件', types: ['ActivityBanner', 'AnnouncementBar', 'Tabbar'] },
 ];
 
+const SITE_COMPONENT_GROUPS: Array<{ label: string; types: StoreComponentType[] }> = [
+  { label: '官网结构', types: ['Navbar', 'Footer', 'Section', 'Divider'] },
+  {
+    label: '官网内容',
+    types: ['Hero', 'HeroSplit', 'Features', 'Stats', 'LogoWall', 'Testimonials'],
+  },
+  { label: '官网转化', types: ['Pricing', 'FAQ', 'ImageWithText', 'ContactForm', 'CTA'] },
+];
+
 const DEFAULT_PAGE: StorePageSchema = {
   id: 1,
   slug: 'home',
   name: '首页',
   title: '商城首页',
+  channel: 'store',
   version: 1,
   isHome: true,
   components: [
@@ -45,6 +55,22 @@ const DEFAULT_PAGE: StorePageSchema = {
       props: { items: ['home', 'category', 'cart', 'me'] },
       style: {},
     },
+  ],
+};
+
+const DEFAULT_SITE_PAGE: StorePageSchema = {
+  ...DEFAULT_PAGE,
+  slug: 'site-home',
+  name: '官网首页',
+  title: '官网首页',
+  channel: 'site',
+  isHome: false,
+  components: [
+    { id: 'site-navbar-1', type: 'Navbar', props: { title: 'LiteShop 官网' }, style: {} },
+    { id: 'site-hero-1', type: 'HeroSplit', props: { title: '让每一笔交易都更轻盈' }, style: {} },
+    { id: 'site-features-1', type: 'Features', props: { title: '核心能力' }, style: {} },
+    { id: 'site-contact-1', type: 'ContactForm', props: { title: '预约一次对话' }, style: {} },
+    { id: 'site-footer-1', type: 'Footer', props: { title: 'LiteShop' }, style: {} },
   ],
 };
 
@@ -120,6 +146,24 @@ function componentLabel(type: StoreComponentType): string {
     ProductCarousel: '商品横滑',
     CouponBlock: '优惠券',
     AnnouncementBar: '公告栏',
+    Navbar: '官网导航',
+    Footer: '官网页脚',
+    Section: '官网区块',
+    Divider: '官网分隔线',
+    Hero: '官网主视觉',
+    HeroSplit: '官网图文主视觉',
+    Hero3D: '官网 3D 主视觉',
+    Features: '官网能力列表',
+    Stats: '官网数据指标',
+    LogoWall: '官网品牌墙',
+    Testimonials: '官网客户评价',
+    Pricing: '官网价格方案',
+    FAQ: '官网常见问题',
+    ImageWithText: '官网图文区块',
+    ContactForm: '官网联系表单',
+    CTA: '官网行动召唤',
+    Hero3DBackground: '官网 3D 背景',
+    Product3DViewer: '官网产品预览',
   };
   return labels[type];
 }
@@ -143,11 +187,12 @@ function openPreview(page: StorePageSchema): boolean {
 /** 商城低代码搭建器：三栏画布、50 步撤销重做、自动保存、模板和预览。 */
 export function PageBuilderPage(): JSX.Element {
   const [page, setPage] = useState<StorePageSchema>(readDraft);
+  const [channel, setChannel] = useState<'store' | 'site'>(page.channel ?? 'store');
   const [history, setHistory] = useState<StorePageSchema[]>([]);
   const [future, setFuture] = useState<StorePageSchema[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [pages, setPages] = useState<
-    Array<{ id: number; slug: string; name: string; isHome: boolean }>
+    Array<{ id: number; slug: string; name: string; isHome: boolean; channel?: 'store' | 'site' }>
   >([]);
   const [zoom, setZoom] = useState(1);
   const [notice, setNotice] = useState('草稿已加载');
@@ -159,6 +204,20 @@ export function PageBuilderPage(): JSX.Element {
     [page.components, selectedId],
   );
 
+  const isSite = channel === 'site';
+  const componentGroups = isSite ? SITE_COMPONENT_GROUPS : COMPONENT_GROUPS;
+
+  const switchChannel = (nextChannel: 'store' | 'site'): void => {
+    setChannel(nextChannel);
+    setSelectedId(null);
+    setPage((current) => {
+      if (current.channel === nextChannel) return current;
+      const fallback = nextChannel === 'site' ? DEFAULT_SITE_PAGE : DEFAULT_PAGE;
+      return { ...fallback, id: current.id, channel: nextChannel };
+    });
+    setNotice(nextChannel === 'site' ? '已切换官网模式' : '已切换商城模式');
+  };
+
   useEffect(() => {
     let active = true;
     void listManagedPages()
@@ -166,7 +225,8 @@ export function PageBuilderPage(): JSX.Element {
         if (active) setPages(items);
       })
       .catch(() => {
-        if (active) setPages([{ id: 1, slug: 'home', name: '首页', isHome: true }]);
+        if (active)
+          setPages([{ id: 1, slug: 'home', name: '首页', isHome: true, channel: 'store' }]);
       });
     return () => {
       active = false;
@@ -340,7 +400,7 @@ export function PageBuilderPage(): JSX.Element {
     const type = event.dataTransfer.getData(
       'application/x-liteshop-component',
     ) as StoreComponentType;
-    if (COMPONENT_GROUPS.some((group) => group.types.includes(type))) addComponent(type);
+    if (componentGroups.some((group) => group.types.includes(type))) addComponent(type);
   };
 
   const handleCanvasKeyDown = (event: ReactKeyboardEvent<HTMLElement>): void => {
@@ -354,8 +414,8 @@ export function PageBuilderPage(): JSX.Element {
     <div className="editor-page builder-page" onKeyDown={handleCanvasKeyDown}>
       <header className="builder-toolbar">
         <div>
-          <p>商城装修</p>
-          <h1>首页搭建器</h1>
+          <p>{isSite ? '官网内容管理' : '商城装修'}</p>
+          <h1>{isSite ? '官网页面搭建器' : '商城首页搭建器'}</h1>
         </div>
         <div className="builder-toolbar__actions" aria-label="搭建器工具">
           <button className="ghost-button" type="button" disabled={!history.length} onClick={undo}>
@@ -382,10 +442,10 @@ export function PageBuilderPage(): JSX.Element {
           <button
             className="primary-action"
             type="button"
-            disabled={publishing}
+            disabled={!isSite || publishing}
             onClick={() => void runPublish()}
           >
-            {publishing ? '发布中…' : '发布官网页'}
+            {publishing ? '发布中…' : isSite ? '发布官网页' : '商城页无需发布'}
           </button>
         </div>
       </header>
@@ -394,11 +454,29 @@ export function PageBuilderPage(): JSX.Element {
       </p>
       <div className="builder-layout">
         <aside className="panel builder-library" aria-label="组件库">
+          <div className="builder-mode-switch" role="group" aria-label="编辑模式">
+            <button
+              className={channel === 'store' ? 'selected' : ''}
+              type="button"
+              aria-pressed={channel === 'store'}
+              onClick={() => switchChannel('store')}
+            >
+              商城 375px
+            </button>
+            <button
+              className={channel === 'site' ? 'selected' : ''}
+              type="button"
+              aria-pressed={channel === 'site'}
+              onClick={() => switchChannel('site')}
+            >
+              官网 1200px
+            </button>
+          </div>
           <div className="panel-title">
             <h2>组件库</h2>
-            <span>{COMPONENT_GROUPS.flatMap((group) => group.types).length} 个组件</span>
+            <span>{componentGroups.flatMap((group) => group.types).length} 个组件</span>
           </div>
-          {COMPONENT_GROUPS.map((group) => (
+          {componentGroups.map((group) => (
             <section className="builder-library__group" key={group.label}>
               <h3>{group.label}</h3>
               <div className="builder-library__items">
@@ -444,11 +522,13 @@ export function PageBuilderPage(): JSX.Element {
                   setPage((current) => ({ ...current, id: Number(event.target.value) }))
                 }
               >
-                {pages.map((item) => (
-                  <option value={item.id} key={item.id}>
-                    {item.name} · /{item.slug}
-                  </option>
-                ))}
+                {pages
+                  .filter((item) => item.channel === channel || !item.channel)
+                  .map((item) => (
+                    <option value={item.id} key={item.id}>
+                      {item.name} · /{item.slug}
+                    </option>
+                  ))}
               </select>
             </label>
             <button
@@ -491,7 +571,7 @@ export function PageBuilderPage(): JSX.Element {
             </button>
           </div>
           <div
-            className="builder-canvas"
+            className={isSite ? 'builder-canvas builder-canvas--site' : 'builder-canvas'}
             onDragOver={(event) => event.preventDefault()}
             onDrop={handleDrop}
             style={{ transform: `scale(${zoom})` }}
@@ -634,6 +714,65 @@ export function PageBuilderPage(): JSX.Element {
                   <option value="var(--spacing-5)">宽松</option>
                 </select>
               </label>
+              {isSite && (
+                <>
+                  <label className="builder-field">
+                    动画
+                    <select
+                      value={selected.animation?.type ?? 'none'}
+                      onChange={(event) =>
+                        updatePage((current) => ({
+                          ...current,
+                          components: current.components.map((component) =>
+                            component.id === selected.id
+                              ? {
+                                  ...component,
+                                  animation: {
+                                    enabled: event.target.value !== 'none',
+                                    type: event.target.value,
+                                  },
+                                }
+                              : component,
+                          ),
+                        }))
+                      }
+                    >
+                      <option value="none">关闭</option>
+                      <option value="fade-up">向上淡入</option>
+                      <option value="fade-down">向下淡入</option>
+                      <option value="fade-left">向左淡入</option>
+                      <option value="fade-right">向右淡入</option>
+                      <option value="zoom-in">缩放进入</option>
+                    </select>
+                  </label>
+                  <label className="builder-field">
+                    SEO 标题
+                    <input
+                      value={String(page.seo?.['title'] ?? '')}
+                      maxLength={120}
+                      onChange={(event) =>
+                        updatePage((current) => ({
+                          ...current,
+                          seo: { ...(current.seo ?? {}), title: event.target.value },
+                        }))
+                      }
+                    />
+                  </label>
+                  <label className="builder-field">
+                    SEO 描述
+                    <input
+                      value={String(page.seo?.['description'] ?? '')}
+                      maxLength={300}
+                      onChange={(event) =>
+                        updatePage((current) => ({
+                          ...current,
+                          seo: { ...(current.seo ?? {}), description: event.target.value },
+                        }))
+                      }
+                    />
+                  </label>
+                </>
+              )}
             </>
           ) : (
             <p className="feedback">选择画布中的组件开始编辑。</p>

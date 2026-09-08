@@ -1,6 +1,7 @@
 """Pydantic request and response schemas."""
 
 from .admin import FeatureFlagUpdate, OrderPriceUpdate, ShipOrderRequest
+from .after_sale import AfterSaleAudit, AfterSaleCreate, AfterSaleReturn
 from .auth import LoginRequest, SmsCodeRequest
 from .cart import CartItemInput, CartItemResponse
 from .orders import OrderCreate, OrderItemCreate, OrderResponse
@@ -42,4 +43,7 @@ __all__ = [
     "SkuCreate",
     "SmsCodeRequest",
     "UploadSignRequest",
+    "AfterSaleCreate",
+    "AfterSaleAudit",
+    "AfterSaleReturn",
 ]

@@ -1,4 +1,11 @@
-import type { InventoryEventType, OrderStatus, PaymentProvider, ProductStatus } from './enums.js';
+import type {
+  AfterSaleStatus,
+  AfterSaleType,
+  InventoryEventType,
+  OrderStatus,
+  PaymentProvider,
+  ProductStatus,
+} from './enums.js';
 
 /** 统一接口响应信封。 */
 export interface ApiEnvelope<T> {
@@ -281,6 +288,8 @@ export interface ProductReviewItem {
   rating: number;
   content: string;
   images: string[];
+  merchantReply?: string | null;
+  merchantRepliedAt?: string | null;
   createdAt: string;
 }
 
@@ -320,6 +329,7 @@ export interface OrderItemResponse {
 }
 
 export interface OrderDetail extends OrderSummary {
+  expiredAt?: string | null;
   refundStatus: string;
   paidAmount: number | null;
   paidAt: string | null;
@@ -349,6 +359,60 @@ export interface RefundResponse {
   paymentId: number;
   amountCents: number;
   status: string;
+}
+
+/** 用户提交商品评价输入。 */
+export interface ReviewCreateInput {
+  orderItemId: number;
+  rating: number;
+  content: string;
+  images?: string[];
+}
+
+/** 后台评价审核条目。 */
+export interface AdminReviewRecord {
+  id: number;
+  productId: number;
+  skuId: number;
+  userId: number;
+  rating: number;
+  content: string;
+  images: string[];
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  reason: string | null;
+  merchantReply: string | null;
+  merchantRepliedAt: string | null;
+  createdAt: string;
+}
+
+/** 售后单摘要，金额统一为整数分。 */
+export interface AfterSaleSummary {
+  id: number;
+  afterSaleNo: string;
+  orderId: number;
+  orderItemId: number;
+  type: AfterSaleType;
+  status: AfterSaleStatus;
+  amountCents: number;
+  reason: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 售后申请输入。 */
+export interface AfterSaleCreateInput {
+  orderItemId: number;
+  type: AfterSaleType;
+  amountCents: number;
+  reason: string;
+  evidenceUrls?: string[];
+}
+
+/** 售后单完整响应，供 H5 与后台审核页面共用。 */
+export interface AfterSaleRecord extends AfterSaleSummary {
+  evidenceUrls: string[];
+  returnTrackingNo: string;
+  auditReason: string | null;
 }
 
 /** 管理后台数据看板与库存行。 */
@@ -403,6 +467,14 @@ export interface AdminRole {
 export interface AdminPermission {
   id: number;
   code: string;
+}
+
+/** 后台角色分配页面的管理员最小快照。 */
+export interface AdminUserRecord {
+  id: number;
+  nickname: string;
+  phone: string;
+  roleIds: number[];
 }
 
 export type MemberLevel = 'NORMAL' | 'MEMBER';
@@ -462,6 +534,27 @@ export interface FreightTemplateItem {
   freeCondition: Record<string, unknown> | null;
 }
 
+/** 官网低代码组件类型，与商城组件共同使用版本化页面载体。 */
+export type SiteComponentType =
+  | 'Navbar'
+  | 'Footer'
+  | 'Section'
+  | 'Divider'
+  | 'Hero'
+  | 'HeroSplit'
+  | 'Hero3D'
+  | 'Features'
+  | 'Stats'
+  | 'LogoWall'
+  | 'Testimonials'
+  | 'Pricing'
+  | 'FAQ'
+  | 'ImageWithText'
+  | 'ContactForm'
+  | 'CTA'
+  | 'Hero3DBackground'
+  | 'Product3DViewer';
+
 export type StoreComponentType =
   | 'SearchBar'
   | 'Carousel'
@@ -475,13 +568,15 @@ export type StoreComponentType =
   | 'ProductList'
   | 'ProductCarousel'
   | 'CouponBlock'
-  | 'AnnouncementBar';
+  | 'AnnouncementBar'
+  | SiteComponentType;
 
 export interface StoreComponentSchema {
   id: string;
   type: StoreComponentType;
   props: Record<string, unknown>;
   style: Record<string, string>;
+  animation?: { enabled: boolean; type: string };
 }
 
 export interface StorePageSchema {
