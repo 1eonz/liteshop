@@ -10,7 +10,10 @@ import { EmptyState, ErrorState, FeedbackState } from '@liteshop/shared-componen
 import { BottomTabBar, type TabBarItem } from './BottomTabBar';
 import { ProductCard } from './ProductCard';
 import { useCategoriesQuery, useProductsQuery } from '../features/catalog';
-import { schemaProductPageSize, selectSchemaProducts } from '../features/catalog/model/schema-products';
+import {
+  schemaProductPageSize,
+  selectSchemaProducts,
+} from '../features/catalog/model/schema-products';
 import { useDebounceAction } from '../hooks/useDebounceAction';
 
 interface SchemaRendererProps {
@@ -20,7 +23,6 @@ interface SchemaRendererProps {
 interface ComponentViewProps {
   component: StoreComponentSchema;
 }
-
 
 function textProp(component: StoreComponentSchema, key: string, fallback = ''): string {
   const value = component.props[key];

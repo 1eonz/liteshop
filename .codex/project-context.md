@@ -69,6 +69,7 @@
 - 首页 Schema 归一化会保留合法的空样式配置、过滤非法组件、清理非字符串样式值并生成稳定 ID；轮播支持配置化自动播放、手动切换、内外链安全校验和 reduced-motion。
 - CRM 借鉴结论已纳入待办：权限快照、错误码到缺省页、URL 字典、TTL storage、组件文档和受控/非受控协议；这些不应在没有真实调用方和契约确认时一次性泛化。
 - `ui-kit` 仅保留并行迁移方案，当前不新增包、不引入重型依赖、不修改 AGENTS 技术栈条款；后续需用户确认 headless 底座、依赖和 `--ui-*` token 桥接方案后再实施。
+- `shared-tokens/ui-kit-bridge.css` 已接入 H5、Admin、Site 三个宿主入口，统一将 `--ui-*` 映射到 LiteShop token；UI Kit 独立使用时仍保留 fallback。
 - sync/await 与 `.then` 约定按场景选择：轮询、事务、补偿和多分支保留 async/await；简单一次性解包可使用 `.then`；同一函数不混用且必须完整传播 rejection。
 - 售后基础闭环已落地：`backend/app/api/after_sales.py`、`services/after_sale.py`、H5/Admin 售后页面和 `docs/api-contracts/v1/after-sale.yaml` 已同步；关键边界单测覆盖金额上限、重复申请、越权、非法状态和退货状态，真实 PostgreSQL/Redis 售后幂等已验证。
 - 官网搭建器已支持商城/官网模式切换、375px/1200px 画布、官网组件面板、SEO 标题/描述和组件动画字段；SiteRenderer 运行时监听 `prefers-reduced-motion` 并清理监听器。

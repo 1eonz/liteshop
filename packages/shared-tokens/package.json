@@ -10,7 +10,13 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./tokens.css": "./src/tokens.css"
+    "./tokens.css": "./src/tokens.css",
+    "./ui-kit-bridge.css": "./src/ui-kit-bridge.css"
   },
-  "scripts": { "build": "tsc -p tsconfig.json", "test": "node --test", "lint": "tsc --noEmit", "typecheck": "tsc --noEmit" }
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "node --test test/*.test.mjs",
+    "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit"
+  }
 }

@@ -1,6 +1,8 @@
 param([switch]$Integration)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
+& python (Join-Path $root 'scripts/check_enum_sync.py')
+if ($LASTEXITCODE -ne 0) { throw 'enum sync check failed' }
 & pnpm --dir $root test
 if ($Integration) {
     $backend = Join-Path $root 'backend'

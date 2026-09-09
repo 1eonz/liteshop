@@ -11,7 +11,9 @@ function readNumberArray(component: StoreComponentSchema, key: string): number[]
 /** 读取首页商品板块的排序配置，未知值回退到接口顺序。 */
 export function readProductSort(component: StoreComponentSchema): ProductSort {
   const value = component.props.sort;
-  return value === 'PRICE_ASC' || value === 'PRICE_DESC' || value === 'SALES_DESC' ? value : 'DEFAULT';
+  return value === 'PRICE_ASC' || value === 'PRICE_DESC' || value === 'SALES_DESC'
+    ? value
+    : 'DEFAULT';
 }
 
 /**

@@ -1,4 +1,5 @@
 @import '@liteshop/shared-tokens/tokens.css';
+@import '@liteshop/shared-tokens/ui-kit-bridge.css';
 :root {
   --color-primary: var(--color-primary-500);
   --color-ink: var(--gallery-color-ink);

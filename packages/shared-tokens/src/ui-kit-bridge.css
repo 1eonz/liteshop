@@ -1,0 +1,46 @@
+/*
+ * LiteShop 宿主为独立 UI Kit 提供的 token 桥接。
+ * 本文件只引用 shared-tokens，不在 UI Kit 内复制项目视觉值。
+ */
+:root {
+  --ui-color-primary: var(--color-primary-500);
+  --ui-color-primary-hover: var(--color-primary-600);
+  --ui-color-primary-active: var(--color-primary-700);
+  --ui-color-primary-contrast: var(--color-text-inverse);
+  --ui-color-text: var(--color-text-primary);
+  --ui-color-text-secondary: var(--color-text-secondary);
+  --ui-color-text-muted: var(--color-text-tertiary);
+  --ui-color-surface: var(--color-bg-card);
+  --ui-color-surface-subtle: var(--color-bg-page);
+  --ui-color-border: var(--color-border-dark);
+  --ui-color-danger: var(--color-error-600);
+  --ui-color-danger-hover: var(--color-error-700);
+  --ui-color-danger-active: var(--color-error-700);
+  --ui-color-danger-surface: var(--color-error-50);
+  --ui-color-focus: var(--color-info-600);
+  --ui-color-skeleton: var(--color-border-base);
+  --ui-color-skeleton-highlight: var(--color-bg-hover);
+  --ui-font-family: var(--font-family-sans);
+  --ui-font-size-sm: var(--font-size-sm);
+  --ui-font-size-md: var(--font-size-md);
+  --ui-font-size-lg: var(--font-size-lg);
+  --ui-font-weight-medium: var(--font-weight-medium);
+  --ui-font-weight-semibold: var(--font-weight-semibold);
+  --ui-line-height-normal: var(--line-height-normal);
+  --ui-spacing-1: var(--spacing-1);
+  --ui-spacing-2: var(--spacing-2);
+  --ui-spacing-3: var(--spacing-3);
+  --ui-spacing-4: var(--spacing-4);
+  --ui-spacing-5: var(--spacing-5);
+  --ui-spacing-6: var(--spacing-6);
+  --ui-radius-sm: var(--radius-sm);
+  --ui-radius-md: var(--radius-md);
+  --ui-radius-lg: var(--radius-lg);
+  --ui-shadow-sm: var(--shadow-sm);
+  --ui-shadow-md: var(--shadow-md);
+  --ui-motion-fast: var(--motion-fast);
+  --ui-motion-normal: var(--motion-normal);
+  --ui-control-height: var(--control-height);
+  --ui-z-modal: var(--z-modal);
+  --ui-z-toast: var(--z-toast);
+}

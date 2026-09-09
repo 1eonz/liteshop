@@ -27,6 +27,8 @@ function Assert-CommandSucceeded {
 function Invoke-BackendVerification {
     Push-Location (Join-Path $root 'backend')
     try {
+        & python (Join-Path $root 'scripts/check_enum_sync.py')
+        Assert-CommandSucceeded 'enum sync check'
         & ruff check .
         Assert-CommandSucceeded 'ruff check'
         & ruff format --check .

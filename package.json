@@ -9,6 +9,7 @@
   "scripts": {
     "build": "turbo run build",
     "test": "turbo run test",
+    "check:enums": "python scripts/check_enum_sync.py",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "format": "npx --yes prettier@3.6.2 --write \"packages/**/*.{ts,tsx,css}\"",

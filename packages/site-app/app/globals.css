@@ -1,4 +1,5 @@
 @import '@liteshop/shared-tokens/tokens.css';
+@import '@liteshop/shared-tokens/ui-kit-bridge.css';
 
 :root {
   --site-bg: var(--gallery-color-page);

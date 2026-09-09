@@ -26,7 +26,7 @@
 
 - [x] Phase 1 未引入重依赖，React 仅作为 peer dependency；后续架构和依赖变更仍需确认。
 - [x] 基础组件为迁移候选，不包含业务逻辑；平台专属组件遵守真实调用方和 Rule of Three。
-- [ ] LiteShop 内通过宿主映射接入 shared-tokens（当前尚未接入）；独立包保留 `--ui-*` fallback，不把 fallback 当作业务 token 源。
+- [x] LiteShop 宿主桥接已由 `@liteshop/shared-tokens/ui-kit-bridge.css` 提供；独立包保留 `--ui-*` fallback，不把 fallback 当作业务 token 源。业务应用在首个组件迁移时按需引入桥接文件。
 - [x] 构建产物支持 ESM、类型声明和按子路径 tree-shaking。
 
 ## 验证命令

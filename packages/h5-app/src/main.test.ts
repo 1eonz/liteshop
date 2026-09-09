@@ -4,7 +4,10 @@ import { products } from './app-data';
 import { toLocalCartItem } from './features/cart';
 import { defaultStoreHomePage } from './features/catalog';
 import { normalizeStoreHomePage } from './features/catalog/api/useStorePageQuery';
-import { schemaProductPageSize, selectSchemaProducts } from './features/catalog/model/schema-products';
+import {
+  schemaProductPageSize,
+  selectSchemaProducts,
+} from './features/catalog/model/schema-products';
 import { formatPrice } from '@liteshop/shared-types';
 
 describe('H5 首页数据', () => {
@@ -130,11 +133,37 @@ describe('H5 首页数据', () => {
       style: {},
     } as const;
     const products: ProductSummary[] = [
-      { id: 1, name: '一', coverUrl: '', minPrice: 100, maxPrice: 100, salesCount: 20, status: ProductStatus.ON_SHELF },
-      { id: 3, name: '三', coverUrl: '', minPrice: 300, maxPrice: 300, salesCount: 5, status: ProductStatus.ON_SHELF },
-      { id: 8, name: '八', coverUrl: '', minPrice: 800, maxPrice: 800, salesCount: 80, status: ProductStatus.ON_SHELF },
+      {
+        id: 1,
+        name: '一',
+        coverUrl: '',
+        minPrice: 100,
+        maxPrice: 100,
+        salesCount: 20,
+        status: ProductStatus.ON_SHELF,
+      },
+      {
+        id: 3,
+        name: '三',
+        coverUrl: '',
+        minPrice: 300,
+        maxPrice: 300,
+        salesCount: 5,
+        status: ProductStatus.ON_SHELF,
+      },
+      {
+        id: 8,
+        name: '八',
+        coverUrl: '',
+        minPrice: 800,
+        maxPrice: 800,
+        salesCount: 80,
+        status: ProductStatus.ON_SHELF,
+      },
     ];
-    expect(selectSchemaProducts(component, products, 2).map((product) => product.id)).toEqual([3, 1]);
+    expect(selectSchemaProducts(component, products, 2).map((product) => product.id)).toEqual([
+      3, 1,
+    ]);
     expect(schemaProductPageSize(component, 2)).toBe(20);
   });
 });
