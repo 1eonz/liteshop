@@ -69,6 +69,56 @@ a {
   background: var(--color-surface);
   box-shadow: var(--shadow-md);
 }
+.pull-refresh-indicator {
+  min-height: var(--spacing-7);
+  padding-block: var(--spacing-2);
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+  text-align: center;
+  transform: translateY(calc(var(--pull-refresh-distance, 0px) * 0.15));
+}
+.home-skeleton {
+  display: grid;
+  gap: var(--spacing-4);
+  padding: var(--spacing-4);
+}
+.home-skeleton__header {
+  display: grid;
+  grid-template-columns: minmax(76px, 0.3fr) minmax(0, 1fr);
+  gap: var(--spacing-3);
+  align-items: center;
+}
+.home-skeleton__section {
+  display: grid;
+  gap: var(--spacing-3);
+}
+.home-skeleton__categories,
+.home-skeleton__products {
+  display: grid;
+  gap: var(--spacing-3);
+}
+.home-skeleton__categories {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.home-skeleton__products {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.skeleton-block {
+  display: block;
+  border-radius: var(--radius-md);
+  background: var(--color-line);
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+.skeleton-block--brand { min-height: var(--spacing-5); }
+.skeleton-block--search { min-height: var(--h5-touch-target); border-radius: var(--radius-full); }
+.skeleton-block--hero { min-height: var(--spacing-13); border-radius: var(--gallery-card-radius); }
+.skeleton-block--title { width: 38%; min-height: var(--font-size-lg); }
+.skeleton-block--category { aspect-ratio: 1; }
+.skeleton-block--product { aspect-ratio: 0.82; }
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
 .h5-header {
   position: sticky;
   top: 0;
@@ -271,7 +321,7 @@ a {
 }
 .categories {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(var(--schema-category-columns, 4), minmax(0, 1fr));
   gap: var(--spacing-4) var(--spacing-2);
 }
 .category {
@@ -326,7 +376,7 @@ a {
 
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--schema-product-columns, 2), minmax(0, 1fr));
   gap: var(--spacing-5) var(--spacing-4);
 }
 .product {

@@ -148,7 +148,7 @@ async def list_admin_after_sales(
     """后台读取售后列表。"""
     _require_database()
     await _admin_permission(session, subject, "review.read")
-    items = await after_sale_service.repository.list_all(session, status)
+    items = await after_sale_service.list_for_admin(session, status)
     return success({"items": [after_sale_response(item) for item in items]})
 
 

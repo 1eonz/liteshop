@@ -63,6 +63,10 @@
 - 页面首页标记已按 `store/site` 渠道隔离清理，避免切换一端首页误取消另一端首页。
 - Admin `useAdminQueries.ts` 与 `service/admin.ts` 仍是兼容出口，真实实现位于各 `features/*/api` 与 `service/admin/<domain>.ts`；后端 `api/admin.py`/`api/orders.py` 仍为历史聚合文件，属于后续拆分项；拆分需保持契约快照和路由标签不变。
 - H5/Admin 的 `hooks/useDebounceAction.ts` 是应用层门面，底层唯一实现位于 `@liteshop/shared-components`；不得再增加新的实现或入口。
+- H5 首页已收口为 Schema 单一渲染链路：`pages/home/index.tsx` 只编排查询状态，默认板块配置位于 `features/catalog/model/home-config.ts`，SchemaRenderer 通过注册表消费后台组件。
+- H5 首页已补 `hooks/usePullToRefresh.ts` 和 `pages/home/HomeSkeleton.tsx`；首页刷新手势仅在滚动顶部生效，加载骨架保持首屏几何稳定。
+- H5 Schema 商品板块的 `features/catalog/model/schema-products.ts` 已统一处理 `productIds`、`sort`、`count`，避免在渲染组件内重复筛选逻辑；分类过滤需待后端契约字段扩展。
+- 首页 Schema 归一化会保留合法的空样式配置、过滤非法组件、清理非字符串样式值并生成稳定 ID；轮播支持配置化自动播放、手动切换、内外链安全校验和 reduced-motion。
 - CRM 借鉴结论已纳入待办：权限快照、错误码到缺省页、URL 字典、TTL storage、组件文档和受控/非受控协议；这些不应在没有真实调用方和契约确认时一次性泛化。
 - `ui-kit` 仅保留并行迁移方案，当前不新增包、不引入重型依赖、不修改 AGENTS 技术栈条款；后续需用户确认 headless 底座、依赖和 `--ui-*` token 桥接方案后再实施。
 - sync/await 与 `.then` 约定按场景选择：轮询、事务、补偿和多分支保留 async/await；简单一次性解包可使用 `.then`；同一函数不混用且必须完整传播 rejection。
@@ -72,6 +76,8 @@
 - Admin RBAC 已从只读快照扩展为角色创建/编辑/删除保护和管理员角色分配；写链路复用权限校验、Redis/DB 幂等与操作日志。
 - Admin 运费模板支持多个地区计费项增删改，评价支持审核通过后的商家回复；共享类型和 OpenAPI 契约已同步。
 - Alembic 当前 head 为 `20260908_110000`，新增评价商家回复字段；后端全量测试为 70 passed，覆盖率命令通过但总覆盖率为 59%，低于 CI 80% 门禁。
+- 已新增 `scripts/check_enum_sync.py`、`backend/app/enums/product.py` 和 `backend/app/enums/logistics.py`；共享 9 个枚举与后端枚举同步检查通过。
+- 已新增根级 `Dockerfile`、`.dockerignore` 和 `.github/workflows/ci.yml`，CI 已覆盖 backend、workspace 和 E2E 命令；生产部署仍需目标主机、镜像、密钥、备份和回滚配置。
 
 ## Agent 工作流适配建议
 

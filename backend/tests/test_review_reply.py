@@ -43,3 +43,13 @@ def test_reply_updates_content_and_timestamp() -> None:
     assert response["merchantReply"] == "感谢支持"
     assert review.merchant_reply == "感谢支持"
     assert review.merchant_replied_at is not None
+
+
+def test_list_for_audit_delegates_through_service_boundary() -> None:
+    """后台审核列表必须经过评价服务，不让 API 直接访问仓储。"""
+    reviews = [SimpleNamespace(id=1), SimpleNamespace(id=2)]
+    repository = SimpleNamespace(list_for_audit=AsyncMock(return_value=reviews))
+    service = ReviewService(repository=cast(ReviewRepository, repository))
+    result = asyncio.run(service.list_for_audit(cast(AsyncSession, AsyncMock()), limit=20))
+    assert result == reviews
+    repository.list_for_audit.assert_awaited_once()

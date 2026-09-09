@@ -53,6 +53,10 @@ class ReviewService:
             ],
         }
 
+    async def list_for_audit(self, session: AsyncSession, limit: int = 100) -> list[ProductReview]:
+        """读取后台评价审核列表，隐藏仓储实现细节。"""
+        return await self.repository.list_for_audit(session, limit=limit)
+
     async def audit(self, session: AsyncSession, review_id: int, status: str, reason: str) -> dict[str, object]:
         """审核评价并保留原因。"""
         review = await self.repository.get_for_update(session, review_id)

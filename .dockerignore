@@ -1,0 +1,13 @@
+.git
+.gitignore
+.env*
+!.env.example
+node_modules
+packages/*/node_modules
+packages/*/dist
+backend/.venv
+backend/.pytest_cache
+backend/htmlcov
+backend/.coverage
+tests/e2e/test-results
+tests/e2e/playwright-report

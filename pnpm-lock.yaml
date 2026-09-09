@@ -199,6 +199,21 @@ importers:
         specifier: ^5.0.0
         version: 5.0.0(@types/node@22.20.1)(vite@8.2.2(@types/node@22.20.1)(yaml@2.9.0))
 
+  packages/ui-kit:
+    devDependencies:
+      '@types/react':
+        specifier: ^18.3.31
+        version: 18.3.31
+      eslint:
+        specifier: ^10.9.1
+        version: 10.9.1
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+      typescript:
+        specifier: ^5.7.2
+        version: 5.7.2
+
 packages:
 
   '@eslint-community/eslint-utils@4.10.1':

@@ -27,3 +27,37 @@ test('搭建器草稿预览可渲染 Schema 组件', async ({ page }) => {
   await expect(page.getByText('预览公告')).toBeVisible();
   await expect(page.getByText('商品列表')).toBeVisible();
 });
+
+test('H5 首页消费后台发布的 Schema，而不是仅渲染本地预览', async ({ page }) => {
+  await page.route('**/api/v1/pages/1/schema', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 0,
+        message: 'ok',
+        requestId: 'e2e-schema',
+        data: {
+          id: 1,
+          slug: 'home',
+          channel: 'store',
+          status: 'PUBLISHED',
+          version: 1,
+          isHome: true,
+          components: [
+            {
+              id: 'announcement-e2e',
+              type: 'AnnouncementBar',
+              props: { label: '发布验证', text: '来自后台发布的首页 Schema' },
+              style: {},
+            },
+          ],
+        },
+      }),
+    });
+  });
+
+  await page.goto('/');
+  await expect(page.getByText('来自后台发布的首页 Schema')).toBeVisible();
+  await expect(page.getByText('LiteShop')).not.toBeVisible();
+});

@@ -1,0 +1,273 @@
+/*
+ * UI Kit 独立 token 默认值。
+ * LiteShop 应用可在宿主层把 --ui-* 映射到 shared-tokens；其他项目可以直接使用这些 fallback。
+ */
+:root {
+  --ui-color-primary: #ff6b6b;
+  --ui-color-primary-hover: #e85a5a;
+  --ui-color-primary-active: #c94b4b;
+  --ui-color-primary-contrast: #ffffff;
+  --ui-color-text: #1f2329;
+  --ui-color-text-secondary: #5c6673;
+  --ui-color-text-muted: #8993a1;
+  --ui-color-surface: #ffffff;
+  --ui-color-surface-subtle: #f7f8fa;
+  --ui-color-border: #d9dee7;
+  --ui-color-danger: #c62828;
+  --ui-color-danger-hover: #a82020;
+  --ui-color-danger-active: #861919;
+  --ui-color-danger-surface: #fff1f0;
+  --ui-color-focus: #1d63d8;
+  --ui-color-skeleton: #e9edf2;
+  --ui-color-skeleton-highlight: #f7f9fb;
+
+  --ui-font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --ui-font-size-sm: 0.875rem;
+  --ui-font-size-md: 1rem;
+  --ui-font-size-lg: 1.125rem;
+  --ui-font-weight-medium: 500;
+  --ui-font-weight-semibold: 600;
+  --ui-line-height-normal: 1.5;
+
+  --ui-spacing-1: 0.25rem;
+  --ui-spacing-2: 0.5rem;
+  --ui-spacing-3: 0.75rem;
+  --ui-spacing-4: 1rem;
+  --ui-spacing-5: 1.25rem;
+  --ui-spacing-6: 1.5rem;
+
+  --ui-radius-sm: 0.375rem;
+  --ui-radius-md: 0.5rem;
+  --ui-radius-lg: 0.75rem;
+  --ui-shadow-sm: 0 1px 3px rgb(31 35 41 / 0.12);
+  --ui-shadow-md: 0 4px 12px rgb(31 35 41 / 0.12);
+  --ui-motion-fast: 150ms;
+  --ui-motion-normal: 220ms;
+  --ui-control-height: 2.75rem;
+  --ui-focus-ring: 0 0 0 3px rgb(29 99 216 / 0.28);
+
+  --ui-z-modal: 1000;
+  --ui-z-toast: 1010;
+}
+
+[data-theme='dark'] {
+  --ui-color-primary: #ff8787;
+  --ui-color-primary-hover: #ff9b9b;
+  --ui-color-primary-active: #ffb0b0;
+  --ui-color-primary-contrast: #291111;
+  --ui-color-text: #f2f4f7;
+  --ui-color-text-secondary: #c0c8d2;
+  --ui-color-text-muted: #9ba6b3;
+  --ui-color-surface: #17191c;
+  --ui-color-surface-subtle: #202329;
+  --ui-color-border: #3a424d;
+  --ui-color-danger: #ff9a93;
+  --ui-color-danger-hover: #ffb0ab;
+  --ui-color-danger-active: #ffc4c0;
+  --ui-color-danger-surface: #3b1c1b;
+  --ui-color-focus: #8db7ff;
+  --ui-color-skeleton: #303740;
+  --ui-color-skeleton-highlight: #414b58;
+}
+
+.ui-kit-button,
+.ui-kit-input,
+.ui-kit-empty-state,
+.ui-kit-skeleton {
+  box-sizing: border-box;
+  font-family: var(--ui-font-family);
+}
+
+.ui-kit-button {
+  display: inline-flex;
+  min-block-size: var(--ui-control-height);
+  align-items: center;
+  justify-content: center;
+  gap: var(--ui-spacing-2);
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-md);
+  padding-inline: var(--ui-spacing-4);
+  color: var(--ui-color-primary-contrast);
+  background: var(--ui-color-primary);
+  font-size: var(--ui-font-size-md);
+  font-weight: var(--ui-font-weight-semibold);
+  line-height: var(--ui-line-height-normal);
+  cursor: pointer;
+  transition:
+    background-color var(--ui-motion-fast) ease,
+    box-shadow var(--ui-motion-fast) ease,
+    opacity var(--ui-motion-fast) ease;
+}
+
+.ui-kit-button:hover:not(:disabled) {
+  background: var(--ui-color-primary-hover);
+}
+
+.ui-kit-button:active:not(:disabled) {
+  background: var(--ui-color-primary-active);
+}
+
+.ui-kit-button:focus-visible,
+.ui-kit-input:focus-visible {
+  outline: 2px solid var(--ui-color-focus);
+  outline-offset: 2px;
+  box-shadow: var(--ui-focus-ring);
+}
+
+.ui-kit-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
+}
+
+.ui-kit-button--secondary {
+  border-color: var(--ui-color-border);
+  color: var(--ui-color-text);
+  background: var(--ui-color-surface);
+}
+
+.ui-kit-button--secondary:hover:not(:disabled) {
+  background: var(--ui-color-surface-subtle);
+}
+
+.ui-kit-button--ghost {
+  color: var(--ui-color-primary);
+  background: transparent;
+}
+
+.ui-kit-button--ghost:hover:not(:disabled) {
+  background: var(--ui-color-surface-subtle);
+}
+
+.ui-kit-button--danger {
+  background: var(--ui-color-danger);
+}
+
+.ui-kit-button--danger:hover:not(:disabled) {
+  background: var(--ui-color-danger-hover);
+}
+
+.ui-kit-button--danger:active:not(:disabled) {
+  background: var(--ui-color-danger-active);
+}
+
+.ui-kit-input-field {
+  display: grid;
+  gap: var(--ui-spacing-1);
+  color: var(--ui-color-text);
+  font-size: var(--ui-font-size-md);
+  line-height: var(--ui-line-height-normal);
+}
+
+.ui-kit-input-label {
+  font-weight: var(--ui-font-weight-medium);
+}
+
+.ui-kit-input {
+  inline-size: 100%;
+  min-block-size: var(--ui-control-height);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-md);
+  padding-inline: var(--ui-spacing-3);
+  color: var(--ui-color-text);
+  background: var(--ui-color-surface);
+  font: inherit;
+  transition:
+    border-color var(--ui-motion-fast) ease,
+    box-shadow var(--ui-motion-fast) ease;
+}
+
+.ui-kit-input::placeholder {
+  color: var(--ui-color-text-muted);
+}
+
+.ui-kit-input[aria-invalid='true'] {
+  border-color: var(--ui-color-danger);
+}
+
+.ui-kit-input-help {
+  color: var(--ui-color-text-secondary);
+  font-size: var(--ui-font-size-sm);
+}
+
+.ui-kit-input-error {
+  color: var(--ui-color-danger);
+  font-size: var(--ui-font-size-sm);
+}
+
+.ui-kit-empty-state {
+  display: grid;
+  min-block-size: 12rem;
+  place-items: center;
+  gap: var(--ui-spacing-2);
+  padding: var(--ui-spacing-6);
+  color: var(--ui-color-text-secondary);
+  text-align: center;
+}
+
+.ui-kit-empty-state__content {
+  max-inline-size: 36rem;
+}
+
+.ui-kit-empty-state__title {
+  margin: 0;
+  color: var(--ui-color-text);
+  font-size: var(--ui-font-size-lg);
+  font-weight: var(--ui-font-weight-semibold);
+}
+
+.ui-kit-empty-state__description {
+  margin: var(--ui-spacing-1) 0 0;
+  line-height: var(--ui-line-height-normal);
+}
+
+.ui-kit-empty-state__action {
+  margin-block-start: var(--ui-spacing-3);
+}
+
+.ui-kit-skeleton {
+  display: block;
+  min-block-size: var(--ui-skeleton-height, 1rem);
+  inline-size: var(--ui-skeleton-width, 100%);
+  border-radius: var(--ui-radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--ui-color-skeleton) 0%,
+    var(--ui-color-skeleton-highlight) 50%,
+    var(--ui-color-skeleton) 100%
+  );
+  background-size: 200% 100%;
+  animation: ui-kit-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.ui-kit-skeleton--circular {
+  --ui-skeleton-width: var(--ui-control-height);
+  --ui-skeleton-height: var(--ui-control-height);
+
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+
+.ui-kit-skeleton--rectangular {
+  border-radius: var(--ui-radius-md);
+}
+
+@keyframes ui-kit-skeleton-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-kit-button,
+  .ui-kit-input {
+    transition-duration: 0.01ms;
+  }
+
+  .ui-kit-skeleton {
+    animation: none;
+    background: var(--ui-color-skeleton);
+  }
+}

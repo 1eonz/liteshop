@@ -1,7 +1,7 @@
 # LiteShop UI 组件库（ui-kit）设计方案
 
 > 定稿日期：2026-09-07
-> 状态：**方向已确认，实施待确认**——H6 倾向 B（不引入 antd-mobile/antd），以独立 ui-kit 包作为候选通用 UI 层；包尚未创建
+> 状态：**Phase 1 骨架已创建**——以独立 `@liteshop/ui-kit` 包作为可迁移的通用 UI 层；当前只落地零业务依赖的基础组件，业务迁移和重依赖引入仍按真实调用方确认
 > 关联文档：《代码分析报告与修复建议.md》（H6/M3/M7）、《CRM项目借鉴分析.md》（3.1/3.2/5.4）
 
 ---
@@ -23,7 +23,7 @@
 | 3 | **交互原子件基于 headless 底座**（Radix UI），只自有样式层与 API | a11y/键盘/弹层定位由底座保证（shadcn 模式）；代码仍在本仓库 |
 | 4 | **Rule of Three 生长**：无真实调用方不进库 | 防止 lxComponent 式 `index 2 copy 2.tsx` 投机膨胀 |
 | 5 | **分平台不分库**：单包内部分「共享层 / pc / mobile」三层，子路径导出 | 两端交互范式不同必须分层（Radix desktop-first vs 触摸手势）；单人维护拆两库则版本/token 双漂移，与"固定风格"目标冲突 |
-| 6 | **依赖先确认再落地**：Radix、Framer Motion、react-hook-form、zod 均属于新增依赖 | 在用户确认包体积、许可证、性能预算和迁移范围前，只维护方案，不修改 workspace |
+| 6 | **重依赖先确认再落地**：Radix、Framer Motion、react-hook-form、zod 均属于新增依赖 | Phase 1 保持 React peer dependency-only；只有真实调用方出现且完成包体积、许可证、性能预算和迁移范围评估后，才引入对应依赖 |
 
 **平台划分依据**（2026-09-07 已决策：单包分层）：
 
@@ -52,10 +52,10 @@ flowchart TB
     style FUTURE fill:#f3e5f5,color:#7b1fa2
 ```
 
-**依赖规则**（实施时写入各包 package.json，当前不执行安装）：
+**依赖规则**（Phase 1 已按最小依赖落地，平台专属底座仍按真实调用方确认）：
 
 ```
-ui-kit            deps: `@radix-ui/react-*`（按组件按需选择）、`clsx`；`framer-motion` 仅在 mobile 层真实需要时加入    peerDeps: react      ❌ @liteshop/*
+ui-kit            Phase 1：无运行时 deps，peerDeps: react；Radix/Framer Motion 仅在真实平台组件落地时按需加入    ❌ @liteshop/*
 shared-components deps: @liteshop/ui-kit                  （业务组件可消费共享层）
 apps              h5: ui-kit + ui-kit/mobile；admin: ui-kit + ui-kit/pc
 site-app          不接入（维持 Tailwind + shadcn，避免两套体系并存）
@@ -166,14 +166,10 @@ packages/ui-kit/
 │   ├── tokens.css        # --ui-* 默认主题 + [data-theme] 覆盖（两端共享一份）
 │   ├── index.ts          # 共享层出口 + export const VERSION
 │   ├── button/           # ── 共享层（平台无关）──
-│   │   ├── Button.tsx    # Props interface + TSDoc（宪法 E4.3）
-│   │   ├── Button.stories.tsx   # 文档共址（CRM 借鉴 3.2）
-│   │   └── button.css
+│   │   └── Button.tsx    # Props interface + 中文 TSDoc（宪法 E4.3）
 │   ├── input/  skeleton/  toast/  empty-state/  field/
-│   ├── pc/               # ── PC 层（Radix 底座）──
-│   │   └── select/ dialog/ popover/ tooltip/ tabs/
-│   └── mobile/           # ── 移动层（Framer Motion 底座）──
-│       └── action-sheet/ bottom-sheet/ picker/ pull-to-refresh/
+│   ├── pc/index.ts       # ── PC 子路径薄出口（专属组件按需增加）
+│   └── mobile/index.ts   # ── 移动子路径薄出口（专属组件按需增加）
 └── test/                 # 每组件至少渲染 + 交互冒烟测试
 ```
 
@@ -190,7 +186,7 @@ packages/ui-kit/
 }
 ```
 
-- **构建**：vite lib mode（仓库现有工具链），产物 ESM + d.ts + css
+- **构建**：当前使用 TypeScript ESM 编译，产物为按模块 JS + d.ts + source map；CSS 以 `tokens.css` 子路径独立发布，宿主显式引入
 - **peerDependencies 声明 react**，杜绝 lxComponent `export * from 'antd'` 式宿主版本锁死
 - **零副作用入口**：不做 locale/全局 css 注入，副作用留给 app 层
 
@@ -207,22 +203,22 @@ packages/ui-kit/
 | 阶段 | 内容 | 前置/验证 |
 |---|---|---|
 | **Phase 0** | M7 tokens 修复（去重字号/隔离 gallery/补 z-index）+ **AGENTS.md 技术栈条款修订**（删 antd-mobile/antd 行，写入 ui-kit 定位与依赖铁律） | AGENTS.md 修订属宪法变更，执行前单独确认 |
-| **Phase 1** | 仅在确认依赖后创建 ui-kit 包骨架：package.json（实际使用的 exports）+ vite lib 构建 + token 桥接 + Button/EmptyState 迁入（含 stories + 测试）。不预建没有调用方的空平台目录 | `pnpm build && pnpm test` |
+| **Phase 1** | 创建零业务依赖的 ui-kit 包骨架：package.json（实际使用的 exports）+ TypeScript ESM 构建 + 独立 fallback token + Button/Input/EmptyState/Skeleton 基础组件（含冒烟测试与 CHANGELOG）。平台子路径只提供薄出口，不预建没有调用方的专属组件 | `pnpm --dir packages/ui-kit build && pnpm --dir packages/ui-kit test` |
 | **Phase 2** | 共享层 Skeleton / Input；由真实页面接入并验证可复用性。Toast 只有出现第二个稳定消费方才进入 | 各 app `tsc --noEmit && pnpm test && pnpm build` |
 | **Phase 3** | 依赖确认后按真实调用方加入 RHF/zod Field、pc Select/Dialog、mobile ActionSheet/BottomSheet/PullToRefresh；每个组件遵守 Rule of Three | 组件 a11y、键盘/触摸、bundle 体积与视觉回归 |
 
-Phase 0/1 仍需先完成架构变更确认和依赖评估；在确认前只更新方案与验收清单，不创建新包、不改现有应用依赖。确认后再与工程卫生批次合并执行。
+Phase 0 的 token 修复已经完成，Phase 1 独立包骨架已经落地并通过包级和根级验证。当前只提供共享层 `Button`、`Input`、`EmptyState`、`Skeleton`，以及 `pc`/`mobile` 的薄出口，尚未实现平台专属交互组件，也未引入 Radix、Framer Motion、react-hook-form、zod 等重依赖。LiteShop 应用尚未接入该包，`shared-tokens → --ui-*` 桥接仍是后续迁移任务；独立包 fallback 仅用于脱离 LiteShop 的可迁移运行。后续迁移必须由真实调用方驱动，并按组件逐步替换，不能一次性全量迁移。
 
 ## 九、与现有文档的关系
 
 | 事项 | 处理 |
 |---|---|
-| H6（UI 库缺失） | **方向：选 B**（维持无 antd），但升级为"自研 ui-kit"路线，非裸手写；实施仍需确认新增依赖、宪法条款与迁移范围 |
+| H6（UI 库缺失） | **方向：选 B**（维持无 antd），已落地为零业务依赖的自研 `@liteshop/ui-kit` 基础层；平台底座与业务迁移仍需按真实调用方确认 |
 | M7（tokens 混乱） | 优先级从"中"升为"高"，成为 Phase 0 前置项 |
 | M3（错误处理） | Toast 组件为其消费端，Phase 2 同批 |
 | CRM 借鉴 3.1（token 三端派生） | 简化为"CSS 变量 → Tailwind v4 / --ui-* 桥接"一端半，antd 分支作废 |
 | CRM 借鉴 3.2/3.3（文档共址/双模式协议） | 直接落入 ui-kit 规范（第六、七章） |
-| 反面警示 5.4（组件库工程劣化） | 铁律 1/3 与第七章为其对冲 |
+| 反面警示 5.4（组件库工程劣化） | 铁律 1/3、Rule of Three 与第七章为其对冲；Phase 1 不复制现有业务组件 |
 
 ---
 

@@ -375,7 +375,7 @@ async def list_reviews(subject: CurrentSubject, session: AsyncSession = _session
     """评价审核列表。"""
     _require_database()
     await _authorize_read(session, subject, "review.read")
-    reviews = await review_service.repository.list_for_audit(session)
+    reviews = await review_service.list_for_audit(session)
     return success(
         {
             "items": [

@@ -69,6 +69,10 @@ class AfterSaleService:
         """读取用户售后单。"""
         return [after_sale_response(item) for item in await self.repository.list_for_user(session, user_id)]
 
+    async def list_for_admin(self, session: AsyncSession, status: str | None = None) -> list[AfterSale]:
+        """读取后台售后单，隐藏仓储筛选实现。"""
+        return await self.repository.list_all(session, status)
+
     async def get_for_user(self, session: AsyncSession, after_sale_id: int, user_id: int) -> AfterSale:
         """读取并校验售后归属。"""
         item = await self.repository.get_for_update(session, after_sale_id)

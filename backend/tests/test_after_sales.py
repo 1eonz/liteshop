@@ -3,6 +3,7 @@
 import asyncio
 from types import SimpleNamespace
 from typing import cast
+from unittest.mock import AsyncMock
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -178,3 +179,13 @@ def test_create_accepts_completed_order_item_with_integer_amount() -> None:
     assert result.amount_cents == 12900
     assert result.type == AfterSaleType.REFUND_ONLY.value
     assert repository.created is result
+
+
+def test_list_for_admin_delegates_through_service_boundary() -> None:
+    """后台列表读取必须经过售后服务边界。"""
+    items = [cast(AfterSale, SimpleNamespace(id=1))]
+    repository = SimpleNamespace(list_all=AsyncMock(return_value=items))
+    service = AfterSaleService(repository=cast(AfterSaleRepository, repository))
+    result = asyncio.run(service.list_for_admin(cast(AsyncSession, AsyncMock()), "PENDING_REVIEW"))
+    assert result == items
+    repository.list_all.assert_awaited_once()

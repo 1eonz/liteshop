@@ -1,0 +1,40 @@
+{
+  "name": "@liteshop/ui-kit",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "description": "可独立迁移的 LiteShop 基础 UI 组件库。",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./pc": {
+      "types": "./dist/pc/index.d.ts",
+      "import": "./dist/pc/index.js"
+    },
+    "./mobile": {
+      "types": "./dist/mobile/index.d.ts",
+      "import": "./dist/mobile/index.js"
+    },
+    "./tokens.css": "./src/tokens.css"
+  },
+  "files": ["dist", "src/tokens.css", "README.md", "CHANGELOG.md"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "pnpm build && node --test test/*.test.mjs",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "peerDependencies": {
+    "react": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "eslint": "^10.9.1",
+    "react": "^18.3.1",
+    "typescript": "^5.7.2"
+  }
+}
