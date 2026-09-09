@@ -1,6 +1,6 @@
 # LiteShop Project Context
 
-> 由 project-radar 增量更新：2026-09-08。本文件是主 Agent 的最小上下文入口，子 Agent 若重新启用必须先读取相关章节。
+> 由 project-radar 增量更新：2026-09-09。本文件是主 Agent 的最小上下文入口，子 Agent 若重新启用必须先读取相关章节。
 
 ## 代码索引
 
@@ -15,7 +15,7 @@
 - `packages/site-app/`：Next.js App Router 官网，页面 Schema 位于 `src/site-data.ts`，组件渲染器位于 `src/components/SiteRenderer.tsx`，包含动态 slug、SEO、sitemap、robots 和联系表单 Route Handler。
 - `packages/shared-3d-components/`：三期 3D 场景配置、设备降级和速度约束工具；官网通过动态组件接入轻量回退，当前不依赖 Three.js/R3F。
 - `backend/app/`：FastAPI 分层骨架：api/core/models/schemas/services/repositories/tasks/enums/errors；订单、库存、支付、用户、设置和后台 API 已实现，领域异常集中于 `errors/domain.py`，主题设置由 `services/settings.py` 编排。
-- `backend/alembic/`：异步 Alembic 迁移及可逆迁移文件；当前 head 为 `20260907_094000`，页面渠道路由使用复合唯一约束并增加草稿/发布状态。
+- `backend/alembic/`：异步 Alembic 迁移及可逆迁移文件；当前 head 为 `20260908_110000`，包含售后表和评价商家回复字段，页面渠道路由使用复合唯一约束并增加草稿/发布状态。
 - `backend/integration_tests/`：显式启用的真实 PostgreSQL/Redis 验收，`scripts/test.ps1 -Integration` 运行库存竞争和 Redis NX 幂等测试；默认单元测试不会自动依赖基础设施。
 - `tests/e2e/`：Playwright H5 冒烟测试。
 - `docs/api-contracts/v1/`：19 个 OpenAPI 文件，包含官网页面、联系表单、导航、营销、物流、售后、评价和后台接口契约。
@@ -48,7 +48,7 @@
 
 ### 当前未处理
 
-- ✅ Docker Desktop Engine 已恢复；PostgreSQL 16 与 Redis 7 已通过本机 Compose healthcheck，Alembic 已完成 upgrade/downgrade 往返；真实库存竞争与 Redis NX 幂等集成测试 `2 passed`。
+- ✅ Docker Desktop Engine 已恢复；PostgreSQL 16 与 Redis 7 已通过本机 Compose healthcheck，Alembic 已完成 upgrade/downgrade 往返；真实库存竞争、Redis NX 幂等和售后请求幂等集成测试 `3 passed`。
 - 真实生产数据库仓储、微信/支付宝 SDK 和支付沙箱尚未接入；当前支付回调为本地签名验证实现。
 - 收藏为浏览器本地存储；settings/page schema 为开发进程内存储；均属于后续持久化范围。
 - 官网动态页面 API、ISR revalidate、联系表单后台处理和 `DRAFT/PUBLISHED` 发布状态已接入；真实数据库种子发布 E2E、通知渠道仍待补齐。
@@ -66,13 +66,12 @@
 - CRM 借鉴结论已纳入待办：权限快照、错误码到缺省页、URL 字典、TTL storage、组件文档和受控/非受控协议；这些不应在没有真实调用方和契约确认时一次性泛化。
 - `ui-kit` 仅保留并行迁移方案，当前不新增包、不引入重型依赖、不修改 AGENTS 技术栈条款；后续需用户确认 headless 底座、依赖和 `--ui-*` token 桥接方案后再实施。
 - sync/await 与 `.then` 约定按场景选择：轮询、事务、补偿和多分支保留 async/await；简单一次性解包可使用 `.then`；同一函数不混用且必须完整传播 rejection。
-- 售后基础闭环已落地：`backend/app/api/after_sales.py`、`services/after_sale.py`、H5/Admin 售后页面和 `docs/api-contracts/v1/after-sale.yaml` 已同步；关键边界单测覆盖金额上限、重复申请、越权、非法状态和退货状态。
+- 售后基础闭环已落地：`backend/app/api/after_sales.py`、`services/after_sale.py`、H5/Admin 售后页面和 `docs/api-contracts/v1/after-sale.yaml` 已同步；关键边界单测覆盖金额上限、重复申请、越权、非法状态和退货状态，真实 PostgreSQL/Redis 售后幂等已验证。
 - 官网搭建器已支持商城/官网模式切换、375px/1200px 画布、官网组件面板、SEO 标题/描述和组件动画字段；SiteRenderer 运行时监听 `prefers-reduced-motion` 并清理监听器。
-- H5 已补支付过期倒计时、订单状态步骤条、独立搜索页及本地历史、通知未读角标、账户设置和客服入口；地址省市区级联、评价提交、足迹和相关推荐仍未完成。
-- H5 地址省市区级联、评价提交、浏览足迹、相关推荐和商家回复展示已完成；专项 i18n/axe-core 键盘与触摸测试仍待补。
+- H5 已补支付过期倒计时、订单状态步骤条、独立搜索页及本地历史、通知未读角标、账户设置和客服入口；地址省市区级联、评价提交、浏览足迹、相关推荐和商家回复展示已完成，专项 i18n/axe-core 深度测试仍待补。
 - Admin RBAC 已从只读快照扩展为角色创建/编辑/删除保护和管理员角色分配；写链路复用权限校验、Redis/DB 幂等与操作日志。
 - Admin 运费模板支持多个地区计费项增删改，评价支持审核通过后的商家回复；共享类型和 OpenAPI 契约已同步。
-- Alembic 当前 head 为 `20260908_110000`，新增评价商家回复字段；后端全量测试为 69 passed。
+- Alembic 当前 head 为 `20260908_110000`，新增评价商家回复字段；后端全量测试为 70 passed，覆盖率命令通过但总覆盖率为 59%，低于 CI 80% 门禁。
 
 ## Agent 工作流适配建议
 
