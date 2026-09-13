@@ -72,12 +72,10 @@ def test_update_template_replaces_all_items_atomically() -> None:
     now = datetime.now(UTC)
     template.created_at = now
     template.updated_at = now
-    repository = cast(
-        FreightRepository,
-        type("Repository", (), {"get_template": AsyncMock(return_value=template)})(),
-    )
+    repository = AsyncMock(spec=FreightRepository)
+    repository.get_template.return_value = template
     service = FreightService(repository=repository)
-    session = cast(AsyncSession, type("Session", (), {"flush": AsyncMock()})())
+    session = cast(AsyncSession, object())
     result = asyncio.run(
         service.update_template(
             session,
@@ -110,3 +108,4 @@ def test_update_template_replaces_all_items_atomically() -> None:
     assert result["name"] == "华东模板"
     assert len(template.items) == 2
     assert template.items[1].first_fee == 900
+    repository.flush.assert_awaited_once_with(session)

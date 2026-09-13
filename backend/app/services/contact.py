@@ -89,7 +89,7 @@ class ContactService:
             raise ContactFormError("联系表单不存在")
         submission.status = status
         submission.updated_at = datetime.now(UTC)
-        await session.flush()
+        await self.repository.flush(session)
         return self._summary(submission)
 
 

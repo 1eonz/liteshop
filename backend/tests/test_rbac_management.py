@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.user import Permission, Role
 from app.repositories.admin import AdminRepository
 from app.schemas.admin import RoleCreate, UserRolesUpdate
 from app.services.admin import AdminService
@@ -76,3 +77,33 @@ def test_delete_role_rejects_assigned_role() -> None:
                 "request-role-delete",
             )
         )
+
+
+def test_create_role_delegates_persistence_to_repository(monkeypatch: pytest.MonkeyPatch) -> None:
+    """角色创建由服务校验权限集合，由仓储负责新增和刷新。"""
+    permission = Permission(id=2, code="product.read")
+
+    async def add_role(_session: AsyncSession, role: Role) -> Role:
+        role.id = 9
+        return role
+
+    repository = SimpleNamespace(
+        get_role_by_name=AsyncMock(return_value=None),
+        get_permissions_by_codes=AsyncMock(return_value=[permission]),
+        add_role=AsyncMock(side_effect=add_role),
+    )
+    service = _service(repository)
+    monkeypatch.setattr(AdminService, "audit", AsyncMock())
+    session = cast(AsyncSession, object())
+
+    result = asyncio.run(
+        service.create_role(
+            session,
+            RoleCreate(name="运营", permissionCodes=["product.read"]),
+            "1",
+            "request-role",
+        )
+    )
+
+    assert result == {"id": 9, "name": "运营", "permissions": ["product.read"]}
+    repository.add_role.assert_awaited_once()

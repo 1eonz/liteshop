@@ -16,22 +16,18 @@ from app.services.after_sale import AfterSaleError, AfterSaleService
 
 
 class FakeSession:
-    """只实现售后服务单测需要的异步会话方法。"""
-
-    async def scalar(self, _statement: object) -> object | None:
-        return None
-
-    async def flush(self) -> None:
-        return None
+    """不暴露 ORM 方法，确保服务只能通过仓储持久化。"""
 
 
 class FakeAfterSaleRepository:
     """提供订单项与售后创建结果，避免单测依赖数据库。"""
 
-    def __init__(self, item: object | None, existing: AfterSale | None = None) -> None:
+    def __init__(self, item: object | None, existing: AfterSale | None = None, *, active: bool = False) -> None:
         self.item = item
         self.existing = existing
+        self.active = active
         self.created: AfterSale | None = None
+        self.flush_count = 0
 
     async def get_by_request(self, _session: object, _user_id: int, _request_id: str) -> AfterSale | None:
         return self.existing
@@ -41,6 +37,12 @@ class FakeAfterSaleRepository:
 
     async def get_for_update(self, _session: object, _after_sale_id: int) -> AfterSale | None:
         return self.existing
+
+    async def has_active_for_order_item(self, _session: object, _order_item_id: int) -> bool:
+        return self.active
+
+    async def flush(self, _session: object) -> None:
+        self.flush_count += 1
 
     async def create(
         self,
@@ -83,10 +85,10 @@ def _payload(amount_cents: int = 12900) -> AfterSaleCreate:
 
 
 def _service(
-    item: object | None, existing: AfterSale | None = None
+    item: object | None, existing: AfterSale | None = None, *, active: bool = False
 ) -> tuple[AfterSaleService, FakeAfterSaleRepository]:
     """构造带假仓储的售后服务。"""
-    repository = FakeAfterSaleRepository(item, existing)
+    repository = FakeAfterSaleRepository(item, existing, active=active)
     return AfterSaleService(repository=cast(AfterSaleRepository, repository)), repository
 
 
@@ -118,13 +120,9 @@ def test_create_rejects_unfinished_duplicate_for_same_order_item() -> None:
     """同一订单项已有进行中售后时拒绝第二笔申请。"""
     item = SimpleNamespace(id=11, total_amount=12900, order=SimpleNamespace(status="COMPLETED"))
 
-    class ActiveSession(FakeSession):
-        async def scalar(self, _statement: object) -> object | None:
-            return 99
-
-    service, _ = _service(item)
+    service, _ = _service(item, active=True)
     with pytest.raises(AfterSaleError, match="进行中的售后申请"):
-        asyncio.run(service.create(cast(AsyncSession, ActiveSession()), 1, "request-1", _payload()))
+        asyncio.run(service.create(cast(AsyncSession, FakeSession()), 1, "request-1", _payload()))
 
 
 def test_state_machine_rejects_illegal_transition() -> None:
@@ -189,3 +187,28 @@ def test_list_for_admin_delegates_through_service_boundary() -> None:
     result = asyncio.run(service.list_for_admin(cast(AsyncSession, AsyncMock()), "PENDING_REVIEW"))
     assert result == items
     repository.list_all.assert_awaited_once()
+
+
+def test_audit_persists_state_through_repository() -> None:
+    """售后审核只通过仓储刷新状态，不直接操作数据库会话。"""
+    item = AfterSale(
+        id=1,
+        after_sale_no="AS-TEST-1",
+        order_id=7,
+        order_item_id=11,
+        user_id=1,
+        type=AfterSaleType.RETURN_REFUND.value,
+        status=AfterSaleStatus.PENDING_REVIEW.value,
+        amount_cents=100,
+        reason="测试",
+        evidence_urls=[],
+        client_request_id="request-1",
+        created_at=SimpleNamespace(),
+        updated_at=SimpleNamespace(),
+    )
+    service, repository = _service(SimpleNamespace(), item)
+
+    result = asyncio.run(service.audit(cast(AsyncSession, FakeSession()), 1, True, "同意退货"))
+
+    assert result.status == AfterSaleStatus.WAITING_RETURN.value
+    assert repository.flush_count == 1

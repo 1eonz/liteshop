@@ -1,20 +1,28 @@
-import type { CSSProperties, FormEvent, JSX } from 'react';
-import { useEffect, useState } from 'react';
+import type { ComponentType, FormEvent, JSX } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import type {
-  CategorySummary,
-  StoreComponentSchema,
-  StorePageSchema,
-} from '@liteshop/shared-types';
-import { EmptyState, ErrorState, FeedbackState } from '@liteshop/shared-components';
+import type { StoreComponentSchema, StorePageSchema } from '@liteshop/shared-types';
+import { EmptyState, FeedbackState } from '@liteshop/shared-components';
 import { BottomTabBar, type TabBarItem } from './BottomTabBar';
-import { ProductCard } from './ProductCard';
-import { useCategoriesQuery, useProductsQuery } from '../features/catalog';
-import {
-  schemaProductPageSize,
-  selectSchemaProducts,
-} from '../features/catalog/model/schema-products';
 import { useDebounceAction } from '../hooks/useDebounceAction';
+import {
+  booleanProp,
+  isInternalPath,
+  numberProp,
+  pathProp,
+  safeSchemaUrl,
+  textProp,
+  urlProp,
+} from './schema/schema-props';
+
+const LazyCategoryGridView = lazy(async () => {
+  const module = await import('./schema/CategoryGridView');
+  return { default: module.CategoryGridView };
+});
+const LazyProductDataView = lazy(async () => {
+  const module = await import('./schema/ProductDataView');
+  return { default: module.ProductDataView };
+});
 
 interface SchemaRendererProps {
   schema: StorePageSchema;
@@ -22,52 +30,6 @@ interface SchemaRendererProps {
 
 interface ComponentViewProps {
   component: StoreComponentSchema;
-}
-
-function textProp(component: StoreComponentSchema, key: string, fallback = ''): string {
-  const value = component.props[key];
-  return typeof value === 'string' ? value : fallback;
-}
-
-function numberProp(component: StoreComponentSchema, key: string, fallback: number): number {
-  const value = component.props[key];
-  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
-}
-
-function booleanProp(component: StoreComponentSchema, key: string, fallback: boolean): boolean {
-  const value = component.props[key];
-  return typeof value === 'boolean' ? value : fallback;
-}
-
-function isInternalPath(value: string): boolean {
-  return value.startsWith('/') && !value.startsWith('//') && !value.includes('\\');
-}
-
-function pathProp(component: StoreComponentSchema, key: string, fallback: string): string {
-  const value = textProp(component, key);
-  return isInternalPath(value) ? value : fallback;
-}
-
-function safeSchemaUrl(value: unknown): string {
-  if (typeof value !== 'string' || !value) return '';
-  const hasUnsafeCharacter = Array.from(value).some((character) => {
-    const code = character.charCodeAt(0);
-    return (
-      code < 32 || character === '"' || character === "'" || character === '(' || character === ')'
-    );
-  });
-  if (hasUnsafeCharacter) return '';
-  if (isInternalPath(value)) return value;
-  try {
-    const parsed = new URL(value);
-    return parsed.protocol === 'https:' || parsed.protocol === 'http:' ? parsed.toString() : '';
-  } catch {
-    return '';
-  }
-}
-
-function urlProp(component: StoreComponentSchema, key: string): string {
-  return safeSchemaUrl(textProp(component, key));
 }
 
 function SearchBarView({ component }: ComponentViewProps): JSX.Element {
@@ -263,96 +225,6 @@ function BannerView({ component }: ComponentViewProps): JSX.Element {
   );
 }
 
-function CategoryGridView({ component }: ComponentViewProps): JSX.Element {
-  const query = useCategoriesQuery();
-  if (query.isLoading) return <FeedbackState>分类加载中…</FeedbackState>;
-  if (query.isError) {
-    return <ErrorState onRetry={() => void query.refetch()}>分类加载失败，请重试。</ErrorState>;
-  }
-  const categories = query.data ?? [];
-  if (!categories.length)
-    return <EmptyState title="暂无分类" description="请先在后台创建商品分类。" />;
-  const columns = Math.max(2, Math.min(6, Math.floor(numberProp(component, 'columns', 4))));
-  const showAll = booleanProp(component, 'showAll', true);
-  const allHref = pathProp(component, 'allHref', '/categories');
-  const categoryStyle = { '--schema-category-columns': columns } as CSSProperties;
-  return (
-    <section
-      className="section schema-category-grid"
-      aria-labelledby={`schema-category-title-${component.id}`}
-    >
-      <div className="section-title">
-        <h2 id={`schema-category-title-${component.id}`}>
-          {textProp(component, 'title', '热门分类')}
-        </h2>
-        {showAll ? (
-          <Link className="text-action" to={allHref}>
-            {textProp(component, 'allLabel', '查看全部')}
-          </Link>
-        ) : null}
-      </div>
-      <div className="categories" style={categoryStyle}>
-        {categories.slice(0, 8).map((category: CategorySummary) => (
-          <Link className="category" to={`/categories?categoryId=${category.id}`} key={category.id}>
-            <span className="category-icon" aria-hidden="true">
-              {category.icon || '✦'}
-            </span>
-            <span>{category.name}</span>
-          </Link>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function ProductDataView({ component }: ComponentViewProps): JSX.Element {
-  const count = Math.max(1, Math.min(24, Math.floor(numberProp(component, 'count', 6))));
-  const query = useProductsQuery({ pageSize: schemaProductPageSize(component, count) });
-  if (query.isLoading) return <FeedbackState>商品加载中…</FeedbackState>;
-  if (query.isError) {
-    return <ErrorState onRetry={() => void query.refetch()}>商品加载失败，请重试。</ErrorState>;
-  }
-  const products = selectSchemaProducts(component, query.data?.items ?? [], count);
-  if (!products.length)
-    return <EmptyState title="暂无商品" description="请先发布商品，首页会自动展示。" />;
-  const isCarousel = component.type === 'ProductCarousel';
-  const columns = Math.max(1, Math.min(4, Math.floor(numberProp(component, 'columns', 2))));
-  const showAll = booleanProp(component, 'showAll', true);
-  const allHref = pathProp(component, 'allHref', '/categories');
-  return (
-    <section
-      className={isCarousel ? 'section schema-product-carousel' : 'section'}
-      aria-labelledby={`schema-product-${component.id}`}
-    >
-      <div className="section-title">
-        <div>
-          <p className="eyebrow">{textProp(component, 'eyebrow', '商品列表')}</p>
-          <h2 id={`schema-product-${component.id}`}>{textProp(component, 'title', '精选商品')}</h2>
-        </div>
-        {showAll ? (
-          <Link className="text-action" to={allHref}>
-            {textProp(component, 'allLabel', '查看全部')}
-          </Link>
-        ) : null}
-      </div>
-      <div
-        className={isCarousel ? 'schema-product-carousel__track' : 'product-grid'}
-        style={isCarousel ? undefined : ({ '--schema-product-columns': columns } as CSSProperties)}
-      >
-        {products.map((product, index) => (
-          <Link
-            className={isCarousel ? 'schema-product-carousel__item' : 'product'}
-            to={`/product/${product.id}`}
-            key={product.id}
-          >
-            <ProductCard product={{ ...product, imageIndex: index + 1 }} />
-          </Link>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 function CouponView({ component }: ComponentViewProps): JSX.Element {
   const [claimed, setClaimed] = useState(false);
   const [claim, claiming] = useDebounceAction(async () => {
@@ -428,17 +300,29 @@ function UnsupportedView(): JSX.Element {
   );
 }
 
-type ComponentRenderer = (props: ComponentViewProps) => JSX.Element;
+type ComponentRenderer = ComponentType<ComponentViewProps>;
+
+function LazySchemaSection({ component }: ComponentViewProps): JSX.Element {
+  return (
+    <Suspense fallback={<FeedbackState>内容加载中…</FeedbackState>}>
+      {component.type === 'CategoryGrid' ? (
+        <LazyCategoryGridView component={component} />
+      ) : (
+        <LazyProductDataView component={component} />
+      )}
+    </Suspense>
+  );
+}
 
 const COMPONENT_RENDERERS: Partial<Record<StoreComponentSchema['type'], ComponentRenderer>> = {
   SearchBar: SearchBarView,
   Carousel: CarouselView,
   ActivityBanner: BannerView,
   ImageBanner: BannerView,
-  CategoryGrid: CategoryGridView,
-  ProductGrid: ProductDataView,
-  ProductList: ProductDataView,
-  ProductCarousel: ProductDataView,
+  CategoryGrid: LazySchemaSection,
+  ProductGrid: LazySchemaSection,
+  ProductList: LazySchemaSection,
+  ProductCarousel: LazySchemaSection,
   CouponBlock: CouponView,
   AnnouncementBar: AnnouncementView,
   Tabbar: TabbarView,

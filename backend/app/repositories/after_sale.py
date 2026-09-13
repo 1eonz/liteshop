@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from ..enums.after_sale import AfterSaleStatus
 from ..models.after_sale import AfterSale
 from ..models.order import Order, OrderItem
 
@@ -27,6 +28,21 @@ class AfterSaleRepository:
     async def get_for_update(self, session: AsyncSession, after_sale_id: int) -> AfterSale | None:
         """锁定售后单。"""
         return cast(AfterSale | None, await session.get(AfterSale, after_sale_id, with_for_update=True))
+
+    async def has_active_for_order_item(self, session: AsyncSession, order_item_id: int) -> bool:
+        """检查订单项是否已有进行中的售后申请。"""
+        active = await session.scalar(
+            select(AfterSale.id).where(
+                AfterSale.order_item_id == order_item_id,
+                AfterSale.active_key == "ACTIVE",
+                AfterSale.status.not_in([AfterSaleStatus.REJECTED.value, AfterSaleStatus.CANCELLED.value]),
+            )
+        )
+        return active is not None
+
+    async def flush(self, session: AsyncSession) -> None:
+        """刷新售后状态和关联字段，不提交外层事务。"""
+        await session.flush()
 
     async def list_for_user(self, session: AsyncSession, user_id: int) -> list[AfterSale]:
         """列出用户售后单。"""

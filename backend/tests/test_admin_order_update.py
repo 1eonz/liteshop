@@ -54,7 +54,7 @@ def _service(order: SimpleNamespace) -> AdminService:
     service = AdminService()
     service.orders = cast(
         OrderWorkflow,
-        SimpleNamespace(orders=SimpleNamespace(get_for_update=AsyncMock(return_value=order))),
+        SimpleNamespace(orders=SimpleNamespace(get_for_update=AsyncMock(return_value=order), flush=AsyncMock())),
     )
     return service
 
@@ -99,6 +99,7 @@ def test_address_update_allows_pending_and_paid_orders(status: OrderStatus, monk
         )
     )
     assert order.address_snapshot == updated
+    cast(AsyncMock, service.orders.orders.flush).assert_awaited_once()
 
 
 @pytest.mark.parametrize(

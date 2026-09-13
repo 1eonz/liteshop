@@ -177,7 +177,7 @@ class PageService:
             for key, value in values.items():
                 setattr(variant, key, value)
             variant.updated_at = now
-            await session.flush()
+            await self.repository.flush(session)
         return self.variant_response(variant)
 
     async def record_event(

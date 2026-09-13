@@ -78,7 +78,6 @@ class MarketingService:
             return {"coupon": self.response(coupon), "claimed": True, "duplicate": True}
         coupon.claimed_count += 1
         await self.repository.add_claim(session, CouponClaim(coupon_id=coupon.id, user_id=user_id, claimed_at=now))
-        await session.flush()
         return {"coupon": self.response(coupon), "claimed": True, "duplicate": False}
 
 

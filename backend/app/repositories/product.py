@@ -4,7 +4,7 @@ from typing import cast
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import contains_eager, selectinload
+from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.elements import ColumnElement
 
 from ..errors.domain import ProductNotFound
@@ -19,11 +19,7 @@ class ProductRepository:
         return cast(
             Sku | None,
             await session.scalar(
-                select(Sku)
-                .join(Sku.spu)
-                .where(Sku.id == sku_id)
-                .options(contains_eager(Sku.spu))
-                .with_for_update(of=Sku)
+                select(Sku).where(Sku.id == sku_id).options(selectinload(Sku.spu)).with_for_update(of=Sku)
             ),
         )
 
@@ -31,7 +27,7 @@ class ProductRepository:
         """读取 SKU 及其商品状态，不获取写锁。"""
         return cast(
             Sku | None,
-            await session.scalar(select(Sku).join(Sku.spu).where(Sku.id == sku_id).options(contains_eager(Sku.spu))),
+            await session.scalar(select(Sku).where(Sku.id == sku_id).options(selectinload(Sku.spu))),
         )
 
     async def list_spus(

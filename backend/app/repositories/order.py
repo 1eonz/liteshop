@@ -172,3 +172,7 @@ class OrderRepository:
             .with_for_update(skip_locked=True)
         )
         return list(result.unique().all())
+
+    async def flush(self, session: AsyncSession) -> None:
+        """刷新订单聚合字段变更，不提交外层事务。"""
+        await session.flush()

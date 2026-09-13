@@ -1,7 +1,7 @@
 # Plan 34：官网画布与动画配置闭环
 
 > PRD 章节：4.4.1+4.4.4+4.4.5+4.4.6+4.5+D3.3+D3.4
-> 当前状态：主要链路已完成；真实数据库种子发布 E2E 待补
+> 当前状态：主要链路已完成；页面搭建器已完成模型、视图和历史/自动保存 hooks 拆分，真实数据库种子发布 E2E 仍待补
 > 依赖关卡：Lenis、GSAP、Framer Motion 等依赖必须先确认包体积、许可证和性能预算。
 
 ## 目标
@@ -11,7 +11,8 @@
 ## 任务清单
 
 - [x] 将 page-builder 的商城/官网模式拆为明确配置，支持 375px 商城画布与 1200px 官网画布切换。
-- [ ] 按领域拆分 ComponentPalette、Canvas、PropsPanel、History/AutoSave hooks，页面只负责编排。
+- [x] 按领域拆分 ComponentPalette、Canvas、PropsPanel、History/AutoSave hooks，页面只负责编排。
+- [x] 将默认 Schema、组件分组、模板、草稿恢复和预览工具移入 `pages/page-builder/model/page-builder-model.ts`，先建立稳定领域边界。
 - [x] 官网模式提供 PRD 定义的组件面板、分组、默认配置和整页模板，不复用不兼容的商城交互。
 - [x] 属性面板增加 SEO 与动画配置；Schema 保持版本化并支持迁移。
 - [x] SiteRenderer 消费动画字段，支持 reduced motion、组件卸载清理和服务端渲染安全。

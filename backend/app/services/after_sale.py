@@ -2,7 +2,6 @@
 
 from datetime import UTC, datetime
 
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..enums.after_sale import ALLOWED_AFTER_SALE_TRANSITIONS, AfterSaleStatus, AfterSaleType
@@ -45,14 +44,7 @@ class AfterSaleService:
             raise AfterSaleError("只有已支付或已发货订单可以申请售后")
         if amount_cents > item.total_amount:
             raise AfterSaleError("售后金额不能超过订单项金额")
-        active = await session.scalar(
-            select(AfterSale.id).where(
-                AfterSale.order_item_id == order_item_id,
-                AfterSale.active_key == "ACTIVE",
-                AfterSale.status.not_in([AfterSaleStatus.REJECTED.value, AfterSaleStatus.CANCELLED.value]),
-            )
-        )
-        if active is not None:
+        if await self.repository.has_active_for_order_item(session, order_item_id):
             raise AfterSaleError("该订单项已有进行中的售后申请")
         return await self.repository.create(
             session,
@@ -97,7 +89,7 @@ class AfterSaleService:
             self._transition(item, AfterSaleStatus.REFUNDING)
         else:
             self._transition(item, AfterSaleStatus.WAITING_RETURN)
-        await session.flush()
+        await self.repository.flush(session)
         return item
 
     async def submit_return(
@@ -110,7 +102,7 @@ class AfterSaleService:
         item.return_tracking_no = tracking_no
         self._transition(item, AfterSaleStatus.RETURNED)
         item.returned_at = datetime.now(UTC)
-        await session.flush()
+        await self.repository.flush(session)
         return item
 
     async def complete_refund(self, session: AsyncSession, after_sale_id: int) -> AfterSale:
@@ -135,7 +127,7 @@ class AfterSaleService:
             self._transition(item, AfterSaleStatus.COMPLETED)
             item.completed_at = datetime.now(UTC)
             item.active_key = None
-            await session.flush()
+            await self.repository.flush(session)
             return item
         payment = await self.refunds.payments.get_for_order(session, item.order_id, for_update=True)
         if payment is None:
@@ -164,7 +156,7 @@ class AfterSaleService:
         self._transition(item, AfterSaleStatus.COMPLETED)
         item.completed_at = datetime.now(UTC)
         item.active_key = None
-        await session.flush()
+        await self.repository.flush(session)
         return item
 
 

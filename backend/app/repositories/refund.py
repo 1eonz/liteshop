@@ -23,6 +23,14 @@ class RefundRepository:
             ),
         )
 
+    async def get_for_update(self, session: AsyncSession, refund_id: int) -> Refund | None:
+        """按主键锁定退款记录。"""
+        return cast(Refund | None, await session.get(Refund, refund_id, with_for_update=True))
+
+    async def flush(self, session: AsyncSession) -> None:
+        """刷新退款状态和关联订单字段，不提交外层事务。"""
+        await session.flush()
+
     async def sum_active_amount(self, session: AsyncSession, payment_id: int) -> int:
         """统计尚未失败退款的金额，防止累计超过支付金额。"""
         value = await session.scalar(

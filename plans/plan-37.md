@@ -1,7 +1,7 @@
 # Plan 37：ui-kit Phase 0/1
 
 > PRD 章节：E2+E4.3+E8.2
-> 当前状态：**Phase 1 骨架已完成，迁移与重依赖待确认**
+> 当前状态：**Phase 1 骨架与 LiteShop token 桥接已完成，调用方迁移、弹层 a11y 与重依赖仍待确认**
 > 强制关卡：修改 AGENTS.md、把现有应用迁移到 ui-kit、引入 Radix/Framer Motion/RHF/zod 前必须获得用户确认。
 
 ## 目标
@@ -11,7 +11,7 @@
 ## 任务清单
 
 - [ ] 先决策 AGENTS.md 中 antd/antd-mobile 与 ui-kit 的最终技术栈条款；本阶段未修改宪法，保留人工确认关卡。
-- [ ] 盘点 shared-components 调用方，定义 ui-kit 与业务组件边界及迁移顺序。
+- [x] 盘点 shared-components 调用方，定义 ui-kit 与业务组件边界及迁移顺序。
 - [x] 修复 shared-tokens 的重复字号和 z-index token；gallery 作用域因三端同步迁移风险暂保留，shared-tokens 仍是 LiteShop 业务 token 唯一事实源。
 - [ ] 评估候选依赖的包体积、许可证、SSR/React 18 兼容、维护活跃度和 a11y 能力。
 - [x] Phase 1 实现 Button、Input、Skeleton、EmptyState；Toast 达到第二个稳定调用方后再加入。
@@ -46,3 +46,11 @@ pnpm build
 - 已验证：`pnpm --dir packages/ui-kit build`、`typecheck`、`lint`、`test` 全部通过（2 tests passed）。
 - 根级 `pnpm typecheck`、`pnpm lint`、`pnpm test`、`pnpm build` 全部通过，Turbo 已将 ui-kit 纳入 8 个 workspace 包。
 - 未修改现有 H5/Admin/Site/shared-components，未引入 Radix、Framer Motion、react-hook-form、zod 或其他重依赖。
+
+## 调用方盘点（2026-09-11）
+
+- `Button`、`Input`、`Skeleton`、`EmptyState` 属于可迁移的基础层；当前业务仍从 `@liteshop/shared-components` 使用反馈状态与商品卡片，避免同名组件并行维护。
+- H5/Admin 共 20 余处使用 `ErrorState`、`FeedbackState`、`EmptyState`；`ProductCard` 由 H5 本地适配层包装，暂不直接替换，待视觉回归基线建立后逐组件迁移。
+- `useDebounceAction` 是跨端唯一行为实现，ui-kit 不重复提供；H5、Admin、Site 继续使用 shared-components 版本。
+- 推荐迁移顺序：先在一个低风险 Admin 空状态页面试用 `@liteshop/ui-kit/EmptyState`，完成视觉/键盘回归后再评估 Button/Input；不执行全量替换。
+- 迁移前仍需用户确认宿主是否接受 `--ui-*` token 边界，以及 antd/antd-mobile 与 ui-kit 的长期共存策略。

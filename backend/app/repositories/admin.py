@@ -158,3 +158,18 @@ class AdminRepository:
             .order_by(User.created_at.desc(), User.id)
         )
         return list(result.unique().all())
+
+    async def add_role(self, session: AsyncSession, role: Role) -> Role:
+        """新增角色并刷新数据库生成字段。"""
+        session.add(role)
+        await session.flush()
+        return role
+
+    async def delete_role(self, session: AsyncSession, role: Role) -> None:
+        """删除未被引用的角色，不提交外层事务。"""
+        await session.delete(role)
+        await session.flush()
+
+    async def flush(self, session: AsyncSession) -> None:
+        """刷新角色或用户角色关系变更，不提交外层事务。"""
+        await session.flush()

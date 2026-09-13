@@ -171,7 +171,7 @@ class OrderWorkflow:
         changed = await self.orders.transition(session, order_id, OrderStatus.CANCELLED)
         changed.cancelled_at = datetime.now(UTC)
         changed.cancel_reason = reason
-        await session.flush()
+        await self.orders.flush(session)
         return changed
 
     async def get_owned_order(self, session: AsyncSession, order_id: int, user_id: int) -> Order:
@@ -215,7 +215,7 @@ class OrderWorkflow:
         """确认收货，只允许已发货订单完成。"""
         changed = await self.orders.transition(session, order_id, OrderStatus.COMPLETED)
         changed.completed_at = datetime.now(UTC)
-        await session.flush()
+        await self.orders.flush(session)
         return changed
 
     async def ship_order(
@@ -248,7 +248,7 @@ class OrderWorkflow:
         order.total_amount = total_amount
         order.discount_amount = gross_amount - total_amount
         order.updated_at = datetime.now(UTC)
-        await session.flush()
+        await self.orders.flush(session)
         return order
 
     async def expire_order(self, session: AsyncSession, order: Order, request_id: str) -> Order:
@@ -260,7 +260,7 @@ class OrderWorkflow:
         changed = await self.orders.transition(session, order.id, OrderStatus.CANCELLED)
         changed.cancelled_at = datetime.now(UTC)
         changed.cancel_reason = "支付超时"
-        await session.flush()
+        await self.orders.flush(session)
         return changed
 
     async def create_payment(
@@ -332,7 +332,7 @@ class OrderWorkflow:
         order.paid_amount = payment.amount_cents
         order.paid_at = now
         order.updated_at = now
-        await session.flush()
+        await self.orders.flush(session)
         return await self.payments.mark_paid(
             session,
             payment,

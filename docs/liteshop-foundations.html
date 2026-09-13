@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LiteShop Foundations</title>
+  <style>
+    :root { --coral:#ff6b6b; --coral-dark:#c93030; --coral-soft:#fff1f1; --teal:#2cb9b0; --success:#52c41a; --warning:#d48806; --danger:#d9363e; --info:#1890ff; --ink:#203236; --muted:#718083; --line:#e6eeee; --page:#f5f7f7; --surface:#fff; --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --r-admin:6px; --r-h5:12px; --shadow-sm:0 2px 8px rgb(32 50 54 / 8%); --shadow-md:0 8px 24px rgb(32 50 54 / 10%); }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); background:var(--page); font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; }
+    button { font:inherit; }
+    :focus-visible { outline:3px solid #ffa3a3; outline-offset:2px; }
+    .topbar { position:sticky; top:0; z-index:2; display:flex; align-items:center; justify-content:space-between; padding:16px max(24px,calc((100vw - 1240px)/2)); background:rgb(255 255 255 / .9); border-bottom:1px solid var(--line); backdrop-filter:blur(12px); }
+    .brand { display:flex; gap:10px; align-items:center; font-weight:800; font-size:19px; letter-spacing:0; }
+    .mark { display:grid; width:28px; height:28px; place-items:center; border-radius:9px; color:#fff; background:var(--coral); box-shadow:var(--shadow-sm); }
+    .tag { padding:4px 8px; border-radius:999px; color:var(--coral-dark); background:var(--coral-soft); font-size:12px; font-weight:700; }
+    main { width:min(1240px,calc(100% - 48px)); margin:40px auto 80px; }
+    h1 { max-width:720px; margin:0; font-size:36px; line-height:1.15; letter-spacing:0; }
+    .lead { max-width:620px; margin:14px 0 36px; color:var(--muted); font-size:16px; }
+    .grid { display:grid; grid-template-columns:repeat(12,1fr); gap:16px; }
+    .panel { grid-column:span 12; padding:24px; border:1px solid var(--line); border-radius:8px; background:var(--surface); }
+    .panel h2 { margin:0 0 4px; font-size:18px; }
+    .panel > p { margin:0 0 20px; color:var(--muted); }
+    .swatches { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; }
+    .swatch { min-width:0; overflow:hidden; border:1px solid var(--line); border-radius:8px; }
+    .swatch i { display:block; height:74px; }
+    .swatch div { padding:10px; }
+    .swatch b,.swatch span { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .swatch span { color:var(--muted); font-size:12px; }
+    .two { grid-column:span 6; }
+    .tokens { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+    .token { padding:14px; border:1px solid var(--line); border-radius:6px; }
+    .token code { color:var(--coral-dark); font-size:12px; }
+    .token strong { display:block; margin-top:6px; font-size:18px; }
+    .type-demo { display:grid; gap:14px; }
+    .type-demo p { margin:0; }
+    .t32 { font-size:32px; font-weight:800; line-height:1.2; }
+    .t24 { font-size:24px; font-weight:700; line-height:1.2; }
+    .t20 { font-size:20px; font-weight:700; }
+    .t16 { font-size:16px; }
+    .t14 { font-size:14px; }
+    .t12 { color:var(--muted); font-size:12px; }
+    .controls { display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+    .btn { min-height:44px; padding:0 18px; border:1px solid transparent; border-radius:8px; background:var(--coral); color:#fff; font-weight:700; cursor:pointer; }
+    .btn:hover { background:#e54545; }
+    .btn:disabled { color:#999; background:#ffe0e0; cursor:not-allowed; }
+    .btn.secondary { border-color:var(--coral); color:var(--coral-dark); background:#fff; }
+    .input { min-height:44px; padding:0 12px; border:1px solid var(--line); border-radius:8px; color:var(--ink); background:#fff; }
+    .input:focus { border-color:var(--coral); outline:0; box-shadow:0 0 0 3px #ffe0e0; }
+    .state-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+    .state { padding:14px; border-radius:8px; font-weight:700; }
+    .state.success { color:#237804; background:#f0fff0; }.state.warning { color:#ad6800; background:#fffbe6; }.state.danger { color:#cf1322; background:#fff2f0; }.state.info { color:#0050b3; background:#e6f7ff; }
+    .layout { display:grid; grid-template-columns:375px 1fr; gap:28px; align-items:start; }
+    .phone { min-height:460px; padding:16px; border:10px solid #203236; border-radius:34px; color:var(--ink); background:#f5f7f7; box-shadow:var(--shadow-md); }
+    .phone-head { display:flex; align-items:center; justify-content:space-between; height:40px; margin-bottom:16px; }.phone-card { padding:16px; border-radius:12px; background:#fff; box-shadow:var(--shadow-sm); }.line { height:12px; margin:10px 0; border-radius:999px; background:#e6eeee; }.line.short { width:50%; }.phone-actions { display:flex; gap:8px; margin-top:16px; }.phone-actions button { flex:1; }
+    .desktop { min-height:460px; overflow:hidden; border:1px solid var(--line); border-radius:8px; background:#fff; }.desktop-inner { display:grid; grid-template-columns:160px 1fr; min-height:460px; }.mini-nav { padding:18px 12px; background:#fff; border-right:1px solid var(--line); }.mini-nav b { color:var(--coral); font-size:18px; }.mini-nav span { display:block; padding:10px; margin-top:6px; color:var(--muted); border-radius:6px; }.mini-nav span.active { color:var(--coral-dark); background:var(--coral-soft); }.mini-main { padding:24px; background:#f5f7f7; }.mini-metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }.mini-metrics div,.mini-panel { padding:12px; border:1px solid var(--line); border-radius:6px; background:#fff; }.mini-panel { height:180px; margin-top:12px; }.chart { display:flex; height:110px; gap:12px; align-items:end; padding-top:16px; }.chart i { flex:1; border-radius:5px 5px 0 0; background:var(--coral); opacity:.8; }
+    @media (max-width:800px) { main{width:min(100% - 32px,1240px);margin-top:28px}.two{grid-column:span 12}.swatches{grid-template-columns:repeat(2,1fr)}.tokens{grid-template-columns:1fr}.state-row{grid-template-columns:repeat(2,1fr)}.layout{grid-template-columns:1fr}.phone{width:min(375px,100%)}.mini-metrics{grid-template-columns:repeat(2,1fr)} }
+    /* Preview only: the soft-glass tokens become formal tokens after approval. */
+    :root { --glass-surface:rgb(255 255 255 / 72%); --glass-surface-strong:rgb(255 255 255 / 86%); --glass-border:rgb(255 255 255 / 76%); --glass-blur:16px; --glass-shadow:0 12px 32px rgb(32 50 54 / 10%), inset 0 1px 0 rgb(255 255 255 / 60%); }
+    .topbar { background:var(--glass-surface-strong); border-bottom-color:var(--glass-border); box-shadow:0 1px 0 rgb(32 50 54 / 4%); backdrop-filter:blur(var(--glass-blur)); }
+    .panel:first-of-type { border-color:var(--glass-border); background:var(--glass-surface); box-shadow:var(--glass-shadow); backdrop-filter:blur(var(--glass-blur)); }
+    .phone { background:linear-gradient(145deg,#f5f7f7,#e8f1f0); }
+    .phone-card { border:1px solid var(--glass-border); background:var(--glass-surface); box-shadow:var(--glass-shadow); backdrop-filter:blur(var(--glass-blur)); }
+    /* Deep preview treatment: make the relationship between tokens and surfaces obvious. */
+    body { background:radial-gradient(760px 400px at 86% 4%,rgb(255 107 107 / 14%),transparent 70%),radial-gradient(700px 520px at 12% 90%,rgb(44 185 176 / 13%),transparent 72%),linear-gradient(145deg,#f7fbfa,#e7f0ef 58%,#dce8e7); }
+    body::before { content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; background:radial-gradient(760px 400px at 86% 4%,rgb(255 107 107 / 14%),transparent 70%),radial-gradient(700px 520px at 12% 90%,rgb(44 185 176 / 13%),transparent 72%),linear-gradient(145deg,#f7fbfa,#e7f0ef 58%,#dce8e7); }
+    .topbar { background:linear-gradient(180deg,rgb(255 255 255 / 88%),rgb(255 255 255 / 68%)); box-shadow:0 8px 26px rgb(32 50 54 / 7%), inset 0 1px 0 rgb(255 255 255 / 88%); -webkit-backdrop-filter:blur(22px) saturate(125%); backdrop-filter:blur(22px) saturate(125%); }
+    .panel { box-shadow:0 8px 22px rgb(32 50 54 / 6%); }
+    .panel:first-of-type { background:linear-gradient(135deg,rgb(255 255 255 / 78%),rgb(255 255 255 / 58%)); box-shadow:0 16px 34px rgb(32 50 54 / 9%), inset 0 1px 0 rgb(255 255 255 / 88%); -webkit-backdrop-filter:blur(20px) saturate(125%); backdrop-filter:blur(20px) saturate(125%); }
+    .phone { box-shadow:0 28px 62px rgb(32 50 54 / 22%), 0 0 0 1px rgb(255 255 255 / 75%), inset 0 1px 0 rgb(255 255 255 / 22%); }
+    .phone-card { background:linear-gradient(135deg,rgb(255 255 255 / 78%),rgb(255 255 255 / 58%)); box-shadow:0 12px 26px rgb(32 50 54 / 9%), inset 0 1px 0 rgb(255 255 255 / 82%); -webkit-backdrop-filter:blur(18px) saturate(125%); backdrop-filter:blur(18px) saturate(125%); }
+    .desktop { box-shadow:0 12px 28px rgb(32 50 54 / 8%); }
+    @supports not ((backdrop-filter: blur(1px))) { .topbar,.panel:first-of-type,.phone-card { background:#fff; } }
+  </style>
+</head>
+<body>
+  <header class="topbar"><div class="brand"><span class="mark">L</span> LiteShop <span class="tag">Design foundations</span></div><span class="t12">v1.0 · 设计交付基线</span></header>
+  <main>
+    <h1>一套为交易与运营而设计的界面基础。</h1>
+    <p class="lead">H5 使用亲和、可信的画廊式层级；后台保持高密度、可快速扫描的工作台。两端共用语义颜色、字号与间距 token。</p>
+    <section class="grid">
+      <article class="panel"><h2>色彩</h2><p>珊瑚红承担转化与选择，青绿色用于信任与确认，功能色只表达状态。</p><div class="swatches">
+        <div class="swatch"><i style="background:var(--coral)"></i><div><b>品牌主色</b><span>#FF6B6B</span></div></div><div class="swatch"><i style="background:var(--coral-dark)"></i><div><b>品牌深色</b><span>#C93030</span></div></div><div class="swatch"><i style="background:var(--teal)"></i><div><b>信任青绿</b><span>#2CB9B0</span></div></div><div class="swatch"><i style="background:var(--ink)"></i><div><b>墨色文字</b><span>#203236</span></div></div><div class="swatch"><i style="background:var(--page)"></i><div><b>页面底色</b><span>#F5F7F7</span></div></div>
+      </div></article>
+      <article class="panel two"><h2>字体层级</h2><p>使用系统中文字体栈；数字可用等宽特性强化金额与运营指标。</p><div class="type-demo"><p class="t32">32 / 页面主标题</p><p class="t24">24 / 页面标题</p><p class="t20">20 / 区块标题</p><p class="t16">16 / H5 正文与重要操作</p><p class="t14">14 / 后台正文与表格内容</p><p class="t12">12 / 标签、辅助说明、时间信息</p></div></article>
+      <article class="panel two"><h2>间距与圆角</h2><p>4px 基线，所有间距向 4 的倍数收敛；H5 更圆润，后台更紧凑。</p><div class="tokens"><div class="token"><code>--spacing-2</code><strong>8 px</strong></div><div class="token"><code>--spacing-4</code><strong>16 px</strong></div><div class="token"><code>--spacing-6</code><strong>32 px</strong></div><div class="token"><code>--radius-h5</code><strong>12 px</strong></div><div class="token"><code>--radius-admin</code><strong>6 px</strong></div><div class="token"><code>--shadow-sm</code><strong>柔和层级</strong></div></div></article>
+      <article class="panel"><h2>组件状态</h2><p>写操作在加载期间必须禁用；状态不只依赖色彩，同时通过文案表达。</p><div class="controls"><button class="btn">提交订单</button><button class="btn secondary">取消</button><button class="btn" disabled>处理中…</button><label>商品名称 <input class="input" placeholder="请输入商品名称" /></label></div><div class="state-row" style="margin-top:16px"><div class="state success">成功 · 已保存</div><div class="state warning">提醒 · 库存偏低</div><div class="state danger">错误 · 请重试</div><div class="state info">信息 · 正在同步</div></div></article>
+      <article class="panel"><h2>跨端基线</h2><p>移动端固定可读宽度，桌面端以 220px 导航与 1180px 内容工作区组织信息。</p><div class="layout"><div class="phone"><div class="phone-head"><b>LiteShop</b><span class="tag">H5</span></div><div class="phone-card"><strong>把喜欢的生活带回家</strong><div class="line"></div><div class="line short"></div><div class="phone-actions"><button class="btn">探索好物</button></div></div><div class="phone-card" style="margin-top:16px"><div class="line"></div><div class="line short"></div><div class="line"></div></div></div><div class="desktop"><div class="desktop-inner"><aside class="mini-nav"><b>LiteShop</b><span class="active">数据看板</span><span>商品管理</span><span>订单管理</span><span>库存管理</span></aside><div class="mini-main"><strong>运营中心 / 数据看板</strong><div class="mini-metrics" style="margin-top:16px"><div>今日销售额<br><b>¥12,680</b></div><div>支付订单<br><b>86</b></div><div>在售商品<br><b>128</b></div><div>待发货<br><b>12</b></div></div><div class="mini-panel"><b>近 7 天销售趋势</b><div class="chart"><i style="height:44%"></i><i style="height:66%"></i><i style="height:52%"></i><i style="height:80%"></i><i style="height:62%"></i><i style="height:96%"></i><i style="height:76%"></i></div></div></div></div></div></div></article>
+    </section>
+  </main>
+</body>
+</html>

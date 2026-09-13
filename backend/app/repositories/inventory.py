@@ -5,6 +5,7 @@ from typing import cast
 
 from sqlalchemy import Executable, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from ..enums.inventory import InventoryEventType
 from ..models.inventory import InventoryLedger
@@ -92,7 +93,12 @@ class InventoryRepository:
             return None
         return cast(
             Sku | None,
-            await session.scalar(select(Sku).where(Sku.id == sku_id).execution_options(populate_existing=True)),
+            await session.scalar(
+                select(Sku)
+                .where(Sku.id == sku_id)
+                .options(selectinload(Sku.spu))
+                .execution_options(populate_existing=True)
+            ),
         )
 
     async def lock(self, session: AsyncSession, sku_id: int, quantity: int, reference_no: str, request_id: str) -> Sku:

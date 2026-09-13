@@ -65,7 +65,7 @@ class RefundService:
             raise RefundError("退款金额超过可退余额")
         order = await self.orders.get_for_update(session, payment.order_id)
         order.refund_status = "APPLYING"
-        await session.flush()
+        await self.orders.flush(session)
         return await self.refunds.create(
             session,
             payment=payment,
@@ -82,7 +82,7 @@ class RefundService:
         restock_lines: list[tuple[int, int]] | None = None,
     ) -> Refund:
         """处理一笔待退款记录，成功后回补订单商品库存。"""
-        refund = await session.get(Refund, refund_id, with_for_update=True)
+        refund = await self.refunds.get_for_update(session, refund_id)
         if refund is None:
             raise RefundError("退款记录不存在")
         if refund.status == "SUCCESS":
@@ -103,7 +103,7 @@ class RefundService:
             refund.status = "FAILED"
             refund.fail_reason = str(error)
             refund.updated_at = datetime.now(UTC)
-            await session.flush()
+            await self.refunds.flush(session)
             raise RefundError("渠道退款失败，可稍后重试") from error
         refund.status = "SUCCESS"
         refund.transaction_id = transaction_id
@@ -125,7 +125,7 @@ class RefundService:
                 refund.refund_no,
                 f"refund:{refund.id}",
             )
-        await session.flush()
+        await self.refunds.flush(session)
         return refund
 
 

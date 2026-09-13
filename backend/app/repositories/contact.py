@@ -51,6 +51,10 @@ class ContactRepository:
         """锁定一条联系表单，供后台状态流转使用。"""
         return cast(FormSubmission | None, await session.get(FormSubmission, submission_id, with_for_update=True))
 
+    async def flush(self, session: AsyncSession) -> None:
+        """刷新联系表单字段变更，不提交外层事务。"""
+        await session.flush()
+
     async def list(self, session: AsyncSession, *, status: str | None = None, limit: int = 100) -> list[FormSubmission]:
         """按创建时间倒序读取联系表单。"""
         statement = select(FormSubmission).order_by(FormSubmission.created_at.desc(), FormSubmission.id.desc())

@@ -230,7 +230,7 @@ class FreightService:
                 for item in items
             )
         template.updated_at = datetime.now(UTC)
-        await session.flush()
+        await self.repository.flush(session)
         return self.template_response(template)
 
     async def delete_template(self, session: AsyncSession, template_id: int) -> dict[str, object]:
@@ -238,8 +238,7 @@ class FreightService:
         template = await self.repository.get_template(session, template_id, for_update=True)
         if template is None:
             raise FreightError("运费模板不存在")
-        await session.delete(template)
-        await session.flush()
+        await self.repository.delete_template(session, template)
         return {"deleted": True, "templateId": template_id}
 
     async def add_item(
@@ -280,7 +279,7 @@ class FreightService:
         for field, value in payload.model_dump(exclude_unset=True, by_alias=False).items():
             setattr(item, field, value)
         item.updated_at = datetime.now(UTC)
-        await session.flush()
+        await self.repository.flush(session)
         template = await self.repository.get_template(session, template_id)
         if template is None:
             raise FreightError("运费模板不存在")

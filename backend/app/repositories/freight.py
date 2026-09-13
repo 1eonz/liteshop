@@ -57,6 +57,15 @@ class FreightRepository:
         await session.flush()
         return template
 
+    async def flush(self, session: AsyncSession) -> None:
+        """刷新模板或计费项字段变更，不提交外层事务。"""
+        await session.flush()
+
+    async def delete_template(self, session: AsyncSession, template: FreightTemplate) -> None:
+        """删除模板及其级联计费项。"""
+        await session.delete(template)
+        await session.flush()
+
     async def add_item(self, session: AsyncSession, item: FreightTemplateItem) -> FreightTemplateItem:
         """新增模板计费项。"""
         session.add(item)
