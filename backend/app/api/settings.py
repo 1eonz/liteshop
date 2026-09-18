@@ -7,7 +7,7 @@ from ..core.config import settings
 from ..core.database import get_session
 from ..errors import ApiError
 from ..schemas.admin import SiteSettingsUpdate, ThemeSettingsUpdate
-from ..services.admin import AdminPermissionDenied, AdminService
+from ..services.admin_core import AdminPermissionDenied, AdminServiceCore
 from ..services.idempotency import IdempotencyInProgress, IdempotentResult, idempotency_service
 from ..services.isr import trigger_isr_revalidate
 from ..services.settings import settings_service
@@ -15,7 +15,7 @@ from .dependencies import CurrentSubject
 from .responses import success
 
 router = APIRouter(prefix="/settings", tags=["settings"])
-admin_service = AdminService()
+admin_service = AdminServiceCore()
 _session_dependency = Depends(get_session)
 
 _feature_flags: dict[str, bool] = {

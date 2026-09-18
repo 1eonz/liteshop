@@ -7,7 +7,7 @@ import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.operation_log import OperationLog
-from app.services.admin import AdminService
+from app.services.admin_core import AdminServiceCore
 
 
 def test_operation_log_captures_actor_and_snapshots() -> None:
@@ -16,7 +16,7 @@ def test_operation_log_captures_actor_and_snapshots() -> None:
     structlog.contextvars.clear_contextvars()
     structlog.contextvars.bind_contextvars(ip="127.0.0.1", user_agent="pytest")
     asyncio.run(
-        AdminService.audit(
+        AdminServiceCore.audit(
             session,
             user_id="42",
             resource_type="PRODUCT",

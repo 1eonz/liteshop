@@ -16,7 +16,7 @@ from uuid import uuid4
 import pytest
 from redis.asyncio import Redis
 from redis.exceptions import RedisError
-from sqlalchemy import delete, func, select
+from sqlalchemy import Connection, delete, event, func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
@@ -36,7 +36,7 @@ from app.models.favorite import Favorite
 from app.models.idempotency import IdempotencyRecord
 from app.models.inventory import InventoryLedger
 from app.models.order import Order, OrderItem, Payment
-from app.models.product import Sku, Spu
+from app.models.product import ProductSpec, ProductSpecValue, Sku, Spu
 from app.models.user import User
 from app.repositories.inventory import InsufficientStock, InventoryRepository
 from app.repositories.order import OrderRepository
@@ -49,6 +49,7 @@ from app.services.cart import CartError, CartLine, CartService
 from app.services.favorite import FavoriteService
 from app.services.idempotency import IdempotencyInProgress, IdempotentResult, idempotency_service
 from app.services.order_workflow import OrderWorkflow, OrderWorkflowError, payment_callback_signature_payload
+from app.services.product_catalog import ProductCatalogService
 
 pytestmark = pytest.mark.skipif(
     os.getenv("LITESHOP_RUN_INTEGRATION") != "1",
@@ -124,6 +125,86 @@ async def _delete_fixture(factory: async_sessionmaker[AsyncSession], reference: 
             sku_ids = select(Sku.id).where(Sku.product_id == product.id)
             await session.execute(delete(InventoryLedger).where(InventoryLedger.sku_id.in_(sku_ids)))
             await session.delete(product)
+
+
+def test_product_summary_avoids_spec_queries_and_detail_loads_values(
+    integration_session_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    """列表保持摘要且不查询规格；详情在会话关闭后仍可完整序列化。"""
+    statements: list[str] = []
+
+    def record_statement(
+        _connection: Connection,
+        _cursor: object,
+        statement: str,
+        _parameters: object,
+        _context: object,
+        _executemany: bool,
+    ) -> None:
+        if statement.lstrip().upper().startswith("SELECT"):
+            statements.append(statement)
+
+    async def run() -> None:
+        sku_id, reference = await _create_fixture(integration_session_factory)
+        try:
+            async with integration_session_factory.begin() as session:
+                sku = await session.get(Sku, sku_id)
+                assert sku is not None
+                product_id = sku.product_id
+                session.add(
+                    ProductSpec(
+                        product_id=product_id,
+                        name="容量",
+                        sort_order=0,
+                        values=[ProductSpecValue(value="480ml", sort_order=0)],
+                    )
+                )
+
+            catalog = ProductCatalogService()
+            async with integration_session_factory() as session:
+                connection = await session.connection()
+                sync_connection = connection.sync_connection
+                event.listen(sync_connection, "before_cursor_execute", record_statement)
+                try:
+                    products, total = await catalog.products.list_spus(session, 0, 10, keyword=reference)
+                finally:
+                    event.remove(sync_connection, "before_cursor_execute", record_statement)
+
+            assert total == 1
+            assert len(products) == 1
+            assert catalog.summary(products[0]) == {
+                "id": product_id,
+                "name": f"集成测试商品-{reference}",
+                "coverUrl": "",
+                "minPrice": 100,
+                "maxPrice": 100,
+                "salesCount": 0,
+                "status": "ON_SHELF",
+            }
+            assert len(statements) == 3  # 商品分页、SKU、总数，不随规格数量增加。
+            assert not any("product_specs" in sql or "product_spec_values" in sql for sql in statements)
+
+            statements.clear()
+            async with integration_session_factory() as session:
+                connection = await session.connection()
+                sync_connection = connection.sync_connection
+                event.listen(sync_connection, "before_cursor_execute", record_statement)
+                try:
+                    product = await catalog.products.get_spu(session, product_id)
+                finally:
+                    event.remove(sync_connection, "before_cursor_execute", record_statement)
+
+            detail = catalog.detail(product)
+            assert detail["minPrice"] == 100
+            assert product.specs[0].name == "容量"
+            assert product.specs[0].values[0].value == "480ml"
+            assert len(statements) == 4
+            assert any("product_specs" in sql for sql in statements)
+            assert any("product_spec_values" in sql for sql in statements)
+        finally:
+            await _delete_fixture(integration_session_factory, reference)
+
+    asyncio.run(run())
 
 
 async def _create_after_sale_fixture(

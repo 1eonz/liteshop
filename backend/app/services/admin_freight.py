@@ -9,10 +9,15 @@ from ..schemas.freight import (
     FreightTemplateUpdate,
 )
 from .admin_core import AdminServiceCore
+from .freight import FreightService
 
 
 class AdminFreightService(AdminServiceCore):
     """编排运费模板写操作与后台审计。"""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.freight = FreightService()
 
     async def list_freight_templates(self, session: AsyncSession) -> list[dict[str, object]]:
         """读取后台运费模板。"""

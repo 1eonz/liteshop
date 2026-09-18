@@ -4,11 +4,13 @@ from fastapi import APIRouter, Header, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...schemas.products import CategoryCreate, CategoryUpdate, ProductCreate, ProductUpdate
+from ...services.admin_catalog import AdminCatalogService
 from ..dependencies import CurrentSubject
 from ..responses import success
-from .common import admin_service, authorize_read, execute_write, require_database, session_dependency
+from .common import authorize_read, execute_write, require_database, session_dependency
 
 router = APIRouter()
+admin_service = AdminCatalogService()
 
 
 @router.get("/products")
@@ -22,9 +24,7 @@ async def list_products(
     """后台商品列表。"""
     require_database()
     await authorize_read(session, subject, "product.read")
-    return success(
-        await admin_service.catalog.list_products(session, page, page_size, keyword=q, include_off_shelf=True)
-    )
+    return success(await admin_service.list_products(session, page, page_size, keyword=q))
 
 
 @router.post("/categories")

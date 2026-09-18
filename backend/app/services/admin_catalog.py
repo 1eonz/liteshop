@@ -4,14 +4,21 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..schemas.products import CategoryCreate, CategoryUpdate, ProductCreate, ProductUpdate
 from .admin_core import AdminServiceCore
+from .product_catalog import ProductCatalogService
 
 
 class AdminCatalogService(AdminServiceCore):
     """编排商品与分类写操作及审计记录。"""
 
-    async def list_products(self, session: AsyncSession, page: int, page_size: int) -> dict[str, object]:
+    def __init__(self) -> None:
+        super().__init__()
+        self.catalog = ProductCatalogService()
+
+    async def list_products(
+        self, session: AsyncSession, page: int, page_size: int, *, keyword: str | None = None
+    ) -> dict[str, object]:
         """后台读取全部未删除商品。"""
-        return await self.catalog.list_products(session, page, page_size, include_off_shelf=True)
+        return await self.catalog.list_products(session, page, page_size, keyword=keyword, include_off_shelf=True)
 
     async def create_category(
         self, session: AsyncSession, payload: CategoryCreate, user_id: str, request_id: str

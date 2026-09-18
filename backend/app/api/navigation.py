@@ -7,7 +7,7 @@ from ..core.config import settings
 from ..core.database import get_session
 from ..errors import ApiError
 from ..schemas.navigation import NavigationItemCreate, NavigationItemUpdate
-from ..services.admin import AdminPermissionDenied, AdminService
+from ..services.admin_core import AdminPermissionDenied, AdminServiceCore
 from ..services.idempotency import IdempotencyInProgress, IdempotentResult, idempotency_service
 from ..services.isr import trigger_isr_revalidate
 from ..services.navigation import NavigationError, navigation_service
@@ -17,7 +17,7 @@ from .responses import success
 router = APIRouter(prefix="/site/navigation", tags=["site-navigation"])
 admin_router = APIRouter(prefix="/admin/navigation", tags=["admin-navigation"])
 _session_dependency = Depends(get_session)
-_admin_service = AdminService()
+_admin_service = AdminServiceCore()
 
 _DEFAULT_ITEMS: list[dict[str, object]] = [
     {

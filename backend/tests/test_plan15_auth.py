@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from app.core.config import Settings
 from app.core.network import get_client_ip
 from app.main import app
-from app.services.admin import AdminPermissionDenied, AdminService
+from app.services.admin_core import AdminPermissionDenied, AdminServiceCore
 from app.services.auth import AuthenticationError, AuthService, auth_service
 
 
@@ -187,6 +187,6 @@ def test_production_cannot_use_console_sms_provider(monkeypatch: pytest.MonkeyPa
 
 def test_admin_subject_must_be_numeric() -> None:
     """管理员权限校验拒绝硬编码 admin 主体。"""
-    service = AdminService()
+    service = AdminServiceCore()
     with pytest.raises(AdminPermissionDenied, match="无效管理员身份"):
         asyncio.run(service.require_permission(None, "admin", "settings.write"))  # type: ignore[arg-type]

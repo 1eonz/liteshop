@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ...core.config import settings
 from ...core.database import get_session
 from ...errors import ApiError
-from ...services.admin import AdminPermissionDenied, AdminService
+from ...services.admin_core import AdminPermissionDenied, AdminServiceCore
 from ...services.idempotency import IdempotencyInProgress, IdempotentResult, idempotency_service
 from ...services.order_workflow import OrderWorkflowError
 from ..dependencies import CurrentSubject
@@ -16,7 +16,7 @@ from ..responses import success
 
 __all__ = ["admin_service", "authorize_read", "execute_write", "require_database", "session_dependency"]
 
-admin_service = AdminService()
+admin_service = AdminServiceCore()
 session_dependency = Depends(get_session)
 AdminWrite = Callable[[AsyncSession, str, str], Awaitable[dict[str, object]]]
 

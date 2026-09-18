@@ -5,11 +5,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...schemas.admin import OrderManagementUpdate, OrderPriceUpdate, ShipOrderRequest
 from ...schemas.products import InventoryAdjust
+from ...services.admin_trade import AdminTradeService
 from ..dependencies import CurrentSubject
 from ..responses import success
-from .common import admin_service, authorize_read, execute_write, require_database, session_dependency
+from .common import authorize_read, execute_write, require_database, session_dependency
 
 router = APIRouter()
+admin_service = AdminTradeService()
 
 
 @router.get("/orders")

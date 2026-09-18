@@ -23,7 +23,7 @@ from app.schemas.page import (
     PageSchemaInput,
     PageVariantInput,
 )
-from app.services.admin import AdminPermissionDenied
+from app.services.admin_core import AdminPermissionDenied
 from app.services.idempotency import IdempotencyInProgress, IdempotentResult
 from app.services.marketing import CouponError
 from app.services.navigation import NavigationError

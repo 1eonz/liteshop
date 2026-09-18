@@ -39,7 +39,7 @@ class ProductRepository:
         keyword: str | None = None,
         include_off_shelf: bool = False,
     ) -> tuple[list[Spu], int]:
-        """分页读取商品，并同时返回总数。"""
+        """分页读取商品摘要所需的 SKU，并同时返回总数。"""
         conditions: list[ColumnElement[bool]] = [Spu.deleted_at.is_(None)]
         if not include_off_shelf:
             conditions.append(Spu.status == "ON_SHELF")
@@ -48,7 +48,7 @@ class ProductRepository:
         statement = (
             select(Spu)
             .where(*conditions)
-            .options(selectinload(Spu.skus), selectinload(Spu.specs).selectinload(ProductSpec.values))
+            .options(selectinload(Spu.skus))
             .order_by(Spu.sort_order, Spu.created_at.desc())
             .offset(offset)
             .limit(limit)

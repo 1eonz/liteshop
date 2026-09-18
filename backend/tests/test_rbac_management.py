@@ -11,12 +11,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user import Permission, Role
 from app.repositories.admin import AdminRepository
 from app.schemas.admin import RoleCreate, UserRolesUpdate
-from app.services.admin import AdminService
+from app.services.admin_access import AdminAccessService
 
 
-def _service(repository: SimpleNamespace) -> AdminService:
+def _service(repository: SimpleNamespace) -> AdminAccessService:
     """注入最小 RBAC 仓储替身。"""
-    service = AdminService()
+    service = AdminAccessService()
     service.repository = cast(AdminRepository, repository)
     return service
 
@@ -93,7 +93,7 @@ def test_create_role_delegates_persistence_to_repository(monkeypatch: pytest.Mon
         add_role=AsyncMock(side_effect=add_role),
     )
     service = _service(repository)
-    monkeypatch.setattr(AdminService, "audit", AsyncMock())
+    monkeypatch.setattr(AdminAccessService, "audit", AsyncMock())
     session = cast(AsyncSession, object())
 
     result = asyncio.run(

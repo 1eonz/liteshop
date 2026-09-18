@@ -9,7 +9,7 @@ from ..core.config import settings
 from ..core.database import get_session
 from ..errors import ApiError
 from ..schemas.after_sale import AfterSaleAudit, AfterSaleCreate, AfterSaleReturn
-from ..services.admin import AdminPermissionDenied, AdminService
+from ..services.admin_core import AdminPermissionDenied, AdminServiceCore
 from ..services.after_sale import AfterSaleError, after_sale_response, after_sale_service
 from ..services.idempotency import IdempotencyInProgress, IdempotentResult, idempotency_service
 from .dependencies import CurrentSubject
@@ -18,7 +18,7 @@ from .responses import success
 router = APIRouter(prefix="/after-sales", tags=["after-sales"])
 admin_router = APIRouter(prefix="/admin/after-sales", tags=["admin-after-sales"])
 _session_dependency = Depends(get_session)
-_admin_service = AdminService()
+_admin_service = AdminServiceCore()
 AfterSaleWrite = Callable[[AsyncSession], Awaitable[dict[str, object]]]
 
 

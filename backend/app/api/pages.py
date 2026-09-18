@@ -7,7 +7,7 @@ from ..core.config import settings
 from ..core.database import get_session
 from ..errors import ApiError
 from ..schemas.page import PageConversionEventInput, PageCopyInput, PageCreateInput, PageSchemaInput, PageVariantInput
-from ..services.admin import AdminPermissionDenied, AdminService
+from ..services.admin_core import AdminPermissionDenied, AdminServiceCore
 from ..services.idempotency import IdempotencyInProgress, IdempotentResult, idempotency_service
 from ..services.isr import trigger_isr_revalidate
 from ..services.page import PageSchemaError, page_service
@@ -17,7 +17,7 @@ from .responses import success
 router = APIRouter(prefix="/pages", tags=["pages"])
 public_router = APIRouter(prefix="/site/pages", tags=["site-pages"])
 _session_dependency = Depends(get_session)
-_admin_service = AdminService()
+_admin_service = AdminServiceCore()
 
 
 async def _notify_site_page(channel: str, slug: str) -> None:

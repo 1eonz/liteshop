@@ -5,14 +5,20 @@ from datetime import UTC, datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..enums.order import OrderStatus
+from ..repositories.inventory import InventoryRepository
 from ..schemas.admin import OrderManagementUpdate, OrderPriceUpdate, ShipOrderRequest, validate_address_snapshot
 from ..schemas.products import InventoryAdjust
 from .admin_core import AdminServiceCore
-from .order_workflow import OrderWorkflowError, order_response
+from .order_workflow import OrderWorkflow, OrderWorkflowError, order_response
 
 
 class AdminTradeService(AdminServiceCore):
     """编排订单状态变更、库存调整和审计记录。"""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.orders = OrderWorkflow()
+        self.inventory = InventoryRepository()
 
     async def list_orders(self, session: AsyncSession, page: int, page_size: int) -> dict[str, object]:
         """后台分页读取订单。"""

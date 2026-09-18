@@ -7,7 +7,7 @@ from ..core.config import settings
 from ..core.database import get_session
 from ..errors import ApiError
 from ..schemas.marketing import CouponClaimRequest, CouponCreate
-from ..services.admin import AdminPermissionDenied, AdminService
+from ..services.admin_core import AdminPermissionDenied, AdminServiceCore
 from ..services.idempotency import IdempotencyInProgress, IdempotentResult, idempotency_service
 from ..services.marketing import CouponError, marketing_service
 from .dependencies import CurrentSubject
@@ -16,7 +16,7 @@ from .responses import success
 router = APIRouter(prefix="/coupons", tags=["coupons"])
 admin_router = APIRouter(prefix="/admin/coupons", tags=["admin-coupons"])
 _session_dependency = Depends(get_session)
-_admin_service = AdminService()
+_admin_service = AdminServiceCore()
 
 
 async def _require_admin(session: AsyncSession, subject: str) -> None:

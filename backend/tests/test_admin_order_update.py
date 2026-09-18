@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.enums.order import OrderStatus
 from app.schemas.admin import OrderManagementUpdate
-from app.services.admin import AdminService
+from app.services.admin_trade import AdminTradeService
 from app.services.order_workflow import OrderWorkflow, OrderWorkflowError
 
 VALID_ADDRESS = {
@@ -50,8 +50,8 @@ def _order(status: OrderStatus) -> SimpleNamespace:
     )
 
 
-def _service(order: SimpleNamespace) -> AdminService:
-    service = AdminService()
+def _service(order: SimpleNamespace) -> AdminTradeService:
+    service = AdminTradeService()
     service.orders = cast(
         OrderWorkflow,
         SimpleNamespace(orders=SimpleNamespace(get_for_update=AsyncMock(return_value=order), flush=AsyncMock())),
@@ -66,7 +66,7 @@ def test_address_update_rejects_terminal_or_shipped_orders(
     """已发货、已完成和已取消订单不能修改地址快照。"""
     order = _order(status)
     service = _service(order)
-    monkeypatch.setattr(AdminService, "audit", AsyncMock())
+    monkeypatch.setattr(AdminTradeService, "audit", AsyncMock())
 
     with pytest.raises(OrderWorkflowError, match="只有待付款或已支付订单"):
         asyncio.run(
@@ -86,7 +86,7 @@ def test_address_update_allows_pending_and_paid_orders(status: OrderStatus, monk
     """待付款和已支付订单可以更新完整地址快照。"""
     order = _order(status)
     service = _service(order)
-    monkeypatch.setattr(AdminService, "audit", AsyncMock())
+    monkeypatch.setattr(AdminTradeService, "audit", AsyncMock())
     updated = {**VALID_ADDRESS, "receiverName": "新收货人"}
 
     asyncio.run(

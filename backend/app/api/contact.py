@@ -7,7 +7,7 @@ from ..core.config import settings
 from ..core.database import get_session
 from ..errors import ApiError
 from ..schemas.contact import ContactFormCreate, ContactFormStatusUpdate
-from ..services.admin import AdminPermissionDenied, AdminService
+from ..services.admin_core import AdminPermissionDenied, AdminServiceCore
 from ..services.contact import ContactFormError, contact_service
 from ..services.idempotency import IdempotencyInProgress, IdempotentResult, idempotency_service
 from .dependencies import CurrentSubject
@@ -16,7 +16,7 @@ from .responses import success
 router = APIRouter(prefix="/contact", tags=["contact"])
 admin_router = APIRouter(prefix="/admin/contact", tags=["admin-contact"])
 _session_dependency = Depends(get_session)
-_admin_service = AdminService()
+_admin_service = AdminServiceCore()
 
 
 @router.post("/forms", status_code=202)

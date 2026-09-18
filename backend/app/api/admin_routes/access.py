@@ -4,11 +4,13 @@ from fastapi import APIRouter, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...schemas.admin import RoleCreate, RoleUpdate, UserRolesUpdate
+from ...services.admin_access import AdminAccessService
 from ..dependencies import CurrentSubject
 from ..responses import success
-from .common import admin_service, authorize_read, execute_write, require_database, session_dependency
+from .common import authorize_read, execute_write, require_database, session_dependency
 
 router = APIRouter()
+admin_service = AdminAccessService()
 
 
 @router.get("/dashboard")

@@ -7,11 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models.operation_log import OperationLog
 from ..repositories.admin import AdminRepository
-from ..repositories.inventory import InventoryRepository
 from ..repositories.operation_log import OperationLogRepository
-from .freight import FreightService
-from .order_workflow import OrderWorkflow
-from .product_catalog import ProductCatalogService
 
 
 class AdminPermissionDenied(PermissionError):
@@ -19,20 +15,10 @@ class AdminPermissionDenied(PermissionError):
 
 
 class AdminServiceCore:
-    """管理后台服务的公共上下文。"""
-
-    catalog: ProductCatalogService
-    orders: OrderWorkflow
-    inventory: InventoryRepository
-    repository: AdminRepository
-    freight: FreightService
+    """仅提供后台权限校验和同事务审计。"""
 
     def __init__(self) -> None:
-        self.catalog = ProductCatalogService()
-        self.orders = OrderWorkflow()
-        self.inventory = InventoryRepository()
         self.repository = AdminRepository()
-        self.freight = FreightService()
 
     async def require_permission(self, session: AsyncSession, subject: str, permission: str) -> None:
         """按数据库 RBAC 校验权限，不提供硬编码管理员后门。"""

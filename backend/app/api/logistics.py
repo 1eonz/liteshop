@@ -7,7 +7,7 @@ from ..core.config import settings
 from ..core.database import get_session
 from ..errors import ApiError
 from ..schemas.logistics import TrackingEventCreate
-from ..services.admin import AdminPermissionDenied, AdminService
+from ..services.admin_core import AdminPermissionDenied, AdminServiceCore
 from ..services.idempotency import IdempotencyInProgress, IdempotentResult, idempotency_service
 from ..services.logistics import LogisticsError, logistics_service
 from .dependencies import CurrentSubject
@@ -15,7 +15,7 @@ from .responses import success
 
 router = APIRouter(prefix="/orders", tags=["logistics"])
 _session_dependency = Depends(get_session)
-_admin_service = AdminService()
+_admin_service = AdminServiceCore()
 
 
 @router.get("/{order_id}/tracking")

@@ -9,11 +9,13 @@ from ...schemas.freight import (
     FreightTemplateItemUpdate,
     FreightTemplateUpdate,
 )
+from ...services.admin_freight import AdminFreightService
 from ..dependencies import CurrentSubject
 from ..responses import success
-from .common import admin_service, authorize_read, execute_write, require_database, session_dependency
+from .common import authorize_read, execute_write, require_database, session_dependency
 
 router = APIRouter()
+admin_service = AdminFreightService()
 
 
 @router.get("/freight-templates")
