@@ -1,6 +1,6 @@
 import type { JSX } from 'react';
 import { useState } from 'react';
-import { useDebounceAction } from '../../hooks';
+import { useDebounceAction } from '../../hooks/useDebounceAction';
 import { useMemberMutations, useMemberQuery, useMembersQuery } from '../../features/members';
 import { formatPrice } from '../../utils/format-price';
 import { ErrorState, FeedbackState } from '@liteshop/shared-components';

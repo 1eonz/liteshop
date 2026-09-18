@@ -5,7 +5,7 @@ import {
   useInventoryLedgerQuery,
   useInventoryQuery,
 } from '../../features/inventory';
-import { useDebounceAction } from '../../hooks';
+import { useDebounceAction } from '../../hooks/useDebounceAction';
 import { ErrorState, FeedbackState } from '@liteshop/shared-components';
 
 /** 库存台账页面，实时展示三层库存并通过原因明确的表单调整。 */

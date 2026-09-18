@@ -2,7 +2,7 @@ import type { ContactFormStatus } from '@liteshop/shared-types';
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { ErrorState, FeedbackState } from '@liteshop/shared-components';
-import { useDebounceAction } from '../../hooks';
+import { useDebounceAction } from '../../hooks/useDebounceAction';
 import { useContactSubmissionMutations, useContactSubmissionsQuery } from '../../features/contact';
 
 const STATUS_LABELS: Record<ContactFormStatus, string> = {

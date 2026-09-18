@@ -7,7 +7,7 @@ import {
   type AfterSaleRecord,
 } from '@liteshop/shared-types';
 import { EmptyState, ErrorState, FeedbackState } from '@liteshop/shared-components';
-import { useDebounceAction } from '../../hooks';
+import { useDebounceAction } from '../../hooks/useDebounceAction';
 import { useAdminAfterSaleMutations, useAdminAfterSalesQuery } from '../../features/after-sales';
 
 const statusLabels: Record<AfterSaleStatus, string> = {

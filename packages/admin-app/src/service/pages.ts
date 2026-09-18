@@ -19,6 +19,12 @@ export async function listManagedPages(): Promise<ManagedPageSummary[]> {
   return response.data.data.items;
 }
 
+/** 加载完整页面；只有成功后编辑器才替换当前身份和画布。 */
+export async function getManagedPage(pageId: number): Promise<StorePageSchema> {
+  const response = await httpClient.get<ApiEnvelope<StorePageSchema>>(`/pages/${pageId}/schema`);
+  return response.data.data;
+}
+
 /** 保存页面 Schema，后端负责版本递增和幂等。 */
 export async function saveManagedPage(page: StorePageSchema): Promise<StorePageSchema> {
   const response = await httpClient.put<ApiEnvelope<StorePageSchema>>(

@@ -1,7 +1,7 @@
 import type { JSX } from 'react';
 import { useState } from 'react';
 import { EmptyState, ErrorState, FeedbackState } from '@liteshop/shared-components';
-import { useDebounceAction } from '../../hooks';
+import { useDebounceAction } from '../../hooks/useDebounceAction';
 import {
   useAdminReviewMutation,
   useAdminReviewReplyMutation,

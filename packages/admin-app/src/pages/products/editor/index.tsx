@@ -7,7 +7,7 @@ import {
   useCreateAdminProductMutation,
   useUpdateAdminProductMutation,
 } from '../../../features/catalog';
-import { useDebounceAction } from '../../../hooks';
+import { useDebounceAction } from '../../../hooks/useDebounceAction';
 import { ErrorState, FeedbackState } from '@liteshop/shared-components';
 import { ProductBasicFields } from './components/ProductBasicFields';
 import { ProductSkuTable, type ProductSkuRow } from './components/ProductSkuTable';

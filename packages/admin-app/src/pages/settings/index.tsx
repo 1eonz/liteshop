@@ -2,7 +2,7 @@ import type { JSX } from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { getThemeSettings, listFeatureFlags, updateThemeSettings } from '../../features/settings';
-import { useDebounceAction } from '../../hooks';
+import { useDebounceAction } from '../../hooks/useDebounceAction';
 
 interface LocalSettings {
   shopName: string;

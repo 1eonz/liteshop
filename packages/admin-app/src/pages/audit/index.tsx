@@ -1,6 +1,8 @@
 import type { JSX } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useAuditLogsQuery, useDebounceAction } from '../../hooks';
+import { useDebounceAction } from '../../hooks/useDebounceAction';
+import { useAuditLogsQuery } from '../../features/rbac/api/useAuditLogsQuery';
+import { messages } from '../../i18n/messages';
 import { useRbacMutations, useRbacQuery } from '../../features/rbac';
 import type { AdminRole } from '@liteshop/shared-types';
 
@@ -144,6 +146,8 @@ export function AuditPage(): JSX.Element {
         </div>
         {logs.isLoading ? (
           <div className="feedback">日志加载中…</div>
+        ) : logs.isError ? (
+          <p className="feedback error-state" role="alert">{messages.audit.failed}</p>
         ) : logs.data?.length ? (
           <div className="audit-list">
             {logs.data.map((log) => (

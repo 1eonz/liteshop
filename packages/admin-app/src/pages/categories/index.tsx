@@ -1,7 +1,7 @@
 import type { FormEvent, JSX } from 'react';
 import { useState } from 'react';
 import { useAdminCategoriesQuery, useAdminCategoryMutations } from '../../features/categories';
-import { useDebounceAction } from '../../hooks';
+import { useDebounceAction } from '../../hooks/useDebounceAction';
 import { ErrorState, FeedbackState } from '@liteshop/shared-components';
 
 /** 商品分类管理页面，支持新增、重命名和停用。 */

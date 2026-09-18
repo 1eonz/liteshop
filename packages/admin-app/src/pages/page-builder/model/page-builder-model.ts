@@ -37,7 +37,7 @@ export const SITE_COMPONENT_GROUPS: ComponentGroup[] = [
 ];
 
 export const DEFAULT_PAGE: StorePageSchema = {
-  id: 1,
+  id: 0,
   slug: 'home',
   name: '首页',
   title: '商城首页',

@@ -5,7 +5,7 @@ import {
   useAdminOrdersQuery,
   useShipAdminOrderMutation,
 } from '../../features/orders';
-import { useDebounceAction } from '../../hooks';
+import { useDebounceAction } from '../../hooks/useDebounceAction';
 import { formatPrice } from '../../utils/format-price';
 import { ErrorState, FeedbackState } from '@liteshop/shared-components';
 

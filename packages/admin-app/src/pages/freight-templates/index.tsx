@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 import { ErrorState, FeedbackState } from '@liteshop/shared-components';
 import { useFreightTemplateMutations, useFreightTemplatesQuery } from '../../features/inventory';
 import type { FreightTemplateInput, FreightTemplateItemInput } from '../../service/admin/inventory';
-import { useDebounceAction } from '../../hooks';
+import { useDebounceAction } from '../../hooks/useDebounceAction';
 
 const typeLabels: Record<FreightTemplate['type'], string> = {
   PIECE: '按件计费',

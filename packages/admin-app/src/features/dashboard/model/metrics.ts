@@ -1,4 +1,5 @@
 import type { DashboardData } from '@liteshop/shared-types';
+import { messages } from '../../../i18n/messages';
 
 export interface DashboardMetric {
   label: string;
@@ -13,13 +14,13 @@ export function buildDashboardMetrics(
 ): DashboardMetric[] {
   if (!data) return [];
   return [
-    { label: '今日销售额', value: formatAmount(data.metrics.salesAmount), trend: '实时聚合' },
-    { label: '支付订单', value: String(data.metrics.orderCount), trend: '累计订单' },
-    { label: '在售商品', value: String(data.metrics.productCount), trend: '商品总量' },
+    { label: messages.dashboard.sales, value: formatAmount(data.metrics.salesAmount), trend: messages.dashboard.paid },
+    { label: messages.dashboard.orders, value: String(data.metrics.orderCount), trend: messages.dashboard.aggregate },
+    { label: messages.dashboard.products, value: String(data.metrics.productCount), trend: messages.dashboard.productCount },
     {
-      label: '待发货',
+      label: messages.dashboard.shipment,
       value: String(data.metrics.pendingShipmentCount),
-      trend: data.metrics.pendingShipmentCount ? '需处理' : '已清空',
+      trend: data.metrics.pendingShipmentCount ? messages.dashboard.pending : messages.dashboard.clear,
     },
   ];
 }
