@@ -28,7 +28,12 @@ export function BottomTabBar({
   return (
     <nav className="tabbar" aria-label="主导航">
       {items.map((item) => (
-        <Link className={className(item.key)} to={item.to} key={item.key}>
+        <Link
+          className={className(item.key)}
+          to={item.to}
+          key={item.key}
+          aria-current={active === item.key ? 'page' : undefined}
+        >
           {item.label}
         </Link>
       ))}

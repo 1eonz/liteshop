@@ -10,12 +10,11 @@ from collections.abc import AsyncIterator
 import httpx
 import pytest
 
-from app.main import app
 from app.core.database import engine
+from app.main import app
 
 pytestmark = pytest.mark.skipif(
-    os.getenv("LITESHOP_RUN_INTEGRATION") != "1"
-    or os.getenv("LITESHOP_USE_DATABASE", "false").lower() != "true",
+    os.getenv("LITESHOP_RUN_INTEGRATION") != "1" or os.getenv("LITESHOP_USE_DATABASE", "false").lower() != "true",
     reason="设置 LITESHOP_RUN_INTEGRATION=1 且启用真实数据库后运行",
 )
 

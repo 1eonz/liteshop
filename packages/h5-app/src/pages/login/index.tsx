@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useDebounceAction } from '../../hooks/useDebounceAction';
 import { login, sendSmsCode } from '../../service/auth';
 import { useSessionStore } from '../../store/session';
+import { messages } from '../../i18n/messages';
 
 interface LoginLocationState {
   from?: string;
@@ -68,33 +69,39 @@ export function LoginPage(): JSX.Element {
         <button className="back-link back-button" type="button" onClick={() => navigate(-1)}>
           ‹ 返回
         </button>
-        <h1>登录 LiteShop</h1>
+        <span className="brand">LiteShop</span>
       </header>
+      <div className="auth-welcome">
+        <div className="auth-brand-mark" aria-hidden="true">L</div>
+        <h1>{messages.welcome}</h1>
+        <p>{messages.loginDescription}</p>
+      </div>
       <section className="form-card">
-        <p className="eyebrow">手机号登录</p>
-        <h2>欢迎回来</h2>
-        <p className="muted">登录后可同步购物车、订单和收货地址。</p>
         <form onSubmit={onSubmit}>
           <label>
-            手机号
+            {messages.phone}
             <input
               inputMode="tel"
               autoComplete="tel"
+              type="tel"
+              maxLength={11}
+              required
               value={phone}
               onChange={(event) => setPhone(event.target.value)}
-              placeholder="请输入手机号"
+              placeholder={messages.phonePlaceholder}
             />
           </label>
           <label>
-            验证码
+            {messages.code}
             <div className="code-row">
               <input
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 value={code}
                 onChange={(event) => setCode(event.target.value)}
-                placeholder="6 位验证码"
+                placeholder={messages.codePlaceholder}
                 maxLength={6}
+                required
               />
               <button
                 className="text-action code-action"
@@ -117,11 +124,12 @@ export function LoginPage(): JSX.Element {
               {feedback}
             </p>
           )}
-          <button className="primary-action form-submit" type="submit" disabled={submitting}>
-            {submitting ? '登录中…' : '登录'}
+          <button className="primary-action form-submit" type="submit" disabled={submitting || !phone || !code}>
+            {submitting ? messages.loggingIn : messages.login}
           </button>
         </form>
       </section>
+      <p className="auth-security">{messages.loginSecurity}</p>
     </main>
   );
 }

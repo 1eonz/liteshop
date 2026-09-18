@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import type { StoreComponentSchema, StorePageSchema } from '@liteshop/shared-types';
 import { EmptyState, FeedbackState } from '@liteshop/shared-components';
 import { BottomTabBar, type TabBarItem } from './BottomTabBar';
-import { useDebounceAction } from '../hooks/useDebounceAction';
+import { messages } from '../i18n/messages';
 import {
   booleanProp,
   isInternalPath,
@@ -124,7 +124,7 @@ function CarouselView({ component }: ComponentViewProps): JSX.Element {
   };
   return (
     <section
-      className="hero"
+      className={activeItem.imageUrl ? 'hero hero--photographic' : 'hero'}
       role="region"
       aria-roledescription="carousel"
       aria-label={textProp(component, 'ariaLabel', '精选活动轮播')}
@@ -170,13 +170,12 @@ function CarouselView({ component }: ComponentViewProps): JSX.Element {
           >
             ‹
           </button>
-          <div className="hero-dots" role="tablist" aria-label="选择轮播图">
+          <div className="hero-dots" role="group" aria-label="选择轮播图">
             {items.map((item, index) => (
               <button
                 className={index === activeIndex ? 'active' : ''}
                 type="button"
-                role="tab"
-                aria-selected={index === activeIndex}
+                aria-pressed={index === activeIndex}
                 aria-label={`查看第 ${index + 1} 张轮播图`}
                 key={`${item.title}-${index}`}
                 onClick={() => setActiveIndex(index)}
@@ -226,20 +225,13 @@ function BannerView({ component }: ComponentViewProps): JSX.Element {
 }
 
 function CouponView({ component }: ComponentViewProps): JSX.Element {
-  const [claimed, setClaimed] = useState(false);
-  const [claim, claiming] = useDebounceAction(async () => {
-    setClaimed(true);
-  }, 300);
-  const actionLabel = textProp(component, 'actionLabel', '领取');
   return (
     <section className="schema-coupon" aria-label="优惠券">
       <div>
         <strong>{textProp(component, 'title', '领券中心')}</strong>
         <span>{textProp(component, 'description', '满 99 减 10')}</span>
       </div>
-      <button type="button" disabled={claiming || claimed} onClick={() => void claim()}>
-        {claimed ? textProp(component, 'claimedLabel', '已领取') : actionLabel}
-      </button>
+      <span className="schema-coupon__availability">{messages.couponUnavailable}</span>
     </section>
   );
 }

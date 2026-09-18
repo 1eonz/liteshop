@@ -21,7 +21,7 @@ export function useCategoriesQuery() {
     queryFn: async () => {
       try {
         const items = await listCategories();
-        return items.length ? items : fallbackCategories;
+        return items;
       } catch (error) {
         if (!isRecoverableApiError(error)) throw error;
         return fallbackCategories;

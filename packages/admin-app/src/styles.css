@@ -180,6 +180,512 @@ h2 {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* UI polish: keep the dashboard dense, legible, and touch-friendly across breakpoints. */
+.admin-shell {
+  background: var(--color-page);
+}
+
+.admin-nav {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  min-height: 100vh;
+  box-shadow: var(--shadow-sm);
+}
+
+.admin-nav nav a {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  min-height: var(--admin-control-height);
+  border-radius: var(--radius-md);
+  transition: background-color var(--motion-fast) ease, color var(--motion-fast) ease;
+}
+
+.admin-nav nav a:hover {
+  background: var(--color-primary-50);
+  color: var(--color-primary-700);
+}
+
+.admin-nav nav a.active {
+  box-shadow: inset 3px 0 0 var(--color-primary);
+}
+
+.nav-icon {
+  display: inline-grid;
+  width: var(--spacing-6);
+  min-width: var(--spacing-6);
+  place-items: center;
+  font-size: var(--font-size-lg);
+  line-height: 1;
+}
+
+.admin-nav__section {
+  margin: var(--spacing-5) var(--spacing-3) var(--spacing-1);
+  color: var(--color-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+}
+
+.admin-user {
+  min-height: var(--admin-control-height);
+  border-radius: var(--radius-md);
+  transition: background-color var(--motion-fast) ease;
+}
+
+.admin-user:hover {
+  background: var(--color-primary-50);
+}
+
+.admin-user__avatar {
+  display: inline-grid;
+  width: var(--spacing-8);
+  height: var(--spacing-8);
+  place-items: center;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-100);
+  color: var(--color-primary-700);
+  font-weight: var(--font-weight-semibold);
+}
+
+.admin-user small {
+  display: block;
+  color: var(--color-muted);
+  font-size: var(--font-size-xs);
+}
+
+.content {
+  min-width: 0;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky, 20);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-4);
+  min-height: var(--admin-control-height);
+  padding: var(--spacing-3) var(--spacing-6);
+  border-bottom: 1px solid var(--color-line);
+  background: color-mix(in srgb, var(--color-page) 94%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.topbar__crumb,
+.topbar__date {
+  color: var(--color-muted);
+  font-size: var(--font-size-sm);
+}
+
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+.icon-button {
+  min-height: var(--admin-control-height);
+  padding-inline: var(--spacing-4);
+  border: 1px solid var(--color-line);
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+
+.icon-button:hover {
+  border-color: var(--color-primary-300);
+  background: var(--color-primary-50);
+  color: var(--color-primary-700);
+}
+
+.admin-dashboard,
+.editor-page,
+.page-section {
+  min-width: 0;
+}
+
+.panel,
+.metric-card,
+.table-panel,
+.form-panel {
+  border-color: var(--color-line);
+  box-shadow: var(--shadow-sm);
+}
+
+.admin-dashboard input,
+.admin-dashboard select,
+.admin-dashboard textarea,
+.editor-page input,
+.editor-page select,
+.editor-page textarea,
+.page-section input,
+.page-section select,
+.page-section textarea {
+  min-height: var(--admin-control-height);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  transition: border-color var(--motion-fast) ease, box-shadow var(--motion-fast) ease;
+}
+
+.admin-dashboard input:focus,
+.admin-dashboard select:focus,
+.admin-dashboard textarea:focus,
+.editor-page input:focus,
+.editor-page select:focus,
+.editor-page textarea:focus,
+.page-section input:focus,
+.page-section select:focus,
+.page-section textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-100);
+  outline: none;
+}
+
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+@media (max-width: 760px) {
+  .admin-nav {
+    position: sticky;
+    min-height: auto;
+    padding: var(--spacing-2);
+  }
+
+  .admin-nav__caption,
+  .admin-nav__section,
+  .admin-user,
+  .topbar__date {
+    display: none;
+  }
+
+  .admin-nav nav {
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .admin-nav nav a {
+    min-height: var(--admin-control-height);
+    padding-inline: var(--spacing-3);
+  }
+
+  .content {
+    padding-bottom: var(--spacing-7);
+  }
+
+  .topbar {
+    padding-inline: var(--spacing-4);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-nav nav a,
+  .admin-user,
+  .icon-button,
+  .admin-dashboard input,
+  .admin-dashboard select,
+  .admin-dashboard textarea,
+  .editor-page input,
+  .editor-page select,
+  .editor-page textarea,
+  .page-section input,
+  .page-section select,
+  .page-section textarea {
+    transition: none;
+  }
+}
+
+/* Stitch admin refinement: compact operations, explicit state colors, and resilient data layouts. */
+:root {
+  --admin-control-height: 36px;
+  --admin-panel-radius: var(--radius-sm);
+  --admin-control-radius: var(--radius-sm);
+  --admin-focus-ring: 0 0 0 3px var(--color-primary-100);
+}
+
+.admin-shell {
+  font-size: var(--font-size-base);
+}
+
+.admin-dashboard > header,
+.editor-page > header {
+  margin-bottom: var(--spacing-5);
+}
+
+.admin-dashboard > header h1,
+.editor-page > header h1 {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-3xl);
+  line-height: var(--line-height-tight);
+  letter-spacing: 0;
+}
+
+.admin-dashboard > header p,
+.editor-page > header p {
+  font-size: var(--font-size-sm);
+}
+
+.metrics {
+  gap: var(--spacing-4);
+}
+
+.metrics article,
+.panel,
+.editor-form,
+.builder-canvas-wrap,
+.admin-login .form-card {
+  border-radius: var(--admin-panel-radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.metrics article {
+  min-width: 0;
+  padding: var(--spacing-5);
+  transition: border-color var(--motion-fast) ease, box-shadow var(--motion-fast) ease,
+    transform var(--motion-fast) ease;
+}
+
+.metrics article:hover {
+  border-color: var(--color-primary-200);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.metrics strong,
+.todo-grid strong,
+.rank strong {
+  font-family: var(--font-family-number);
+  font-variant-numeric: tabular-nums;
+}
+
+.panel {
+  overflow: hidden;
+  padding: var(--spacing-5);
+}
+
+.panel-title {
+  min-height: var(--admin-control-height);
+  margin-bottom: var(--spacing-3);
+}
+
+.panel-title h2 {
+  margin: 0;
+  font-family: var(--font-family-sans);
+  font-weight: var(--font-weight-semibold);
+}
+
+.rank,
+.order-row,
+.inventory-row,
+.freight-row,
+.admin-product-row,
+.category-row,
+.audit-log,
+.admin-user-row {
+  transition: background-color var(--motion-fast) ease;
+}
+
+.rank:hover,
+.order-row:hover,
+.inventory-row:hover,
+.freight-row:hover,
+.admin-product-row:hover,
+.category-row:hover,
+.audit-log:hover,
+.admin-user-row:hover {
+  background: var(--color-primary-50);
+}
+
+.toolbar {
+  align-items: end;
+  padding: var(--spacing-3);
+  border: 1px solid var(--color-line);
+  border-radius: var(--admin-panel-radius);
+  background: var(--color-surface);
+}
+
+.toolbar-search input,
+.admin-login input,
+.editor-form input,
+.editor-form select,
+.editor-form textarea,
+.ship-form input,
+.inline-adjust input,
+.builder-canvas-wrap__bar select,
+.builder-field input,
+.builder-field select {
+  border-radius: var(--admin-control-radius);
+  transition: border-color var(--motion-fast) ease, box-shadow var(--motion-fast) ease;
+}
+
+.toolbar-search input:focus,
+.admin-login input:focus,
+.editor-form input:focus,
+.editor-form select:focus,
+.editor-form textarea:focus,
+.ship-form input:focus,
+.inline-adjust input:focus,
+.builder-canvas-wrap__bar select:focus,
+.builder-field input:focus,
+.builder-field select:focus {
+  border-color: var(--color-primary);
+  box-shadow: var(--admin-focus-ring);
+  outline: none;
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-2);
+}
+
+.row-actions button,
+.toolbar button,
+.admin-dashboard button,
+.editor-page button {
+  min-height: var(--admin-control-height);
+  border-radius: var(--admin-control-radius);
+}
+
+.secondary-button,
+.ghost-button,
+.danger-button {
+  box-shadow: none;
+}
+
+.danger-button:hover {
+  border-color: var(--color-error-600);
+  color: var(--color-error-700);
+  background: var(--color-error-50);
+}
+
+.status-badge,
+.warning-badge {
+  min-height: var(--spacing-5);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+}
+
+.status-badge--on {
+  border-color: var(--color-success-500);
+}
+
+.status-badge--danger {
+  border-color: var(--color-error-500);
+}
+
+.warning-badge {
+  border-color: var(--color-warning-500);
+}
+
+.builder-toolbar {
+  align-items: center;
+  padding-block: var(--spacing-3);
+}
+
+.builder-toolbar__actions button,
+.builder-mode-switch button,
+.builder-library__item,
+.builder-item__actions button {
+  border-radius: var(--admin-control-radius);
+}
+
+.builder-canvas {
+  box-shadow: var(--shadow-sm);
+}
+
+.builder-item--selected {
+  box-shadow: inset 0 0 0 2px var(--color-primary-500);
+}
+
+.admin-login {
+  background: var(--gallery-color-page);
+}
+
+.admin-login .form-card {
+  padding: var(--spacing-6);
+}
+
+@media (max-width: 760px) {
+  :root {
+    --admin-control-height: 44px;
+  }
+
+  .admin-dashboard > header,
+  .editor-page > header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-dashboard > header > *,
+  .editor-page > header > * {
+    width: 100%;
+  }
+
+  .admin-dashboard > header button,
+  .editor-page > header button,
+  .editor-page > header a {
+    width: 100%;
+  }
+
+  .metrics {
+    gap: var(--spacing-3);
+  }
+
+  .metrics article {
+    padding: var(--spacing-4);
+  }
+
+  .panel,
+  .editor-form {
+    padding: var(--spacing-4);
+  }
+
+  .toolbar {
+    align-items: stretch;
+  }
+
+  .row-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .metrics article,
+  .rank,
+  .order-row,
+  .inventory-row,
+  .freight-row,
+  .admin-product-row,
+  .category-row,
+  .audit-log,
+  .admin-user-row,
+  .toolbar-search input,
+  .admin-login input,
+  .editor-form input,
+  .editor-form select,
+  .editor-form textarea,
+  .ship-form input,
+  .inline-adjust input,
+  .builder-canvas-wrap__bar select,
+  .builder-field input,
+  .builder-field select {
+    transition: none;
+  }
+}
 .editor-page {
   min-height: 100vh;
   padding: var(--spacing-6) var(--spacing-7);
@@ -1118,5 +1624,59 @@ button:disabled {
   .freight-row__status,
   .freight-row .row-actions {
     justify-content: flex-start;
+  }
+}
+
+/* Keep the final surface language consistent after page-specific rules. */
+:root {
+  --admin-control-height: 36px;
+  --admin-panel-radius: var(--radius-sm);
+  --admin-control-radius: var(--radius-sm);
+}
+
+.admin-dashboard .panel,
+.admin-dashboard .metrics article,
+.editor-page .editor-form,
+.editor-page .panel,
+.editor-page .builder-canvas-wrap,
+.admin-login .form-card {
+  border-radius: var(--admin-panel-radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.admin-dashboard .panel,
+.editor-page .editor-form {
+  padding: var(--spacing-5);
+}
+
+.admin-dashboard .toolbar,
+.editor-page .toolbar {
+  border-radius: var(--admin-panel-radius);
+}
+
+.admin-dashboard .panel-title {
+  margin-bottom: var(--spacing-3);
+}
+
+.admin-dashboard .metrics article {
+  padding: var(--spacing-5);
+}
+
+.admin-dashboard .metrics article:hover {
+  transform: translateY(-1px);
+}
+
+@media (max-width: 760px) {
+  :root {
+    --admin-control-height: 44px;
+  }
+
+  .admin-dashboard .panel,
+  .editor-page .editor-form {
+    padding: var(--spacing-4);
+  }
+
+  .admin-dashboard .metrics article {
+    padding: var(--spacing-4);
   }
 }

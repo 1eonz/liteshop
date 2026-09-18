@@ -16,7 +16,10 @@ import { formatPrice } from '@liteshop/shared-types';
 import { listProductReviews } from '../../service/reviews';
 import { useSessionStore } from '../../store/session';
 import { ErrorState, FeedbackState } from '@liteshop/shared-components';
-import { ProductGallery, DETAIL_SLIDES } from './components/ProductGallery';
+import { ProductGallery } from './components/ProductGallery';
+import { ProductCard } from '../../components/ProductCard';
+import { ProductImage } from '../../components/ProductImage';
+import { messages } from '../../i18n/messages';
 import { ProductReviews } from './components/ProductReviews';
 import { SkuDrawer } from './components/SkuDrawer';
 
@@ -35,6 +38,7 @@ export function ProductDetailPage(): JSX.Element {
     queryFn: () => listProductReviews(productId),
   });
   const product = query.data;
+  const images = product ? [...new Set([product.coverUrl, ...product.detailImages].filter(Boolean))] : [];
   const [selectedSkuId, setSelectedSkuId] = useState<number | null>(null);
   const [favorite, setFavorite] = useState(() => listFavoriteProductIds().includes(productId));
   const addLine = useCartStore((state) => state.addLine);
@@ -50,6 +54,11 @@ export function ProductDetailPage(): JSX.Element {
   );
   const [favoriteNotice, setFavoriteNotice] = useState('');
   const [actionNotice, setActionNotice] = useState('');
+  useEffect(() => {
+    setImageIndex(0);
+    setSelectedSkuId(null);
+    setSkuOpen(false);
+  }, [productId]);
   useEffect(() => {
     try {
       const raw = JSON.parse(window.localStorage.getItem('liteshop.product.history') ?? '[]');
@@ -89,6 +98,7 @@ export function ProductDetailPage(): JSX.Element {
       }
     }
     closeSkuDrawer();
+    setActionNotice((current) => current || messages.addedToCart);
   }, [addLine, authenticated, closeSkuDrawer, selectedSku]);
   const [addToCart, loading] = useDebounceAction(addAction, 300);
   const [buyNow, buying] = useDebounceAction(async () => {
@@ -104,7 +114,7 @@ export function ProductDetailPage(): JSX.Element {
     if (authenticated) void queryClient.invalidateQueries({ queryKey: ['favorites'] });
   }, 300);
   const moveImage = (offset: number): void => {
-    setImageIndex((current) => (current + offset + DETAIL_SLIDES.length) % DETAIL_SLIDES.length);
+    if (images.length) setImageIndex((current) => (current + offset + images.length) % images.length);
   };
   if (query.isError)
     return (
@@ -121,21 +131,25 @@ export function ProductDetailPage(): JSX.Element {
     );
   const skuName = selectedSku?.name ?? '请选择规格';
   return (
-    <main className="trade-page">
-      <Link className="back-link" to="/">
-        ‹ 返回
-      </Link>
+    <main className="trade-page product-detail-page">
+      <header className="trade-header product-detail-header">
+        <Link className="back-link" to="/">‹ {messages.back}</Link>
+        <span>LiteShop</span>
+        <Link className="text-action" to="/cart">购物车</Link>
+      </header>
       <ProductGallery
         productName={product.name}
+        images={images}
         imageIndex={imageIndex}
         onMove={moveImage}
         onSelect={setImageIndex}
       />
-      <h1>{product.name}</h1>
-      <p className="muted">{product.subtitle}</p>
-      <strong className="detail-price">
-        {formatPrice(selectedSku?.priceCents ?? product.minPrice)}
-      </strong>
+      <section className="detail-summary">
+        <strong className="detail-price">{formatPrice(selectedSku?.priceCents ?? product.minPrice)}</strong>
+        <h1>{product.name}</h1>
+        <p className="muted">{product.subtitle}</p>
+        <p className="detail-summary__sales">{messages.sales} {product.salesCount}</p>
+      </section>
       <section className="detail-section">
         <div className="section-title">
           <h2>选择规格</h2>
@@ -152,13 +166,9 @@ export function ProductDetailPage(): JSX.Element {
             {relatedQuery.data.items
               .filter((item) => item.id !== productId)
               .slice(0, 2)
-              .map((item, index) => (
+              .map((item) => (
                 <Link className="product" to={`/product/${item.id}`} key={item.id}>
-                  <span className={`product-image product-image-${index + 1}`} aria-hidden="true" />
-                  <strong>{item.name}</strong>
-                  <span className="product-meta">
-                    <b>{formatPrice(item.minPrice)}</b>
-                  </span>
+                  <ProductCard product={item} />
                 </Link>
               ))}
           </div>
@@ -184,6 +194,9 @@ export function ProductDetailPage(): JSX.Element {
           </button>
         </div>
         <p>{product.description}</p>
+        <div className="detail-description-images">
+          {product.detailImages.map((src, index) => <ProductImage key={src} src={src} alt={messages.productImage(product.name, index + 1)} />)}
+        </div>
         {actionNotice && (
           <p className="action-feedback" role="status" aria-live="polite">
             {actionNotice}
@@ -203,7 +216,7 @@ export function ProductDetailPage(): JSX.Element {
           className="primary-action"
           type="button"
           onClick={() => void addToCart()}
-          disabled={loading || buying || !selectedSku}
+          disabled={loading || buying || !selectedSku || selectedSku.quantity <= 0}
         >
           {loading ? '加入中…' : '加入购物车'}
         </button>
@@ -211,7 +224,7 @@ export function ProductDetailPage(): JSX.Element {
           className="buy-action"
           type="button"
           onClick={() => void buyNow()}
-          disabled={loading || buying || !selectedSku}
+          disabled={loading || buying || !selectedSku || selectedSku.quantity <= 0}
         >
           {buying ? '处理中…' : '立即购买'}
         </button>

@@ -11,6 +11,7 @@
 - [x] 补齐 shared-types/tokens/components 行为测试。
 - [x] 执行 backend、H5、Admin、shared、E2E 全量验证（Docker 集成项除外）。
 - [x] 执行契约对照、机械 Impeccable detector 和代码结构审查。
+- [x] 增加真实 HTTP API 边界测试和 H5 浏览器真实接口联调：分页、空搜索、非法参数、404、匿名鉴权、CORS 和 Demo fallback 隔离。
 - [x] 生成商业验收报告和当前阶段交接文档。
 - [x] 启动 Docker Engine，执行真实 PostgreSQL/Redis 健康检查和并发集成测试。
 
@@ -37,3 +38,11 @@
 - [x] `ruff format --check .`、`ruff check .`、`python -m mypy .` 全通过。
 - [x] 后端全量测试 `133 passed`，覆盖率 `83%`，超过 CI 80% 门禁。
 - [ ] 真实微信/支付宝、短信、物流供应商沙箱及完整 axe-core/i18n 仍未完成，不能据此宣称生产就绪。
+
+## 2026-09-15 真实接口联调记录
+
+- [x] `backend/integration_tests/test_real_http_api.py`：真实数据库模式 HTTP ASGI 测试 3 passed，覆盖商品分页、空搜索、参数边界、404、分类和匿名订单鉴权。
+- [x] `tests/e2e/specs/real-api.spec.ts`：Playwright API 与 H5 分类页面真实请求 3 passed；页面实际命中 `/categories` 和 `/products`，不把 Demo fallback 当作通过。
+- [x] E2E 支持 `E2E_H5_PORT`、`E2E_ADMIN_PORT`、`E2E_SITE_PORT`、`E2E_API_BASE`，避免复用其他项目占用的开发端口。
+- [x] 开发环境 CORS 增加 `127.0.0.1` 默认端口，修复浏览器预检 400。
+- [ ] 当前机器 Docker Desktop 引擎停止，需恢复后重跑 PostgreSQL/Redis 集成测试；本轮未修改生产配置。

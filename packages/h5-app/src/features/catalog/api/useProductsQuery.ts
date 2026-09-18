@@ -16,7 +16,7 @@ const demoPage = (
   const page = query.page ?? 1;
   const pageSize = query.pageSize ?? 20;
   return {
-    items,
+    items: items.slice((page - 1) * pageSize, page * pageSize),
     meta: {
       page,
       pageSize,

@@ -1,6 +1,7 @@
 import type { JSX } from 'react';
 import type { ProductSummary } from '@liteshop/shared-types';
 import { ProductCard as SharedProductCard } from '@liteshop/shared-components';
+import { messages } from '../i18n/messages';
 
 interface ProductCardProps {
   product: ProductSummary & { imageIndex?: number };
@@ -13,8 +14,7 @@ export function ProductCard({ product }: ProductCardProps): JSX.Element {
     <SharedProductCard
       product={product}
       className={className}
-      subtitle="轻盈质感，日常陪伴"
-      salesLabel="已售"
+      salesLabel={messages.sales}
       imageAlt={product.name}
     />
   );

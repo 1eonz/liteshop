@@ -19,8 +19,8 @@
 - `packages/shared-3d-components/`：三期 3D 场景配置、设备降级和速度约束工具；官网通过动态组件接入轻量回退，当前不依赖 Three.js/R3F。
 - `backend/app/`：FastAPI 分层骨架：api/core/models/schemas/services/repositories/tasks/enums/errors；订单、库存、支付、用户、设置和后台 API 已实现，领域异常集中于 `errors/domain.py`，主题设置由 `services/settings.py` 编排。
 - `backend/alembic/`：异步 Alembic 迁移及可逆迁移文件；当前 head 为 `20260908_110000`，包含售后表和评价商家回复字段，页面渠道路由使用复合唯一约束并增加草稿/发布状态。
-- `backend/integration_tests/`：显式启用的真实 PostgreSQL/Redis 验收，`scripts/test.ps1 -Integration` 运行库存/订单并发、支付竞态、验证码与 refresh token 单次消费、购物车故障和收藏幂等测试（当前 9 passed）；默认单元测试不会自动依赖基础设施。
-- `tests/e2e/`：Playwright H5 冒烟测试。
+- `backend/integration_tests/`：显式启用的真实 PostgreSQL/Redis 验收，`scripts/test.ps1 -Integration` 运行库存/订单并发、支付竞态、验证码与 refresh token 单次消费、购物车故障和收藏幂等测试（当前 9 passed）；`test_real_http_api.py` 通过 ASGI HTTP 链路覆盖数据库模式下的分页、404 和匿名鉴权边界；默认单元测试不会自动依赖基础设施。
+- `tests/e2e/`：Playwright H5 冒烟测试；`specs/real-api.spec.ts` 验证真实 API 与 H5 分类页请求，支持独立端口环境变量。
 - `docs/api-contracts/v1/`：19 个 OpenAPI 文件，包含官网页面、联系表单、导航、营销、物流、售后、评价和后台接口契约。
 - `plans/`：plan-01 到 plan-13 及索引，覆盖 1a 需求。
 - `docs/架构说明.md`：CRM 风格目录对齐方案、前端数据流和后端分层边界。
@@ -51,7 +51,7 @@
 
 ### 当前未处理
 
-- ✅ Docker Desktop Engine 已恢复；PostgreSQL 16 与 Redis 7 已通过本机 Compose healthcheck，临时库已完成 `upgrade head → downgrade base → upgrade head` 往返；真实订单/库存并发、支付竞态、验证码/Token 单次消费、购物车故障、收藏幂等和售后请求幂等集成测试 `9 passed`，并连续 5 轮复跑。
+- ✅ Docker Desktop Engine 在上一轮已恢复；PostgreSQL 16 与 Redis 7 曾通过本机 Compose healthcheck，临时库已完成 `upgrade head → downgrade base → upgrade head` 往返；真实订单/库存并发、支付竞态、验证码/Token 单次消费、购物车故障、收藏幂等和售后请求幂等集成测试 `9 passed`，并连续 5 轮复跑。2026-09-15 当前机器 Docker 引擎暂时停止，需恢复后重跑基础设施测试。
 - 真实生产数据库仓储、微信/支付宝 SDK 和支付沙箱尚未接入；当前支付回调为本地签名验证实现。
 - 收藏为浏览器本地存储；settings/page schema 为开发进程内存储；均属于后续持久化范围。
 - 官网动态页面 API、ISR revalidate、联系表单后台处理和 `DRAFT/PUBLISHED` 发布状态已接入；真实数据库种子发布 E2E、通知渠道仍待补齐。
@@ -81,7 +81,7 @@
 - H5 已补支付过期倒计时、订单状态步骤条、独立搜索页及本地历史、通知未读角标、账户设置和客服入口；地址省市区级联、评价提交、浏览足迹、相关推荐和商家回复展示已完成，专项 i18n/axe-core 深度测试仍待补。
 - Admin RBAC 已从只读快照扩展为角色创建/编辑/删除保护和管理员角色分配；写链路复用权限校验、Redis/DB 幂等与操作日志。
 - Admin 运费模板支持多个地区计费项增删改，评价支持审核通过后的商家回复；共享类型和 OpenAPI 契约已同步。
-- Alembic 当前 head 为 `20260908_110000`，新增评价商家回复字段；后端全量测试为 84 passed，真实集成测试为 9 passed，覆盖率命令通过但总覆盖率约为 62%，低于 CI 80% 门禁。
+- Alembic 当前 head 为 `20260908_110000`，新增评价商家回复字段；后端全量测试为 133 passed，覆盖率 83% 已超过 CI 80% 门禁；真实 PostgreSQL/Redis 集成测试为 9 passed，真实 HTTP API 边界测试为 3 passed。
 - 已新增 `scripts/check_enum_sync.py`、`backend/app/enums/product.py` 和 `backend/app/enums/logistics.py`；共享 9 个枚举与后端枚举同步检查通过。
 - 已新增根级 `Dockerfile`、`.dockerignore` 和 `.github/workflows/ci.yml`，CI 已覆盖 backend、workspace 和 E2E 命令；生产部署仍需目标主机、镜像、密钥、备份和回滚配置。
 

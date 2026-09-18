@@ -33,6 +33,7 @@ export const defaultStoreHomePage: StorePageSchema = {
             description: '精选日常好物，今天下单更快送达',
             action: '探索好物',
             href: '/product/1',
+            imageUrl: '/images/hero-home.jpg',
           },
           {
             eyebrow: '通勤提案',
@@ -40,6 +41,7 @@ export const defaultStoreHomePage: StorePageSchema = {
             description: '从一只保温杯开始，整理你的日常节奏',
             action: '看看保温杯',
             href: '/product/1',
+            imageUrl: '/images/detail-lifestyle.jpg',
           },
           {
             eyebrow: '春日上新',
@@ -47,6 +49,7 @@ export const defaultStoreHomePage: StorePageSchema = {
             description: '精选小物限时优惠，慢慢布置喜欢的空间',
             action: '浏览人气好物',
             href: '/categories',
+            imageUrl: '/images/product-lamp.jpg',
           },
         ],
       },
