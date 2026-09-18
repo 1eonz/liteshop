@@ -45,40 +45,51 @@ export function ProductGallery({
         const dy = touch.clientY - start.y;
         if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 1.5) onMove(dx < 0 ? 1 : -1);
       }}
-      onTouchCancel={() => { touchStart.current = null; }}
+      onTouchCancel={() => {
+        touchStart.current = null;
+      }}
     >
-      <ProductImage className="detail-visual__image" src={images[activeIndex]} alt={messages.productImage(productName, activeIndex + 1)} priority />
-      {images.length > 1 ? <>
-      <button
-        className="visual-control visual-control-prev"
-        type="button"
-        onClick={() => onMove(-1)}
-        aria-label={messages.imagePrevious}
-      >
-        ‹
-      </button>
-      <button
-        className="visual-control visual-control-next"
-        type="button"
-        onClick={() => onMove(1)}
-        aria-label={messages.imageNext}
-      >
-        ›
-      </button>
-      <div className="hero-dots" role="group" aria-label={messages.imageSelect}>
-        {images.map((src, index) => (
+      <ProductImage
+        className="detail-visual__image"
+        src={images[activeIndex]}
+        alt={messages.productImage(productName, activeIndex + 1)}
+        priority
+      />
+      {images.length > 1 ? (
+        <>
           <button
-            className={index === activeIndex ? 'active' : ''}
+            className="visual-control visual-control-prev"
             type="button"
-            aria-pressed={index === activeIndex}
-            aria-label={messages.imagePosition(index + 1, images.length)}
-            key={src}
-            onClick={() => onSelect(index)}
-          />
-        ))}
-      </div>
-      <span className="detail-visual__counter" aria-live="polite">{activeIndex + 1} / {images.length}</span>
-      </> : null}
+            onClick={() => onMove(-1)}
+            aria-label={messages.imagePrevious}
+          >
+            ‹
+          </button>
+          <button
+            className="visual-control visual-control-next"
+            type="button"
+            onClick={() => onMove(1)}
+            aria-label={messages.imageNext}
+          >
+            ›
+          </button>
+          <div className="hero-dots" role="group" aria-label={messages.imageSelect}>
+            {images.map((src, index) => (
+              <button
+                className={index === activeIndex ? 'active' : ''}
+                type="button"
+                aria-pressed={index === activeIndex}
+                aria-label={messages.imagePosition(index + 1, images.length)}
+                key={src}
+                onClick={() => onSelect(index)}
+              />
+            ))}
+          </div>
+          <span className="detail-visual__counter" aria-live="polite">
+            {activeIndex + 1} / {images.length}
+          </span>
+        </>
+      ) : null}
     </div>
   );
 }

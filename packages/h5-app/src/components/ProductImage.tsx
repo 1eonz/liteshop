@@ -10,7 +10,12 @@ interface ProductImageProps {
 }
 
 /** 真实商品图片及断图回退，预留尺寸由宿主样式控制。 */
-export function ProductImage({ src, alt, className, priority = false }: ProductImageProps): JSX.Element {
+export function ProductImage({
+  src,
+  alt,
+  className,
+  priority = false,
+}: ProductImageProps): JSX.Element {
   const [failedUrl, setFailedUrl] = useState<string>();
   return src && failedUrl !== src ? (
     <img

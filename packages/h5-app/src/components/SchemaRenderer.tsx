@@ -100,18 +100,31 @@ function CarouselView({ component }: ComponentViewProps): JSX.Element {
   const items = readCarouselItems(component);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [isUserPaused, setIsUserPaused] = useState(false);
   const autoplay = booleanProp(component, 'autoplay', true);
   const intervalMs = Math.max(3000, Math.min(15000, numberProp(component, 'intervalMs', 5000)));
 
   useEffect(() => {
-    if (isPaused || !autoplay || items.length < 2) return undefined;
+    if (isPaused || isUserPaused || !autoplay || items.length < 2) return undefined;
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return undefined;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
-    const timer = window.setInterval(() => {
-      setActiveIndex((current) => (current + 1) % items.length);
-    }, intervalMs);
-    return () => window.clearInterval(timer);
-  }, [autoplay, intervalMs, isPaused, items.length]);
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let timer: number | undefined;
+    const updatePlayback = (): void => {
+      window.clearInterval(timer);
+      if (motionQuery.matches || document.hidden) return;
+      timer = window.setInterval(() => {
+        setActiveIndex((current) => (current + 1) % items.length);
+      }, intervalMs);
+    };
+    updatePlayback();
+    motionQuery.addEventListener('change', updatePlayback);
+    document.addEventListener('visibilitychange', updatePlayback);
+    return () => {
+      window.clearInterval(timer);
+      motionQuery.removeEventListener('change', updatePlayback);
+      document.removeEventListener('visibilitychange', updatePlayback);
+    };
+  }, [autoplay, intervalMs, isPaused, isUserPaused, items.length]);
 
   useEffect(() => {
     setActiveIndex((current) => Math.min(current, Math.max(items.length - 1, 0)));
@@ -190,6 +203,16 @@ function CarouselView({ component }: ComponentViewProps): JSX.Element {
           >
             ›
           </button>
+          {autoplay ? (
+            <button
+              className="hero-playback"
+              type="button"
+              onClick={() => setIsUserPaused((current) => !current)}
+              aria-label={isUserPaused ? messages.playCarouselLabel : messages.pauseCarouselLabel}
+            >
+              {isUserPaused ? messages.playCarousel : messages.pauseCarousel}
+            </button>
+          ) : null}
         </div>
       ) : null}
     </section>

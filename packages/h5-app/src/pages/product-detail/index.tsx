@@ -38,7 +38,9 @@ export function ProductDetailPage(): JSX.Element {
     queryFn: () => listProductReviews(productId),
   });
   const product = query.data;
-  const images = product ? [...new Set([product.coverUrl, ...product.detailImages].filter(Boolean))] : [];
+  const images = product
+    ? [...new Set([product.coverUrl, ...product.detailImages].filter(Boolean))]
+    : [];
   const [selectedSkuId, setSelectedSkuId] = useState<number | null>(null);
   const [favorite, setFavorite] = useState(() => listFavoriteProductIds().includes(productId));
   const addLine = useCartStore((state) => state.addLine);
@@ -50,7 +52,11 @@ export function ProductDetailPage(): JSX.Element {
   });
   const closeSkuDrawer = useCallback(() => setSkuOpen(false), []);
   const selectedSku = product?.skus.find(
-    (sku) => sku.skuId === (selectedSkuId ?? product.skus[0]?.skuId),
+    (sku) =>
+      sku.skuId ===
+      (selectedSkuId ??
+        product.skus.find((item) => item.quantity > 0)?.skuId ??
+        product.skus[0]?.skuId),
   );
   const [favoriteNotice, setFavoriteNotice] = useState('');
   const [actionNotice, setActionNotice] = useState('');
@@ -79,7 +85,7 @@ export function ProductDetailPage(): JSX.Element {
     setFavorite(listFavoriteProductIds().includes(productId));
   }, [authenticated, favoritesQuery.data, productId]);
   const addAction = useCallback(async () => {
-    if (!selectedSku) return;
+    if (!selectedSku || selectedSku.quantity <= 0) return;
     setActionNotice('');
     addLine({
       skuId: selectedSku.skuId,
@@ -133,9 +139,13 @@ export function ProductDetailPage(): JSX.Element {
   return (
     <main className="trade-page product-detail-page">
       <header className="trade-header product-detail-header">
-        <Link className="back-link" to="/">‹ {messages.back}</Link>
+        <Link className="back-link" to="/">
+          ‹ {messages.back}
+        </Link>
         <span>LiteShop</span>
-        <Link className="text-action" to="/cart">购物车</Link>
+        <Link className="text-action" to="/cart">
+          购物车
+        </Link>
       </header>
       <ProductGallery
         productName={product.name}
@@ -145,10 +155,14 @@ export function ProductDetailPage(): JSX.Element {
         onSelect={setImageIndex}
       />
       <section className="detail-summary">
-        <strong className="detail-price">{formatPrice(selectedSku?.priceCents ?? product.minPrice)}</strong>
+        <strong className="detail-price">
+          {formatPrice(selectedSku?.priceCents ?? product.minPrice)}
+        </strong>
         <h1>{product.name}</h1>
         <p className="muted">{product.subtitle}</p>
-        <p className="detail-summary__sales">{messages.sales} {product.salesCount}</p>
+        <p className="detail-summary__sales">
+          {messages.sales} {product.salesCount}
+        </p>
       </section>
       <section className="detail-section">
         <div className="section-title">
@@ -195,7 +209,13 @@ export function ProductDetailPage(): JSX.Element {
         </div>
         <p>{product.description}</p>
         <div className="detail-description-images">
-          {product.detailImages.map((src, index) => <ProductImage key={src} src={src} alt={messages.productImage(product.name, index + 1)} />)}
+          {product.detailImages.map((src, index) => (
+            <ProductImage
+              key={src}
+              src={src}
+              alt={messages.productImage(product.name, index + 1)}
+            />
+          ))}
         </div>
         {actionNotice && (
           <p className="action-feedback" role="status" aria-live="polite">

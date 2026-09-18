@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ProductStatus, type ProductSummary } from '@liteshop/shared-types';
-import { products } from './app-data';
+import { demoProducts as products } from './features/catalog/model/demo-products';
 import { toLocalCartItem } from './features/cart';
 import { defaultStoreHomePage } from './features/catalog';
 import { normalizeStoreHomePage } from './features/catalog/api/useStorePageQuery';

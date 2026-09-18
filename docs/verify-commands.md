@@ -1,164 +1,75 @@
-# LiteShop 各端验证命令清单
+# 验证命令
 
-> 子 Agent 完成后必须运行对应命令，把真实输出粘进 final summary。
-> 主 Agent 5+1 步验收时自己再跑一遍（第 6 步重复检测见 AGENTS.md §8.2）。
+以下命令对应当前 package.json 与 backend 配置。测试结果记在 [当前交接](交接文档-当前阶段.md)，不把历史数字当作当次验收。
 
-## 后端（backend/）
+## H5 / Admin
 
-```bash
-cd backend
-source .venv/bin/activate   # Windows: .\.venv\Scripts\activate
+在仓库根目录执行；Admin 将路径改为 `packages/admin-app`。每条必须单独检查退出码。
 
-# 代码规范
-ruff check .
-
-# 类型检查
-mypy .
-
-# 单元测试 + 覆盖率
-pytest -v --cov=app --cov-report=term-missing
-
-# 数据库迁移可升可降
-alembic upgrade head && alembic downgrade -1 && alembic upgrade head
-
-# 关键业务测试
-pytest tests/test_order_state_machine.py tests/test_stock_concurrency.py tests/test_payment_callback.py -v
-
-# 契约测试
-pytest tests/contract/ -v
-
-# 服务能启动
-uvicorn app.main:app --port 8000 &
-curl -f http://localhost:8000/health
-curl -f http://localhost:8000/ready
-kill %1
+```powershell
+pnpm --dir packages/h5-app typecheck
+pnpm --dir packages/h5-app lint
+pnpm --dir packages/h5-app test
+pnpm --dir packages/h5-app build
 ```
 
-## H5 商城端（packages/h5-app/）
+开发预览：`pnpm --dir packages/h5-app exec vite --host 127.0.0.1 --port 4173 --strictPort`。不要在 `pnpm dev` 后额外插入 `--` 导致参数未传给 Vite。
 
-```bash
-cd packages/h5-app
+## Site / 共享包
 
-# 类型检查
-tsc --noEmit
+```powershell
+pnpm --dir packages/site-app build
+pnpm --dir packages/site-app typecheck
+pnpm --dir packages/site-app lint
+pnpm --dir packages/site-app test
+pnpm --dir packages/shared-types build
+pnpm --dir packages/shared-types test
+pnpm --dir packages/shared-components build
+pnpm --dir packages/shared-components test
+pnpm --dir packages/shared-3d-components test
+```
 
-# ESLint
-eslint src --ext .ts,.tsx
+Site 先构建以生成 `.next/types`。需要预览生产构建时运行 `pnpm --dir packages/site-app exec next start --hostname 127.0.0.1 --port 4175`，该包没有 `start` 脚本。
 
-# 单元测试
-pnpm test -- --coverage
+## 后端
 
-# 生产构建
+使用已安装 `backend/requirements.txt` 的 Python 3.12 环境，从 `backend` 目录运行：
+
+```powershell
+python -m ruff check .
+python -m mypy .
+python -m pytest -q --cov=app --cov-report=term-missing
+```
+
+真实集成只指向本地/隔离测试库；需要 PostgreSQL/Redis 和测试夹具。默认测试不会替代该检查。
+
+```powershell
+$env:LITESHOP_RUN_INTEGRATION = '1'
+$env:LITESHOP_USE_DATABASE = 'true'
+python -m pytest -q integration_tests/test_postgres_redis.py integration_tests/test_real_http_api.py
+```
+
+迁移回退只能在明确创建的临时库执行，不把 `downgrade` 列为普通开发库的常规验证。
+
+## 端到端
+
+```powershell
+pnpm --dir tests/e2e test
+```
+
+配置会启动 H5/Admin/Site 本地服务。真实 API 用例需要本地后端，可用 `E2E_API_BASE` 配置地址；端口冲突用 `E2E_H5_PORT`、`E2E_ADMIN_PORT`、`E2E_SITE_PORT`。报告必须区分通过、失败和跳过，不能把未启动后端的跳过算作通过。
+
+## 全仓与交付检查
+
+```powershell
+pnpm typecheck
+pnpm lint
+pnpm test
 pnpm build
-
-# 包体积检查（gzip 后首屏 JS ≤ 200KB）
-gzip -c dist/assets/*.js | wc -c
-```
-
-## 管理后台（packages/admin-app/）
-
-```bash
-cd packages/admin-app
-
-# 类型检查
-tsc --noEmit
-
-# ESLint
-eslint src --ext .ts,.tsx
-
-# 单元测试
-pnpm test -- --coverage
-
-# 生产构建
-pnpm build
-```
-
-## 官网端（packages/site-app/，二期）
-
-```bash
-cd packages/site-app
-
-# 类型检查
-tsc --noEmit
-
-# 构建（SSG）
-pnpm build
-
-# 验证 SSG 页面
-ls .next/server/app/
-
-# 启动后验证
-pnpm start &
-curl -f http://localhost:3000
-curl -f http://localhost:3000/sitemap.xml
-kill %1
-```
-
-## 共享层（packages/shared-*）
-
-```bash
-# shared-types
-cd packages/shared-types && pnpm build && pnpm test
-
-# shared-tokens
-cd packages/shared-tokens && pnpm build
-
-# shared-components
-cd packages/shared-components && pnpm build && pnpm test
-
-# 双构建兼容性测试
-pnpm test:e2e:vite
-pnpm test:e2e:nextjs
-```
-
-## 端到端（tests/e2e/）
-
-```bash
-# 启动基础设施
-docker compose up -d postgres redis
-
-# 启动后端
-cd backend && uvicorn app.main:app --port 8000 &
-
-# 启动 H5
-cd packages/h5-app && pnpm dev --port 5173 &
-
-# 启动 Admin
-cd packages/admin-app && pnpm dev --port 5174 &
-
-# 跑 Playwright
-cd tests/e2e && pnpm playwright test
-
-# 冒烟测试（部署后）
-pnpm playwright test --grep @smoke
-```
-
-## a11y 检查
-
-```bash
-pnpm --filter shared-components run test:a11y
-pnpm --filter h5-app run test:a11y
-```
-
-## OpenAPI 契约校验
-
-```bash
-npx @stoplight/spectral-cli lint docs/api-contracts/v1/*.yaml
-```
-
-## 枚举同步检查
-
-```bash
 python scripts/check_enum_sync.py
+git diff --check
 ```
 
-## 包体积门禁
+只改一个包时先执行受影响包的命令。UI 另做实际浏览器的视口、键盘、加载/失败、禁用、长文案及 reduced-motion 检查。构建输出中的入口 gzip 和首屏实际依赖图用于体积判断，不能把所有 lazy chunk 总和叫作“首屏体积”。
 
-```bash
-# H5 首屏 JS gzip 不超过 200KB
-SIZE=$(gzip -c packages/h5-app/dist/assets/*.js | wc -c)
-if [ $SIZE -gt 204800 ]; then
-  echo "H5 首屏 JS gzip ${SIZE} bytes 超过 200KB 限制"
-  exit 1
-fi
-```
+当前仓库未配置 `test:a11y`、`test:e2e:vite`、`test:e2e:nextjs` 脚本，不再列出不存在的命令。完整 a11y 自动验收仍是待补项。

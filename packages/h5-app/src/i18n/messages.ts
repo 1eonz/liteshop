@@ -17,7 +17,7 @@ export const messages = {
   allProducts: '全部商品',
   categories: '商品分类',
   categoryDirectory: '分类目录',
-  categoryNotice: '分类商品筛选即将开放，当前展示全部商品。',
+  categoryNotice: '当前展示全部商品，可使用搜索查找你喜欢的好物。',
   productLoading: '商品加载中…',
   productError: '商品加载失败，请重试。',
   productEmpty: '暂无商品',
@@ -37,4 +37,8 @@ export const messages = {
   loggingIn: '登录中…',
   loginSecurity: '手机号仅用于登录与订单服务',
   sales: '已售',
+  pauseCarousel: '暂停',
+  playCarousel: '播放',
+  pauseCarouselLabel: '暂停自动轮播',
+  playCarouselLabel: '播放自动轮播',
 } as const;
